@@ -1,5 +1,6 @@
 # 診断: api.open-meteo.com の IP アドレスごとに、GitHub のマシンから応答するかを調べる(手動実行だけ。定期実行はしない)。
-# 確かめたい見立て(未確認の仮説): 「一部のサーバーが GitHub のマシンから応答しない」(docs/collect-run4-analysis.md)。
+# 1 回目の診断で「一部のサーバーだけ応答しない」は外れた。今の見立て(未確認の仮説): 「新しい接続を始めるときに一定の割合で止まる。
+# 接続を使い回せば失敗が減る」。新しい接続と接続の使い回しを、同じ実行の中で交互に行って比べる。
 # 取得するのは meta.json(jma_msm)だけ。ヤマビヨリは実行しない。棚(data ブランチ)には何も書かない。
 # 通信は collect/diag_probe.py の子プロセスだけが行い、計測フックを付ける(許可ホストは hosts.yaml の diag、回数・時間の上限は config.yaml の diag)。
 name: diagnose
@@ -23,7 +24,7 @@ concurrency:
 jobs:
   diagnose:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20          # 仮置き(config.yaml diag.total_timeout_s 900 秒の外側)
+    timeout-minutes: 40          # 仮置き(config.yaml diag.total_timeout_s 1800 秒の外側)
     permissions:
       contents: read
     env:
