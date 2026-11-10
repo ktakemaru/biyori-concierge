@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "biyori-proposal/1",
+  "title": "biyori-proposal/1",
+  "description": "各ビヨリからコンシェルジュへの提案。構造化データ(proposals)とユーザー向け文章(presentation)を分ける。互換性規則: 項目追加のみ。削除・意味変更は版を上げる。",
+  "type": "object",
+  "required": ["schema", "request_id", "agent", "status", "generated_at", "data_as_of", "proposals"],
+  "additionalProperties": true,
+  "properties": {
+    "schema": {"const": "biyori-proposal/1"},
+    "request_id": {"type": "string"},
+    "agent": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string"},
+        "version": {"type": "string"},
+        "commit": {"type": ["string", "null"], "description": "既存アプリを包む場合は固定commitを必ず記録"}
+      }
+    },
+    "status": {"enum": ["ok", "partial", "failed", "rate_limited", "not_applicable"]},
+    "status_reason": {
+      "type": "string",
+      "description": "failed / partial / not_applicable の理由。例: out_of_season, outside_geography, fetch_error"
+    },
+    "generated_at": {"$ref": "#/$defs/datetime_offset"},
+    "data_as_of": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "fetched_at"],
+        "properties": {
+          "source": {"type": "string"},
+          "source_type": {"$ref": "#/$defs/source_type"},
+          "run_time": {"type": ["string", "null"]},
+          "fetched_at": {"$ref": "#/$defs/datetime_offset"},
+          "last_updated": {"type": ["string", "null"], "description": "出典側の最終更新日（公式発表・観察記録など）"},
+          "url": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "proposals": {"type": "array", "items": {"$ref": "#/$defs/proposal"}},
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "api_calls": {"type": ["integer", "null"]},
+        "cache_hit": {"type": ["boolean", "null"]},
+        "runtime_s": {"type": ["number", "null"]},
+        "fetch_finished_at": {"anyOf": [{"$ref": "#/$defs/datetime_offset"}, {"type": "null"}], "description": "任意(段階6。項目の追加のみ)。通信(取得)が終わった時刻。アダプター側が付ける。generated_at の意味はエージェントごとに違う(開始/終了/合成)ので、時刻をそろえて見たいときはこちらを使う。通信しない実行は省略または null"},
+        "warnings": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "properties": {
+        "summary_md": {"type": ["string", "null"]},
+        "artifact_path": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"enum": ["failed", "rate_limited", "not_applicable"]}}},
+      "then": {"properties": {"proposals": {"maxItems": 0}}}
+    },
+    {
+      "if": {"properties": {"status": {"enum": ["failed", "not_applicable"]}}},
+      "then": {"required": ["status_reason"]}
+    }
+  ],
+  "$defs": {
+    "datetime_offset": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?(Z|[+-]\\d{2}:\\d{2})$",
+      "description": "ISO 8601。オフセット必須。"
+    },
+    "source_type": {"enum": ["forecast", "observation", "official_notice", "model_derived", "static_reference"]},
+    "proposal": {
+      "type": "object",
+      "required": ["id", "title", "place", "time_window", "suitability", "evidence", "uncertainty"],
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "subject": {
+          "type": "object",
+          "description": "イキモノビヨリ等で、1か所に複数対象がある場合の対象。気象系では省略可。",
+          "required": ["category", "name"],
+          "properties": {
+            "category": {"enum": ["seasonal_progression", "observation_record", "occurrence_event"]},
+            "name": {"type": "string"},
+            "profile_id": {"type": "string"}
+          }
+        },
+        "phenology_stage": {
+          "enum": ["before_bud", "bud", "early_bloom", "peak", "late", "out_of_season"],
+          "description": "季節進行型（花・紅葉）と発生イベント型（ホタル等）で共通に使う"
+        },
+        "place": {
+          "type": "object",
+          "required": ["name", "lat", "lon"],
+          "properties": {
+            "name": {"type": "string"},
+            "lat": {"type": "number", "minimum": -90, "maximum": 90},
+            "lon": {"type": "number", "minimum": -180, "maximum": 180},
+            "elevation_m": {"type": ["number", "null"]},
+            "region": {"type": ["string", "null"]},
+        "area_id": {"type": ["string", "null"], "description": "場所グループの識別子(任意。5c-2で項目追加)。窓口の絞り込みは (agent, subject, area_id) ごとに上位を取る。例: 野鳥の bird_areas の id"},
+        "site_ref": {"type": ["string", "null"], "description": "別のビヨリの同じ場所を指す共通の参照(任意。5c-2で項目追加)。例: yamabiyori:m002。窓口は、同じ site_ref をもつ他エージェントの提案を組み合わせの候補プールに加える"},
+            "location_precision": {
+              "enum": ["exact", "area_1km", "area_10km", "municipality"],
+              "description": "exact以外は座標を丸めて出す。希少種・営巣地・群生地向け"
+            }
+          }
+        },
+        "time_window": {
+          "type": "object",
+          "required": ["start", "end"],
+          "properties": {
+            "start": {"$ref": "#/$defs/datetime_offset"},
+            "end": {"$ref": "#/$defs/datetime_offset"},
+            "kind": {
+              "enum": ["activity_window", "calendar_day", "clear_window", "target_above_terrain"],
+              "description": "任意(項目追加)。時間帯の種類。activity_window=日の出・日没に基づく活動時間 / calendar_day=暦日の代用(粗い値) / clear_window=晴れ間・無月などの条件を通った区間 / target_above_terrain=天体が地形を上回る最長区間。窓口は activity_window と clear_window どうしの重なりだけを衝突とし、それ以外(粗い窓)が絡む組み合わせは衝突とせず needs_confirmation(時間帯は要確認)を付ける"
+            }
+          }
+        },
+        "suitability": {
+          "type": "object",
+          "required": ["band"],
+          "properties": {
+            "band": {"enum": ["go", "maybe", "no"]},
+            "score": {
+              "type": ["object", "null"],
+              "description": "点数は尺度つきでのみ許可。ビヨリ間で比較しない。",
+              "required": ["value", "scale"],
+              "properties": {
+                "value": {"type": "number"},
+                "scale": {"type": "string", "minLength": 1},
+                "go_threshold": {"type": ["number", "null"]}
+              }
+            }
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["metric", "value", "source"],
+            "properties": {
+              "metric": {"type": "string"},
+              "value": {"type": ["number", "string", "boolean", "null"]},
+              "unit": {"type": ["string", "null"]},
+              "valid_time": {"type": ["string", "null"]},
+              "source": {"type": "string"},
+              "source_type": {"$ref": "#/$defs/source_type"},
+              "url": {"type": ["string", "null"]},
+              "last_updated": {"type": ["string", "null"]}
+            }
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "text", "hard"],
+            "properties": {
+              "kind": {"type": "string", "description": "hazard, access, light, moon, season など"},
+              "text": {"type": "string"},
+              "hard": {"type": "boolean"},
+              "time_window": {
+                "type": ["object", "null"],
+                "properties": {
+                  "start": {"$ref": "#/$defs/datetime_offset"},
+                  "end": {"$ref": "#/$defs/datetime_offset"}
+                }
+              }
+            }
+          }
+        },
+        "uncertainty": {
+          "type": "object",
+          "required": ["confidence"],
+          "properties": {
+            "lead_days": {"type": ["number", "null"]},
+            "reliable_up_to_days": {"type": ["number", "null"]},
+            "confidence": {
+              "type": "object",
+              "required": ["method"],
+              "properties": {
+                "value": {"type": ["number", "null"]},
+                "scale": {"type": ["string", "null"]},
+                "method": {
+                  "type": "string",
+                  "description": "例: ecmwf-ens-51, gdd-model, observation-frequency, heuristic-unvalidated"
+                },
+                "validated": {"type": "boolean", "description": "過去実績で検証済みか。falseなら窓口は『推定』と表示する"}
+              }
+            },
+            "known_limits": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "care": {
+          "type": "object",
+          "description": "見るときの配慮。窓口は詳細地点や採取を促す文章を書いてはならない。",
+          "properties": {
+            "manners": {"type": "array", "items": {"type": "string"}},
+            "do_not_disclose_exact_location": {"type": "boolean"}
+          }
+        },
+        "logistics": {"type": "object"},
+        "native_ref": {
+          "type": ["object", "null"],
+          "properties": {"format": {"type": "string"}, "path": {"type": "string"}}
+        },
+        "details": {"type": "object", "description": "ビヨリ固有の自由欄。窓口は根拠として使わない。"}
+      }
+    }
+  }
+}

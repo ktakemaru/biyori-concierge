@@ -1,0 +1,8 @@
+# ビヨリコンシェル(取得の側・答える側・テスト)の依存。Python 3.13。版は biyori-hub requirements-hub.txt と同じ固定。
+# ヤマビヨリ・ホシビヨリの依存は、それぞれの requirements.txt を別の venv に入れる(collect.yml)。ここには入れない。
+attrs==26.1.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+PyYAML==6.0.3
+referencing==0.37.0
+rpds-py==2026.9.1

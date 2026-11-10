@@ -1,0 +1,10 @@
+# 手元だけの設定の見本。config.local.yaml に写して使う(config.local.yaml は .gitignore 対象。commit しない)。
+# 棚(data ブランチ)には入らない。答える側(段階 2 以降)が読む。
+origin:
+  # 出発地の上書き(既定は config.yaml の 横浜)
+  # name: 東京
+  # lat: 35.681
+  # lon: 139.767
+ikimonobiyori:
+  # イキモノビヨリの場所(段階 4)。そこにある版をそのまま使う
+  path: C:/ikimonobiyori

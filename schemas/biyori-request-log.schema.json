@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "biyori-request-log/1",
+  "title": "biyori-request-log/1(棚の logs/requests.json)",
+  "description": "1回の実行の通信の集計。ホスト別・ステータス別の回数だけ。座標・URL のクエリ・応答の本文は入れない(additionalProperties: false で検査)。estimated_calls は推定。",
+  "type": "object",
+  "required": ["schema", "started_at", "finished_at", "total", "agents", "metadata"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "biyori-request-log/1"},
+    "started_at": {"$ref": "#/$defs/dt"},
+    "finished_at": {"$ref": "#/$defs/dt"},
+    "estimated_calls_note": {"type": "string"},
+    "total": {"$ref": "#/$defs/counts"},
+    "metadata": {"$ref": "#/$defs/counts"},
+    "agents": {"type": "object", "additionalProperties": {"$ref": "#/$defs/counts"}}
+  },
+  "$defs": {
+    "dt": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?(Z|[+-]\\d{2}:\\d{2})$"},
+    "tally": {"type": ["object", "null"], "additionalProperties": {"type": "integer", "minimum": 0}},
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requests": {"type": ["integer", "null"], "minimum": 0},
+        "by_host": {"$ref": "#/$defs/tally"},
+        "by_status": {"$ref": "#/$defs/tally"},
+        "estimated_calls": {"type": ["integer", "null"], "minimum": 0},
+        "aborted": {"type": ["string", "null"], "maxLength": 300},
+        "blocked_host": {"type": ["string", "null"], "maxLength": 253}
+      }
+    }
+  }
+}

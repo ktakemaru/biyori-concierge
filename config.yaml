@@ -1,0 +1,56 @@
+# ビヨリコンシェルの既定値。個人の設定(出発地の上書き・イキモノビヨリの場所)は config.local.yaml(.gitignore 対象)に書く。
+# 値の出典を必ず書く。出典のない値は「仮置き」と書き、報告の「未確認」に入れる(推測で決めない)。
+schema: biyori-concierge-config/1
+
+origin:
+  # 出発地の既定(利用者の決定。指示書 2 章)。座標はイキモノビヨリ ikimonobiyori/data/catalog/policy.yaml の
+  # range_limit.origins の値(commit e095a61 で確認)。答える側(段階2)で使う。棚には入れない。
+  default:
+    name: 横浜
+    lat: 35.466
+    lon: 139.622
+  # 出発地からの直線距離の上限(km)。利用者の決定(指示書 2 章)。直線距離であって移動時間ではない。
+  max_straight_line_km: 250
+
+combo:
+  # 主役と添えるものを組み合わせる直線距離(km)。好みの仮置き。
+  # イキモノビヨリ ikimonobiyori/data/ask/plan.yaml の combo.max_km(20)と同じ値(commit e095a61 で確認)。
+  near_km: 20
+
+answer:
+  # 答えの字数の上限。仮置き(指示書 6.5)。
+  max_chars: 2000
+
+collect:
+  # 取得の側(collect/)の値。
+  agents:
+    yamabiyori:
+      repo: ktakemaru/yamabiyori
+      ref: main                     # 公開版が main(指示書 5.1)
+      # HTTP リクエストの上限(計測フックで強制)。仮置き 300(指示書 5.2)。最初の手動実行の実測の 1.3 倍程度に直す。
+      max_requests: 300
+      # 子プロセスの時間の上限(秒)。仮置き(PC で約 6 分。collect.yml の timeout-minutes 90 の内側)。
+      timeout_s: 3600
+      # 出力の schema の文字列(mountain_weather_mvp.py --json-out。report_data.py)
+      expected_schema: yamabiyori-report-data/1
+  # Open-Meteo のメタデータ(利用上限に数えられない。yamabiyori-backtest backtest/collect_forecast_snapshot.py の説明)で記録するモデル
+  model_runs: [jma_msm, ecmwf_ifs025]
+  # メタデータ取得のリクエスト上限(モデル 2 つ × 前後 2 回 = 4。余裕を見て 8。仮置き)
+  meta_max_requests: 8
+  # 棚が古いとみなす時間(時間)。指示書 6.2「棚が半日以上古いときは、その旨が入る」の半日。答える側(段階2)が使う。
+  stale_after_hours: 12
+  # 取得の時刻(利用者の決定 D3: 朝 4:27 / 夕 16:47 日本時間)。collect.yml の cron と一致することをテストで検査する。
+  schedule_utc: ["27 19 * * *", "47 7 * * *"]
+  # yamabiyori-backtest の収集の cron(.github/workflows/collect.yml「収集」の行。commit 964293a で確認。参照のみ)。
+  # 取得の時刻と重ならないことをテストで検査する(cron の文字列を読むだけ)。
+  backtest_cron_utc: "20 */3 * * *"
+  # 重ならないとみなす最小の間隔(分)。仮置き(バックテストの収集の所要時間は未確認)。
+  backtest_min_gap_minutes: 30
+
+estimated_calls:
+  # Open-Meteo の call 換算の「推定」。公式の式は未確認(指示書 U7)。仮置きの式:
+  #   1 リクエスト = max(1, 変数の数 / variables_per_call) × max(1, 日数 / days_per_call)
+  # 変数の数は hourly と daily の合計、日数は forecast_days + past_days(記録がなければ 1 倍)。メタデータの取得は 0 と数える。
+  # 地点を複数まとめたリクエストや models の複数指定は、フックの記録にないため数えられない(過小になりうる)。
+  variables_per_call: 10
+  days_per_call: 14

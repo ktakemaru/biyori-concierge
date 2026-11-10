@@ -1,0 +1,89 @@
+# 窓口とビヨリが共有する語彙(interests・domains)。依頼(biyori-request/1)の interests・domains と、
+# 各 manifest の capabilities.interests・domains は、ここにある語から選ぶ(hub/validate.py が検査する)。
+# 新しい語が要るときは、先にここへ足す(足さないと validate が通らない)。語の削除・意味の変更は版を上げる(/2)。
+# aliases は窓口が使いがちな言い換え → 正式な語。select が依頼の語を正式な語に直してから照合する。初版は空(実際に外れた言葉を見てから足す)。
+# label は日本語。窓口 LLM が依頼を構造化するときの手がかりになる。
+schema: biyori-vocabulary/1
+interests:
+  hiking:
+    label: 登山・ハイキング
+    note: "山に登る・歩く。yamabiyori"
+  mountains:
+    label: 山
+    note: "山の天気・山域の見通し。yamabiyori"
+  clear_sky_summit:
+    label: 山頂の晴れ
+    note: "山頂で晴れ間・眺望が期待できるか。yamabiyori"
+  landscape_photo:
+    label: 風景写真
+    note: "風景を撮りに行く。段階11で yamabiyori に割り当て(山の風景)。星景(夜)は astrophotography"
+  stars:
+    label: 星空
+    note: "星空を見る・撮る。hoshibiyori"
+  milky_way:
+    label: 天の川
+    note: "天の川(銀河中心)が見える夜と場所。hoshibiyori"
+  astrophotography:
+    label: 星景写真
+    note: "星空と地上風景の撮影。hoshibiyori"
+  autumn_leaves:
+    label: 紅葉
+    note: "紅葉の見頃。ikimonobiyori"
+  wildflowers:
+    label: 野の花
+    note: "ヒガンバナ・ヒマワリなど。ikimonobiyori"
+  higanbana:
+    label: ヒガンバナ
+    note: "彼岸花の見頃(骨組みのみ)。ikimonobiyori。wildflowers の個別の語"
+  sunflower:
+    label: ヒマワリ
+    note: "ヒマワリの見頃(骨組みのみ)。ikimonobiyori。wildflowers の個別の語"
+  cherry_blossom:
+    label: 桜
+    note: "桜の開花・見頃(骨組みのみ)。ikimonobiyori"
+  birds:
+    label: 野鳥
+    note: "野鳥の観察記録にもとづく相対頻度。ikimonobiyori"
+  wintering_birds:
+    label: 冬鳥
+    note: "冬鳥の飛来(白鳥などの飛来地。骨組みのみ)。ikimonobiyori。段階H3で追加。birds とは別の語"
+  flowers:
+    label: 花
+    note: "季節の花の見頃(公園・植物園の花。骨組みのみ)。ikimonobiyori。段階H3で追加。wildflowers・higanbana・sunflower・cherry_blossom とは別の語(まとめない)"
+  fireflies:
+    label: ホタル
+    note: "ホタルの観察(骨組みのみ)。ikimonobiyori"
+  bioluminescence:
+    label: 発光生物
+    note: "夜光虫などの発光(骨組みのみ)。ikimonobiyori"
+  demo_sea:
+    label: (検証用)海
+    note: "demobiyori(demo: true)。架空のデータで、実在の情報ではない"
+domains:
+  mountain_weather:
+    label: 山の天気
+  hiking:
+    label: 登山・ハイキング
+  mountain_viewing:
+    label: 山の眺め
+  astronomy:
+    label: 天文
+  stargazing:
+    label: 星空観察
+  astrophotography:
+    label: 星景写真
+  nature_observation:
+    label: 自然観察
+  seasonal_flora:
+    label: 季節の植物
+  birdwatching:
+    label: バードウォッチング
+  firefly:
+    label: ホタル
+  bioluminescence:
+    label: 発光生物
+  synthetic_demo:
+    label: (検証用)架空のデータ
+  sea:
+    label: (検証用)海
+aliases: {}

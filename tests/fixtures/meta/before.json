@@ -1,0 +1,18 @@
+{
+ "_note": "テスト用。yamabiyori-backtest data/snapshots/forecast/2026-09-24/06Z_meta_before.json.gz の値から必要な項目だけ",
+ "fetched_at": "2026-09-24T09:34:11Z",
+ "models": {
+  "jma_msm": {
+   "last_run_initialisation_time": 1790218800,
+   "last_run_availability_time": 1790237394,
+   "last_run_modification_time": 1790231418,
+   "update_interval_seconds": 10800
+  },
+  "ecmwf_ifs025": {
+   "last_run_initialisation_time": 1790208000,
+   "last_run_availability_time": 1790236206,
+   "last_run_modification_time": 1790235872,
+   "update_interval_seconds": 21600
+  }
+ }
+}

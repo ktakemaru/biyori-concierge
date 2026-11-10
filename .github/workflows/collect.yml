@@ -1,0 +1,173 @@
+# 山・星の予報をまとめて取得し、棚(data ブランチ)に置く(指示書 5 章)。
+# 実通信が起きるのは次の 2 つだけ:
+#   手動実行(workflow_dispatch): confirm に yes-run-live と入れたとき。
+#   定期実行(schedule)        : 日本時間 4:27 と 16:47(UTC の 19:27 と 7:47)。リポジトリの変数 BIYORI_COLLECT_SCHEDULE が on のときだけ(停止スイッチ)。
+#                                 段階 5 までは on にしない。未設定・他の値なら collect は skipped、publish も動かない。
+# Open-Meteo への通信は、collect ジョブの中で、計測フック(collect/measure/sitecustomize.py)を付けた子プロセスだけが行う。
+#
+# 2 つのジョブに分ける(権限の分離。biyori-hub の fetch-autumn.yml と同じ考え方):
+#   collect : 読み取り権限のみ。実通信はここだけ。成果物は artifact に置く。
+#   publish : 書き込み権限はここだけ。取得のコードは実行しない(整形と git 操作だけ)。
+#             親なしの 1 コミットを data にだけ強制 push する(main には push しない)。
+name: collect
+
+on:
+  schedule:
+    - cron: "27 19 * * *"    # 日本時間 4:27(朝)
+    - cron: "47 7 * * *"     # 日本時間 16:47(夕)
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "実通信を行う確認。yes-run-live と入れたときだけ実行する"
+        required: true
+        type: string
+      agents:
+        description: "取得するビヨリ(hoshibiyori は段階 3 から)"
+        required: true
+        type: choice
+        options: [yamabiyori, hoshibiyori, both]
+        default: yamabiyori
+      yama_limit:
+        description: "山の数(空 = 全 76 座。最初の確認は 3)"
+        required: false
+        type: string
+        default: "3"
+      publish:
+        description: "取得の結果を棚(data ブランチ)に残す"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# 棚の更新が同時に走って競合しないように、実行を 1 つずつにする(待たせる。途中の実行は止めない)。
+concurrency:
+  group: biyori-collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && vars.BIYORI_COLLECT_SCHEDULE == 'on') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90          # 仮置き(PC で山 約 6 分・星 約 21 分)。実測で見直す
+    permissions:
+      contents: read
+    env:
+      PYTHONUTF8: "1"
+      AGENTS: ${{ github.event_name == 'schedule' && 'both' || inputs.agents }}
+      YAMA_LIMIT: ${{ inputs.yama_limit }}          # 定期実行では空(= 全 76 座)
+    steps:
+      - name: Check confirmation
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "yes-run-live" ]; then
+            echo "confirm が yes-run-live と一致しないため中止します(実通信はしていません)"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Get yamabiyori (main)
+        if: ${{ env.AGENTS == 'yamabiyori' || env.AGENTS == 'both' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ktakemaru/yamabiyori
+          ref: main
+          path: _agents/yamabiyori
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install concierge dependencies
+        run: python -m pip install -r requirements.txt
+      # ヤマビヨリは別の venv に、ヤマビヨリの requirements.txt だけを入れる(Playwright は入れない)。
+      - name: Install yamabiyori dependencies (own venv)
+        if: ${{ env.AGENTS == 'yamabiyori' || env.AGENTS == 'both' }}
+        run: |
+          python -m venv _venvs/yamabiyori
+          _venvs/yamabiyori/bin/python -m pip install -r _agents/yamabiyori/requirements.txt
+      - name: Collect (live)
+        id: run
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python -X utf8 -m collect run --agents "$AGENTS" --out _out \
+            --yamabiyori-checkout _agents/yamabiyori --yamabiyori-python "$PWD/_venvs/yamabiyori/bin/python" \
+            --yama-limit "$YAMA_LIMIT" --trigger "$EVENT_NAME" --concierge-commit "$GITHUB_SHA"
+      # 確認で止まったとき(取得していないとき)は、成果物も要約も作らない。
+      - name: Upload results
+        if: ${{ always() && steps.run.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: collect-result
+          path: _out/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Write the run summary
+        if: ${{ always() && steps.run.outcome != 'skipped' }}
+        run: python -X utf8 -m collect summary --artifact _out >> "$GITHUB_STEP_SUMMARY"
+      # 失敗したビヨリがあれば、ここでジョブを赤にする(成果物は上で残してある。publish は成功したビヨリだけを入れ替える)。
+      - name: Fail if a requested agent is not ok
+        run: python -X utf8 -m collect verdict --artifact _out
+
+  publish:
+    needs: collect
+    if: ${{ always() && needs.collect.result != 'cancelled' && needs.collect.result != 'skipped' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - name: Check confirmation
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "yes-run-live" ]; then
+            echo "confirm が yes-run-live と一致しないため中止します(何も書いていません)"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install concierge dependencies
+        run: python -m pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: collect-result
+          path: _artifact
+      - name: Get the current data branch (absent on the first run)
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: _data
+          persist-credentials: false
+      - name: Build the tree to publish (no network, no collect code)
+        run: |
+          mkdir -p _data
+          python -X utf8 -m collect prepare --artifact _artifact --existing _data --out "$RUNNER_TEMP/publish"
+      - name: Commit without history and force-push to data only
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$RUNNER_TEMP/publish"
+          test -f manifest.json
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json ATTRIBUTION.md
+          for p in logs yamabiyori hoshibiyori proposals; do if [ -e "$p" ]; then git add "$p"; fi; done
+          git commit -q -m "data: collect (run ${GITHUB_RUN_ID}). 履歴は残さない(毎回この 1 コミットに置き換える)"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          AUTH="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          echo "::add-mask::$AUTH"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $AUTH" push --force origin HEAD:refs/heads/data

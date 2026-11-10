@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "biyori-collect-run/1",
+  "title": "biyori-collect-run/1(1回の取得の結果。artifact の run.json)",
+  "description": "collect ジョブが書き、publish ジョブが manifest を作る材料にする。棚には載せない。",
+  "type": "object",
+  "required": ["schema", "slot", "trigger", "started_at", "finished_at", "concierge_commit", "model_runs", "requested_agents", "agents"],
+  "properties": {
+    "schema": {"const": "biyori-collect-run/1"},
+    "slot": {"enum": ["morning", "evening"]},
+    "trigger": {"enum": ["schedule", "workflow_dispatch"]},
+    "started_at": {"$ref": "#/$defs/dt"},
+    "finished_at": {"$ref": "#/$defs/dt"},
+    "concierge_commit": {"$ref": "#/$defs/commit"},
+    "model_runs": {"type": "object"},
+    "requested_agents": {"type": "array", "items": {"enum": ["yamabiyori", "hoshibiyori"]}},
+    "yama_limit": {"type": ["integer", "null"]},
+    "agents": {
+      "type": "object",
+      "propertyNames": {"enum": ["yamabiyori", "hoshibiyori"]},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status", "requests", "runtime_s", "data_time"],
+        "properties": {
+          "status": {"enum": ["ok", "failed", "rate_limited", "skipped"]},
+          "reason": {"type": ["string", "null"]},
+          "requests": {"type": "integer", "minimum": 0},
+          "runtime_s": {"type": "number", "minimum": 0},
+          "data_time": {"anyOf": [{"$ref": "#/$defs/dt"}, {"type": "null"}]},
+          "commit": {"$ref": "#/$defs/commit"},
+          "version": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "requests": {"type": "object"}
+  },
+  "$defs": {
+    "dt": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?(Z|[+-]\\d{2}:\\d{2})$"},
+    "commit": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{40}$"}, {"type": "null"}]}
+  }
+}

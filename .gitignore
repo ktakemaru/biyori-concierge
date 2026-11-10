@@ -1,0 +1,11 @@
+# 手元だけの設定(commit しない)
+config.local.yaml
+# 生成物・キャッシュ
+__pycache__/
+*.pyc
+/_out/
+/_agents/
+/_venvs/
+/_artifact/
+/_data/
+/.venv/

@@ -1,0 +1,8 @@
+# 取得の子プロセスが通信してよいホスト(計測フックの BIYORI_ALLOW_HOSTS に渡す)。ここにないホストは送信前に止まる。
+# 推測で足さない(指示書 5.2)。最初の手動実行のログで止められたホストを見てから、理由と日付を添えて足す。
+schema: biyori-collect-hosts/1
+hosts:
+  yamabiyori:
+    - api.open-meteo.com          # mountain_weather_core.py OPEN_METEO_URL
+  meta:
+    - api.open-meteo.com          # /data/<model>/static/meta.json(yamabiyori-backtest の手本と同じ)
