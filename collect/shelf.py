@@ -12,6 +12,7 @@ import shutil
 from pathlib import Path
 
 from .common import COLLECT, dump_json, read_json, schema_errors
+from .yamabiyori import coverage_text
 
 SHELF_SCHEMA = "biyori-shelf/1"
 AGENT_FILES = {
@@ -21,7 +22,10 @@ AGENT_FILES = {
                     "proposals/hoshibiyori.json": "biyori-proposal"},
 }
 NATIVE_SCHEMA = {"native_explore": "yamabiyori-report-data/1", "native_hoshi": "hoshibiyori-explore/1"}
-ENTRY_KEYS = ("commit", "version", "data_time", "model_runs", "proposal_status", "proposals", "limit")
+ENTRY_KEYS = ("commit", "version", "data_time", "model_runs", "proposal_status", "proposals", "limit", "coverage")
+# 全座そろわない回(run.json の status: incomplete)を棚に載せるか。利用者が決めるまでの暫定 = 載せる(段階 1 の最初の版と同じ動き)。
+# 載せるときは manifest の status を incomplete にし、coverage で何座そろったかを示す(ok とは書かない)。
+PUBLISHABLE = ("ok", "incomplete")
 
 
 def _plain(p):
@@ -64,8 +68,10 @@ def build_manifest(run, previous, outcome):
             continue
         this_run = {"requests": (r or {}).get("requests", 0), "runtime_s": (r or {}).get("runtime_s", 0.0)}
         if how == "new":
-            e = {"status": "ok", **{k: r.get(k) for k in ENTRY_KEYS}, **this_run, "kept_from": None,
+            e = {"status": r["status"], **{k: r.get(k) for k in ENTRY_KEYS}, **this_run, "kept_from": None,
                  "files": sorted(AGENT_FILES[agent])}
+            if r["status"] == "incomplete":
+                e["reason"] = r.get("reason") or "partial_fetch"
         elif how == "kept":
             p = prev_agents[agent]
             kept_from = p.get("kept_from") if p.get("status") == "kept_previous" else previous.get("finished_at")
@@ -84,7 +90,8 @@ def build_manifest(run, previous, outcome):
             "requests": run.get("requests"),
             "notes": ["時刻はすべて ISO 8601・オフセットつき。分からない値は null",
                       "agents.*.model_runs はそのビヨリのファイルを取得したときの予報の回。最上位の model_runs はこの回の実行のもの",
-                      "requests・runtime_s はこの回の実行の値。kept_previous のとき commit・version・data_time は残したファイルのもの"]}
+                      "requests・runtime_s はこの回の実行の値。kept_previous のとき commit・version・data_time・coverage は残したファイルのもの",
+                      "status: incomplete は、この回のファイルに入れ替えたが全座はそろっていない(coverage の fetched / pool_size)"]}
 
 
 def prepare(artifact, existing, out):
@@ -100,14 +107,14 @@ def prepare(artifact, existing, out):
     outcome, reasons = {}, {}
     for agent in AGENT_FILES:
         r = (run.get("agents") or {}).get(agent)
-        if r and r.get("status") == "ok":
+        if r and r.get("status") in PUBLISHABLE:
             probs = agent_files_problems(art, agent)
             if not probs:
                 outcome[agent] = "new"
                 continue
             r["status"], r["reason"], r["detail"] = "failed", "artifact_invalid", "; ".join(probs)[:500]
         prev = prev_agents.get(agent)
-        if prev and prev.get("status") in ("ok", "kept_previous") and not agent_files_problems(ex, agent):
+        if prev and prev.get("status") in ("ok", "incomplete", "kept_previous") and not agent_files_problems(ex, agent):
             outcome[agent] = "kept"
         elif r and r.get("status") != "skipped":
             outcome[agent] = "failed"
@@ -148,9 +155,10 @@ def render_summary(artifact):
     if not isinstance(run, dict):
         return "\n".join(lines + ["run.json がありません(取得の前に止まった可能性。collect ジョブのログを見る)。", ""])
     lines += [f"- 開始 {run.get('started_at')} / 終了 {run.get('finished_at')}(slot: {run.get('slot')}, trigger: {run.get('trigger')})", ""]
-    lines += ["| ビヨリ | 状態 | 理由 | 通信の回数 | 所要(秒) | データの時刻 |", "|---|---|---|---|---|---|"]
+    lines += ["| ビヨリ | 状態 | 理由 | 山の数 | 通信の回数 | 所要(秒) | データの時刻 |", "|---|---|---|---|---|---|---|"]
     for a, r in (run.get("agents") or {}).items():
-        lines.append(f"| {a} | {r.get('status')} | {r.get('reason') or ''} {r.get('detail') or ''} | {r.get('requests')} | {r.get('runtime_s')} | {r.get('data_time') or 'なし'} |")
+        cov = coverage_text(r["coverage"]) if r.get("coverage") else "なし"
+        lines.append(f"| {a} | {r.get('status')} | {r.get('reason') or ''} {r.get('detail') or ''} | {cov} | {r.get('requests')} | {r.get('runtime_s')} | {r.get('data_time') or 'なし'} |")
     lines += ["", "| モデル | 初期時刻 | 公開 | 前後で同じ |", "|---|---|---|---|"]
     for m, r in (run.get("model_runs") or {}).items():
         lines.append(f"| {m} | {r.get('init') or 'なし'} | {r.get('available') or 'なし'} | {r.get('same_before_after')} |")

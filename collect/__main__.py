@@ -48,9 +48,13 @@ def main(argv=None):
         sys.stdout.write(shelf.render_summary(a.artifact))
         return 0
     run = read_json(f"{a.artifact}/run.json") or {}
-    bad = [k for k in run.get("requested_agents", []) if (run.get("agents") or {}).get(k, {}).get("status") != "ok"]
+    agents = run.get("agents") or {}
+    bad = [k for k in run.get("requested_agents", []) if agents.get(k, {}).get("status") != "ok"]
     if not run or bad:
-        print("ok でないビヨリ: " + (", ".join(bad) if bad else "run.json なし"))
+        # incomplete(全座そろわない)も ok ではないので赤にする。publish ジョブは always() なので、この結果では止まらない
+        print("ok でないビヨリ: " + (", ".join(f"{k}({agents.get(k, {}).get('status')}"
+                                             + (f": {agents[k]['detail']}" if agents.get(k, {}).get("detail") else "") + ")"
+                                             for k in bad) if bad else "run.json なし"))
         return 1
     return 0
 

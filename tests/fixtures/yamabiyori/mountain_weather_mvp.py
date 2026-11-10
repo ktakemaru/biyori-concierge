@@ -1,7 +1,8 @@
 """テスト用の偽のヤマビヨリ(本物ではない)。通信しない。記録済みの explore.json(ヤマビヨリ tests/fixtures/report/explore.json の写し)を
 --json-out に書くだけ。FAKE_YAMA で失敗の形を真似る:
   ok(既定) / exit2 / bad_schema / no_output / net(通信を試みる → 計測フックが許可外で止める) / 429(フックの 429 の記録を真似て 75 で終わる)
-  tz(TZ 環境変数を出力の generated に入れる。子プロセスの環境の確認用)"""
+  tz(TZ 環境変数を出力の generated に入れる。子プロセスの環境の確認用)
+  partial(3 座のうち最後の 1 座を取れなかった形。fetched=2 で、その山の行を落とす) / no_counts(pool_size・fetched がない)"""
 import argparse
 import json
 import os
@@ -46,6 +47,20 @@ if mode == "bad_schema":
     native["schema"] = "yamabiyori-report-data/2"
 if mode == "tz":
     native["generated"] = os.environ.get("TZ")
+if mode == "partial":
+    names = []
+    for d in native["days"]:
+        for r in d["all"]:
+            if r["mountain"] not in names:
+                names.append(r["mountain"])
+    drop = names[-1]
+    for d in native["days"]:
+        d["all"] = [r for r in d["all"] if r["mountain"] != drop]
+        d["rows"] = [r for r in d["rows"] if r["mountain"] != drop]
+    native["fetched"] = native["pool_size"] - 1
+if mode == "no_counts":
+    native.pop("pool_size")
+    native.pop("fetched")
 if mode != "no_output":
     Path(a.json_out).write_text(json.dumps(native, ensure_ascii=False), encoding="utf-8")
 sys.exit(0)

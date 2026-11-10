@@ -9,6 +9,7 @@
   raw/                          フックの記録(JSONL)と標準出力の末尾。artifact にだけ残し、棚には載せない
 
 ビヨリの失敗(終了コード≠0・429・フックの中止・出力の形が違う)は、そのビヨリを status≠ok にするだけで、ほかのビヨリは続ける。
+ヤマビヨリが対象の山を全部は取れなかった回(explore.json の fetched < pool_size)は status: incomplete(ok にしない)。
 """
 import shutil
 import sys
@@ -66,6 +67,8 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None):
     probs = yama.output_problems(native)
     if probs:
         return dict(entry, status="failed", reason="unexpected_output", detail="; ".join(probs)[:500])
+    cov = yama.coverage(native, mountains)
+    entry["coverage"] = cov
     fetched_at = res.finished_at
     runs = model_runs_fn() if model_runs_fn else {}
     sun = yama.load_sun_times(checkout / "cache", mountains)
@@ -84,8 +87,11 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None):
     shutil.copyfile(json_out, out_dir / "yamabiyori" / "explore.json")          # --json-out そのまま
     write_json(out_dir / "yamabiyori" / "mountains.json", mdoc)
     write_json(out_dir / "proposals" / "yamabiyori.json", prop)
-    return dict(entry, status="ok", reason=None, data_time=iso(fetched_at), proposal_status=prop["status"],
-                proposals=len(prop["proposals"]), model_runs=runs)
+    # 全座そろわない回は ok にしない(incomplete)。ファイルは作る(棚に載せるかは publish 側の決まり。shelf.py の PUBLISHABLE)
+    complete = cov["missing"] == 0
+    extra = {} if complete else {"detail": yama.coverage_text(cov)}
+    return dict(entry, status="ok" if complete else "incomplete", reason=None if complete else "partial_fetch", **extra,
+                data_time=iso(fetched_at), proposal_status=prop["status"], proposals=len(prop["proposals"]), model_runs=runs)
 
 
 def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, trigger="workflow_dispatch", concierge_commit=None,
@@ -182,6 +188,7 @@ def main_run(args):
                   trigger=args.trigger, concierge_commit=args.concierge_commit or None)
     for a, r in run["agents"].items():
         print(f"{a}: {r['status']}" + (f" ({r.get('reason')})" if r.get("reason") else "")
+              + (f" 山={yama.coverage_text(r['coverage'])}" if "coverage" in r else "")
               + f" requests={r.get('requests')} runtime_s={r.get('runtime_s')}")
     logs = read_json(Path(args.out) / "logs" / "requests.json") or {}
     for name, x in (("metadata", logs.get("metadata") or {}), ("total", logs.get("total") or {})):

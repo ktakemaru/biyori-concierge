@@ -35,6 +35,35 @@ class Success(unittest.TestCase):
         self.assertEqual(r["model_runs"]["jma_msm"], {"init": "2026-09-24T03:00:00Z", "available": "2026-09-24T08:09:54Z",
                                                       "same_before_after": True})
         self.assertEqual(r["concierge_commit"], "0" * 40)
+        self.assertEqual(y["coverage"], {"pool_size": 3, "fetched": 3, "missing": 0, "total_mountains": 76})
+
+    def test_not_every_mountain_is_incomplete_not_ok(self):
+        # ヤマビヨリが対象の山を全部は取れなかった回(collect #4: 76 座のうち 60 座)は ok と表示しない
+        r, out = run(self, mode="partial")
+        y = r["agents"]["yamabiyori"]
+        self.assertEqual((y["status"], y["reason"]), ("incomplete", "partial_fetch"))
+        self.assertEqual(y["coverage"], {"pool_size": 3, "fetched": 2, "missing": 1, "total_mountains": 76})
+        self.assertIn("3座のうち2座(1座取得できず)", y["detail"])
+        self.assertEqual(schema_errors(read_json(out / "run.json"), "biyori-collect-run"), [])
+        for rel in ("yamabiyori/explore.json", "proposals/yamabiyori.json"):     # ファイルは作る(載せるかは publish の決まり)
+            self.assertTrue((out / rel).is_file(), rel)
+        self.assertEqual(read_json(out / "proposals/yamabiyori.json")["status"], "partial")
+
+    def test_verdict_is_red_for_incomplete(self):
+        import io
+        from contextlib import redirect_stdout
+        from collect.__main__ import main
+        def out_buf():                       # main() は sys.stdout.reconfigure を呼ぶので、TextIOWrapper にする
+            return io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+        _, out = run(self, mode="partial")
+        with redirect_stdout(out_buf()) as buf:
+            self.assertEqual(main(["verdict", "--artifact", str(out)]), 1)
+            buf.flush()
+            text = buf.buffer.getvalue().decode("utf-8")
+        self.assertIn("yamabiyori(incomplete: 3座のうち2座(1座取得できず)", text)
+        _, ok = run(self)
+        with redirect_stdout(out_buf()):
+            self.assertEqual(main(["verdict", "--artifact", str(ok)]), 0)
 
     def test_child_sees_japan_time(self):
         r, out = run(self, mode="tz")
@@ -88,6 +117,10 @@ class Failures(unittest.TestCase):
 
     def test_nonzero_exit(self):
         self.check("exit2", "failed", "exit_2")
+
+    def test_missing_counts_is_unexpected_output(self):
+        r, _ = self.check("no_counts", "failed", "unexpected_output")
+        self.assertIn("pool_size", r["agents"]["yamabiyori"]["detail"])
 
     def test_wrong_schema_string(self):
         r, _ = self.check("bad_schema", "failed", "unexpected_output")

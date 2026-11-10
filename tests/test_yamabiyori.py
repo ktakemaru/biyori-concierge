@@ -137,5 +137,22 @@ class OutputShape(unittest.TestCase):
             convert(now=datetime(2026, 10, 12, 5, 0))
 
 
+class Coverage(unittest.TestCase):
+    def test_text(self):
+        from collect.yamabiyori import coverage_text
+        self.assertEqual(coverage_text({"pool_size": 76, "fetched": 60, "missing": 16, "total_mountains": 76}), "76座のうち60座(16座取得できず)")
+        self.assertEqual(coverage_text({"pool_size": 76, "fetched": 76, "missing": 0, "total_mountains": 76}), "76座のうち76座")
+        self.assertEqual(coverage_text({"pool_size": 3, "fetched": 3, "missing": 0, "total_mountains": 76}), "3座のうち3座(全76座の先頭3座)")
+        self.assertEqual(coverage_text(None), "不明")
+
+    def test_counts_are_checked(self):
+        from collect.yamabiyori import output_problems
+        base = {"schema": "yamabiyori-report-data/1", "mode": "explore", "days": [{"date": "2026-11-11", "rows": [], "all": []}]}
+        self.assertEqual(output_problems(dict(base, pool_size=76, fetched=60)), [])
+        for pool, fetched in ((76, 77), (None, 60), (76, None), ("76", 60), (76, -1), (True, 1), (76, 6.0)):
+            with self.subTest(pool=pool, fetched=fetched):
+                self.assertTrue(output_problems(dict(base, pool_size=pool, fetched=fetched)))
+
+
 if __name__ == "__main__":
     unittest.main()

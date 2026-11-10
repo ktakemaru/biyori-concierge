@@ -132,6 +132,34 @@ class SwapOnlyOnSuccess(unittest.TestCase):
         _, _, m = publish(self, artifact(self, "exit2"), existing=prev)
         self.assertEqual(m["agents"]["yamabiyori"]["status"], "failed")
 
+    def test_incomplete_is_published_as_incomplete_not_ok(self):
+        # 暫定(利用者が決めるまで): 全座そろわない回も入れ替えるが、status は incomplete で、何座そろったかを示す
+        prev, _ = self.previous()
+        out, s, m = publish(self, artifact(self, "partial"), existing=prev)
+        y = m["agents"]["yamabiyori"]
+        self.assertEqual((y["status"], y["reason"], y["kept_from"]), ("incomplete", "partial_fetch", None))
+        self.assertEqual(y["coverage"], {"pool_size": 3, "fetched": 2, "missing": 1, "total_mountains": 76})
+        self.assertEqual(schema_errors(m, "biyori-shelf"), [])
+        self.assertEqual(s["files"], EXPECTED)
+        self.assertEqual(read_json(out / "proposals/yamabiyori.json")["status"], "partial")
+
+    def test_incomplete_shelf_can_be_kept_and_keeps_its_coverage(self):
+        inc = publish(self, artifact(self, "partial"))[0]
+        _, _, m = publish(self, artifact(self, "exit2"), existing=inc)
+        y = m["agents"]["yamabiyori"]
+        self.assertEqual(y["status"], "kept_previous")
+        self.assertEqual(y["coverage"]["fetched"], 2)                  # 残したファイルの山の数
+        self.assertEqual(schema_errors(m, "biyori-shelf"), [])
+
+    def test_ok_manifest_has_full_coverage(self):
+        _, _, m = publish(self, artifact(self))
+        self.assertEqual(m["agents"]["yamabiyori"]["coverage"]["missing"], 0)
+
+    def test_incomplete_manifest_needs_coverage(self):
+        _, _, m = publish(self, artifact(self, "partial"))
+        m["agents"]["yamabiyori"].pop("coverage")
+        self.assertTrue(schema_errors(m, "biyori-shelf"))
+
     def test_unexpected_files_in_the_artifact_are_not_published(self):
         art = artifact(self)
         (art / "config.local.yaml").write_text("origin: 自宅", encoding="utf-8")
@@ -158,6 +186,11 @@ class RequestLogSchema(unittest.TestCase):
         text = shelf.render_summary(art)
         self.assertIn("- 失敗の種類(例外の名前): URLError 1 件", text)
         self.assertIn("- メタデータ(meta.json): 4 件、ステータス別 {'200': 3, 'error': 1}、失敗の種類 URLError 1 件", text)
+
+    def test_summary_shows_how_many_mountains(self):
+        text = shelf.render_summary(artifact(self, "partial"))
+        self.assertIn("| yamabiyori | incomplete | partial_fetch 3座のうち2座(1座取得できず)(全76座の先頭3座) | 3座のうち2座(1座取得できず)(全76座の先頭3座) |", text)
+        self.assertNotIn("| yamabiyori | ok |", text)
 
 
 class Attribution(unittest.TestCase):

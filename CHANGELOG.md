@@ -13,3 +13,7 @@
 - (段階 1 の追加の修正)失敗の種類(例外の名前)を `logs/requests.json` の `by_error` と、取得の結果の表示(Summary・`collect run` の出力)に出す。
 - (段階 1 の追加の修正)`yama_limit` の全 76 座は `all` と入れる方式にした(初期値 3 はそのまま)。空・`all` 以外の文字・0 以下は通信の前にエラーで止める。
   定期実行は `all` を渡す。手動実行で欄を空にしても 3 座で動いたため(GitHub が初期値を入れ直したためかは未確認)。
+- (段階 1 の追加の修正)ヤマビヨリの explore.json の `pool_size`・`fetched` を確かめ、run.json・manifest に `coverage`(何座のうち何座)を入れ、
+  Summary と `collect run` の出力に「76座のうち60座」の形で出す。全座そろわない回は `ok` でなく新しい状態 `incomplete`(理由 `partial_fetch`)。
+  `pool_size`・`fetched` が無い・おかしい出力は `unexpected_output`。そろわない回を棚に載せるかは未決(暫定は載せる。`docs/collect-run4-analysis.md` 6 章)。
+- 手動実行 collect #4(全 76 座。60 座だけ取れた)の記録の調べ `docs/collect-run4-analysis.md`。

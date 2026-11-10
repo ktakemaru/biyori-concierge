@@ -90,6 +90,29 @@ def command(python, checkout, json_out, limit=None):
     return argv
 
 
+def _count(x):
+    return isinstance(x, int) and not isinstance(x, bool) and x >= 0
+
+
+def coverage(native, mountains):
+    """何座のうち何座取れたか(ヤマビヨリの explore.json の pool_size・fetched をそのまま使う。数え直さない)。
+    pool_size は --limit を効かせたあとの対象の山の数、total_mountains は MOUNTAINS の全数。"""
+    pool, fetched = native["pool_size"], native["fetched"]
+    return {"pool_size": pool, "fetched": fetched, "missing": pool - fetched, "total_mountains": len(mountains)}
+
+
+def coverage_text(c):
+    """表示用: 「76座のうち60座(16座取得できず)」。--limit のときは全数も添える。"""
+    if not isinstance(c, dict):
+        return "不明"
+    s = f"{c.get('pool_size')}座のうち{c.get('fetched')}座"
+    if c.get("missing"):
+        s += f"({c['missing']}座取得できず)"
+    if c.get("total_mountains") not in (None, c.get("pool_size")):
+        s += f"(全{c['total_mountains']}座の先頭{c.get('pool_size')}座)"
+    return s
+
+
 def output_problems(native):
     """出力の形の検査(想定と違えば、その回の山は使わない)。→ 問題の文のリスト。"""
     if not isinstance(native, dict):
@@ -99,6 +122,9 @@ def output_problems(native):
         probs.append(f"schema が {SCHEMA_IN!r} でない: {native.get('schema')!r}")
     if native.get("mode") != "explore":
         probs.append(f"mode が 'explore' でない: {native.get('mode')!r}")
+    pool, fetched = native.get("pool_size"), native.get("fetched")
+    if not (_count(pool) and _count(fetched) and fetched <= pool):
+        probs.append(f"pool_size・fetched が 0 以上の整数でない、または fetched > pool_size: pool_size={pool!r} fetched={fetched!r}")
     days = native.get("days")
     if not isinstance(days, list) or not days:
         probs.append("days がない・空")

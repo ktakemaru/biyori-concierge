@@ -38,11 +38,23 @@
         }
       }
     },
+    "coverage": {
+      "type": "object",
+      "required": ["pool_size", "fetched", "missing", "total_mountains"],
+      "additionalProperties": false,
+      "properties": {
+        "pool_size": {"type": "integer", "minimum": 0},
+        "fetched": {"type": "integer", "minimum": 0},
+        "missing": {"type": "integer", "minimum": 0},
+        "total_mountains": {"type": "integer", "minimum": 0}
+      }
+    },
     "agent": {
       "type": "object",
       "required": ["status", "commit", "version", "data_time", "requests", "runtime_s", "kept_from", "files"],
       "properties": {
-        "status": {"enum": ["ok", "kept_previous", "failed"], "description": "ok=この回に入れ替えた / kept_previous=前回のファイルを残した / failed=使えるファイルがない"},
+        "status": {"enum": ["ok", "incomplete", "kept_previous", "failed"], "description": "ok=この回に入れ替えた(全座そろった) / incomplete=この回に入れ替えたが、全座はそろっていない(coverage を見る) / kept_previous=前回のファイルを残した / failed=使えるファイルがない"},
+        "coverage": {"anyOf": [{"$ref": "#/$defs/coverage"}, {"type": "null"}], "description": "棚にあるファイルの山の数。pool_size 座のうち fetched 座(missing 座は取得できなかった)。total_mountains は MOUNTAINS の全数"},
         "commit": {"$ref": "#/$defs/commit", "description": "棚にあるファイルを作ったビヨリの commit"},
         "version": {"type": ["string", "null"]},
         "data_time": {"$ref": "#/$defs/dt_or_null", "description": "棚にあるファイルの取得が終わった時刻"},
@@ -59,6 +71,7 @@
       },
       "allOf": [
         {"if": {"properties": {"status": {"const": "ok"}}}, "then": {"properties": {"kept_from": {"type": "null"}, "data_time": {"$ref": "#/$defs/dt"}}}},
+        {"if": {"properties": {"status": {"const": "incomplete"}}}, "then": {"required": ["reason", "coverage"], "properties": {"kept_from": {"type": "null"}, "data_time": {"$ref": "#/$defs/dt"}, "coverage": {"$ref": "#/$defs/coverage"}}}},
         {"if": {"properties": {"status": {"const": "kept_previous"}}}, "then": {"required": ["reason"]}},
         {"if": {"properties": {"status": {"const": "failed"}}}, "then": {"required": ["reason"], "properties": {"files": {"maxItems": 0}}}}
       ]
