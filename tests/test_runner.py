@@ -48,12 +48,22 @@ class Summaries(unittest.TestCase):
         self.assertEqual(s["requests"], 4)
         self.assertEqual(s["by_host"], {"api.open-meteo.com": 4})
         self.assertEqual(s["by_status"], {"200": 3, "error": 1})
+        self.assertEqual(s["by_error"], {"ConnectionError": 1})          # 失敗の種類(例外の名前)
         # 推定: 25 変数 × 15 日 → 2.5 × (15/14) ≈ 2.68、5 変数 → 1、meta → 0、エラー(変数の記録なし)→ 1 。合計 4.68 → 切り上げ 5
         self.assertEqual(s["estimated_calls"], 5)
         self.assertEqual(estimated_calls(recs[2]), 0.0)
 
     def test_empty(self):
         self.assertEqual(summarize([])["estimated_calls"], 0)
+        self.assertEqual(summarize([])["by_error"], {})
+
+    def test_error_kinds_are_counted_by_name(self):
+        recs = [{"host": "h", "path": "/data/jma_msm/static/meta.json", "status": None, "error": "URLError"},
+                {"host": "h", "path": "/data/jma_msm/static/meta.json", "status": None, "error": "TimeoutError"},
+                {"host": "h", "path": "/data/jma_msm/static/meta.json", "status": None, "error": "URLError"},
+                {"host": "h", "path": "/data/jma_msm/static/meta.json", "status": None},
+                {"host": "h", "path": "/data/jma_msm/static/meta.json", "status": 200}]
+        self.assertEqual(summarize(recs)["by_error"], {"TimeoutError": 1, "URLError": 2, "unknown": 1})
 
 
 if __name__ == "__main__":

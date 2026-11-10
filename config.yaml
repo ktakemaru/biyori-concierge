@@ -35,7 +35,7 @@ collect:
       expected_schema: yamabiyori-report-data/1
   # Open-Meteo のメタデータ(利用上限に数えられない。yamabiyori-backtest backtest/collect_forecast_snapshot.py の説明)で記録するモデル
   model_runs: [jma_msm, ecmwf_ifs025]
-  # メタデータ取得のリクエスト上限(モデル 2 つ × 前後 2 回 = 4。余裕を見て 8。仮置き)
+  # メタデータ取得のリクエスト上限(子プロセス 1 回あたり。モデル 2 つ + 失敗したモデルの読み直し 最大 2 = 4。余裕を見て 8。仮置き)
   meta_max_requests: 8
   # 棚が古いとみなす時間(時間)。指示書 6.2「棚が半日以上古いときは、その旨が入る」の半日。答える側(段階2)が使う。
   stale_after_hours: 12

@@ -136,6 +136,10 @@ def prepare(artifact, existing, out):
             "files": sorted(p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file())}
 
 
+def _tally(d):
+    return ", ".join(f"{k} {v} 件" for k, v in d.items()) if d else "なし"
+
+
 def render_summary(artifact):
     """$GITHUB_STEP_SUMMARY 用の Markdown(通信なし。run.json が無くても落ちない)。"""
     run = read_json(Path(artifact) / "run.json")
@@ -152,6 +156,9 @@ def render_summary(artifact):
         lines.append(f"| {m} | {r.get('init') or 'なし'} | {r.get('available') or 'なし'} | {r.get('same_before_after')} |")
     t = logs.get("total") or {}
     lines += ["", f"- 通信: 合計 {t.get('requests')} 件、ホスト別 {t.get('by_host')}、ステータス別 {t.get('by_status')}、推定 call {t.get('estimated_calls')}(推定)"]
+    lines.append(f"- 失敗の種類(例外の名前): {_tally(t.get('by_error'))}")
+    md = logs.get("metadata") or {}
+    lines.append(f"- メタデータ(meta.json): {md.get('requests')} 件、ステータス別 {md.get('by_status')}、失敗の種類 {_tally(md.get('by_error'))}")
     blocked = [f"{a}: {x.get('blocked_host')}" for a, x in (logs.get("agents") or {}).items() if x.get("blocked_host")]
     lines.append(f"- 止められたホスト: {', '.join(blocked) if blocked else 'なし'}")
     rl = [a for a, r in (run.get("agents") or {}).items() if r.get("status") == "rate_limited"]

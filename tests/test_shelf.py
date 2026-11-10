@@ -147,6 +147,18 @@ class RequestLogSchema(unittest.TestCase):
         logs["agents"]["yamabiyori"]["latitude"] = 35.1
         self.assertTrue(schema_errors(logs, "biyori-request-log"))
 
+    def test_error_kinds_are_in_the_log_and_the_summary(self):
+        art = artifact(self)
+        logs = read_json(art / "logs/requests.json")
+        self.assertEqual(logs["total"]["by_error"], {})                     # 偽のヤマビヨリは失敗しない
+        logs["metadata"].update(requests=4, by_status={"200": 3, "error": 1}, by_error={"URLError": 1})
+        logs["total"]["by_error"] = {"URLError": 1}
+        self.assertEqual(schema_errors(logs, "biyori-request-log"), [])
+        (art / "logs/requests.json").write_text(json.dumps(logs), encoding="utf-8")
+        text = shelf.render_summary(art)
+        self.assertIn("- 失敗の種類(例外の名前): URLError 1 件", text)
+        self.assertIn("- メタデータ(meta.json): 4 件、ステータス別 {'200': 3, 'error': 1}、失敗の種類 URLError 1 件", text)
+
 
 class Attribution(unittest.TestCase):
     def test_open_meteo_cc_by_is_on_the_shelf(self):

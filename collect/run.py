@@ -5,7 +5,7 @@
   yamabiyori/explore.json       成功したときだけ
   yamabiyori/mountains.json     成功したときだけ
   proposals/yamabiyori.json     成功したときだけ
-  logs/requests.json            通信の集計(ホスト別・ステータス別の回数だけ)
+  logs/requests.json            通信の集計(ホスト別・ステータス別・失敗の種類(例外の名前)別の回数だけ)
   raw/                          フックの記録(JSONL)と標準出力の末尾。artifact にだけ残し、棚には載せない
 
 ビヨリの失敗(終了コード≠0・429・フックの中止・出力の形が違う)は、そのビヨリを status≠ok にするだけで、ほかのビヨリは続ける。
@@ -133,7 +133,7 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, trigger="wo
     logs = {"schema": "biyori-request-log/1", "started_at": iso(started), "finished_at": iso(finished),
             "estimated_calls_note": "estimated_calls は推定(Open-Meteo の公式の換算式は未確認。config.yaml の estimated_calls)",
             "total": totals,
-            "agents": {a: {k: r.get("fetch", {}).get(k) for k in ("requests", "by_host", "by_status", "estimated_calls", "aborted", "blocked_host")}
+            "agents": {a: {k: r.get("fetch", {}).get(k) for k in ("requests", "by_host", "by_status", "by_error", "estimated_calls", "aborted", "blocked_host")}
                        for a, r in results.items()},
             "metadata": summarize([x for m in meta_results for x in m.records])}
     write_json(out_dir / "logs" / "requests.json", logs)
@@ -162,4 +162,7 @@ def main_run(args):
     for a, r in run["agents"].items():
         print(f"{a}: {r['status']}" + (f" ({r.get('reason')})" if r.get("reason") else "")
               + f" requests={r.get('requests')} runtime_s={r.get('runtime_s')}")
+    logs = read_json(Path(args.out) / "logs" / "requests.json") or {}
+    for name, x in (("metadata", logs.get("metadata") or {}), ("total", logs.get("total") or {})):
+        print(f"{name}: by_status={x.get('by_status')} by_error={x.get('by_error') or 'なし'}")
     return 0

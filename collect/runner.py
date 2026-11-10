@@ -134,16 +134,20 @@ def estimated_calls(rec, cfg=None):
 
 
 def summarize(records, abort=None):
-    by_host, by_status = {}, {}
+    by_host, by_status, by_error = {}, {}, {}
     calls = 0.0
     for r in records:
         h = r.get("host") or "unknown"
         by_host[h] = by_host.get(h, 0) + 1
         s = "error" if r.get("status") is None else str(r["status"])
         by_status[s] = by_status.get(s, 0) + 1
+        if r.get("status") is None:             # 失敗の種類(フックが記録した例外の名前。記録がなければ unknown)
+            e = str(r.get("error") or "unknown")[:60]
+            by_error[e] = by_error.get(e, 0) + 1
         calls += estimated_calls(r)
     return {"requests": len(records), "by_host": dict(sorted(by_host.items())),
             "by_status": dict(sorted(by_status.items())),
+            "by_error": dict(sorted(by_error.items())),
             "estimated_calls": math.ceil(calls) if records else 0,
             "aborted": abort}
 
