@@ -103,7 +103,7 @@ hoshibiyori/milkyway.json     ホシビヨリの --json-out(天の川モード�
 hoshibiyori/stars.json        同(星空・星座モード)
 proposals/yamabiyori.json     共通の形(biyori-proposal/1)に直したもの
 proposals/hoshibiyori.json
-logs/requests.json            通信の集計(ホスト別の回数・ステータス別の回数だけ。座標や本文は入れない)
+logs/requests.json            通信の集計(ホスト別の回数・ステータス別の回数・失敗の種類(例外の名前)別の回数だけ。座標や本文は入れない)
 ATTRIBUTION.md                出典と利用条件(Open-Meteo CC BY 4.0、気象庁、国土地理院、NASA Black Marble ほか)
 ```
 
@@ -145,7 +145,7 @@ ATTRIBUTION.md                出典と利用条件(Open-Meteo CC BY 4.0、気�
 - 起動: `workflow_dispatch`(手動)と `schedule`。
   - cron は UTC で `27 19 * * *`(日本時間 4:27)と `47 7 * * *`(日本時間 16:47)。
   - 定期実行は、リポジトリの変数 `BIYORI_COLLECT_SCHEDULE` が `on` のときだけ動く(停止スイッチ)。**段階 5 までは `on` にしない。**
-  - 手動実行の入力: `confirm`(`yes-run-live` と入れたときだけ実通信)、`agents`(`yamabiyori` / `hoshibiyori` / `both`)、`yama_limit`(山の数。空=全76座。最初の確認は 3)、`publish`(棚に残すか)。
+  - 手動実行の入力: `confirm`(`yes-run-live` と入れたときだけ実通信)、`agents`(`yamabiyori` / `hoshibiyori` / `both`)、`yama_limit`(山の数。全76座は `all`、一部なら 1 以上の整数。初期値 3。空・`all` 以外の文字・0 以下はエラーで止める。定期実行は全76座)、`publish`(棚に残すか)。
 - ジョブを2つに分ける(hub の `fetch-autumn.yml` と同じ考え方):
   - `collect`: 権限は `contents: read` だけ。実通信はここだけ。成果物は artifact に置く。
   - `publish`: `contents: write` はここだけ。取得のコードは実行しない(整形と git 操作だけ)。既存の `data` と artifact から木を組み立て、親なしの1コミットを **`data` にだけ**強制 push する。
