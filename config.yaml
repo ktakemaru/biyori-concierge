@@ -27,10 +27,17 @@ collect:
     yamabiyori:
       repo: ktakemaru/yamabiyori
       ref: main                     # 公開版が main(指示書 5.1)
-      # HTTP リクエストの上限(計測フックで強制)。仮置き 300(指示書 5.2)。最初の手動実行の実測の 1.3 倍程度に直す。
-      max_requests: 300
-      # 子プロセスの時間の上限(秒)。仮置き(PC で約 6 分。collect.yml の timeout-minutes 90 の内側)。
+      # HTTP リクエストの上限(計測フックで強制)。取り直しを含む全部の回の合計。仮置き 450。
+      # 根拠: collect #4(全 76 座・1 回だけ)の実測 281 件 × 1.3 ≈ 365 に、取り直しの分(欠けた 16 座 × 3 回の通信 ≈ 48 件と、
+      # その再試行)を足した目安。取り直しを入れた実行の実測で直す(指示書 5.2)。
+      max_requests: 450
+      # 1 回の子プロセスの時間の上限(秒)。仮置き(collect #4 の 1 回目は 2153 秒)。
       timeout_s: 3600
+      # 取り直し: 1 回目のあと fetched < pool_size なら同じコマンドをもう一度実行する。1 回目を含めた回数の上限(利用者の指示「最大 3 回まで」)。
+      max_runs: 3
+      # 全部の回の時間の合計の上限(秒)。超えたら次の回を始めない(実行中の回もこの残りで打ち切る)。
+      # 仮置き 4500 秒(75 分)。collect.yml の timeout-minutes 90(5400 秒)から、準備・メタデータ・成果物の分を残す。
+      total_timeout_s: 4500
       # 出力の schema の文字列(mountain_weather_mvp.py --json-out。report_data.py)
       expected_schema: yamabiyori-report-data/1
   # Open-Meteo のメタデータ(利用上限に数えられない。yamabiyori-backtest backtest/collect_forecast_snapshot.py の説明)で記録するモデル
@@ -54,3 +61,12 @@ estimated_calls:
   # 地点を複数まとめたリクエストや models の複数指定は、フックの記録にないため数えられない(過小になりうる)。
   variables_per_call: 10
   days_per_call: 14
+
+diag:
+  # 診断(diagnose.yml・collect/diag_probe.py)。api.open-meteo.com の IP アドレスごとに meta.json(jma_msm)を取る。手動実行だけ。
+  per_ip: 10            # IP ごとの回数(利用者の指示)
+  interval_s: 1.0       # 回と回のあいだ(秒。始まりから次の始まりまで)。1 秒以上(利用者の指示。1 未満は 1 にする)
+  timeout_s: 10         # 打ち切り(秒。TCP の接続・TLS・応答待ち・受信の各段階ごと)(利用者の指示)
+  max_ips: 8            # 調べる IP の数の上限。仮置き(名前解決で何個返るかは未確認)
+  max_requests: 100     # 合計の回数の上限(計測フックでも強制)。仮置き(8 個 × 10 回 = 80 に余裕)
+  total_timeout_s: 900  # 全体の時間の上限(秒)。超えたら次の回を始めない。仮置き(diagnose.yml の timeout-minutes 20 の内側)

@@ -47,7 +47,7 @@ class LocalFiles(unittest.TestCase):
 
     def test_provisional_values_are_marked(self):
         text = (ROOT / "config.yaml").read_text(encoding="utf-8")
-        for key in ("near_km: 20", "max_chars: 2000", "max_requests: 300", "timeout_s: 3600", "backtest_min_gap_minutes: 30"):
+        for key in ("near_km: 20", "max_chars: 2000", "max_requests: 450", "timeout_s: 3600", "total_timeout_s: 4500", "backtest_min_gap_minutes: 30"):
             i = text.index(key)
             block = text[max(0, text.rfind("\n\n", 0, i)):i]
             self.assertIn("仮置き", block[-400:], key)

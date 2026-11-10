@@ -2,7 +2,9 @@
 --json-out に書くだけ。FAKE_YAMA で失敗の形を真似る:
   ok(既定) / exit2 / bad_schema / no_output / net(通信を試みる → 計測フックが許可外で止める) / 429(フックの 429 の記録を真似て 75 で終わる)
   tz(TZ 環境変数を出力の generated に入れる。子プロセスの環境の確認用)
-  partial(3 座のうち最後の 1 座を取れなかった形。fetched=2 で、その山の行を落とす) / no_counts(pool_size・fetched がない)"""
+  partial(3 座のうち最後の 1 座を取れなかった形。fetched=2 で、その山の行を落とす) / no_counts(pool_size・fetched がない)
+取り直しのテスト: FAKE_YAMA_PLAN="partial:9,ok:3" と FAKE_YAMA_STATE=<ファイル> で、呼ばれた回ごとに形を変え、
+  その回の通信の記録(status 200)を指定の件数だけ BIYORI_REQ_LOG に書く(実際には通信しない)。"""
 import argparse
 import json
 import os
@@ -24,6 +26,16 @@ ap.add_argument("--json-out")
 ap.add_argument("--limit", type=int)
 a = ap.parse_args()
 mode = os.environ.get("FAKE_YAMA", "ok")
+if os.environ.get("FAKE_YAMA_PLAN"):
+    state = Path(os.environ["FAKE_YAMA_STATE"])
+    k = int(state.read_text()) if state.is_file() else 0
+    state.write_text(str(k + 1))
+    plan = os.environ["FAKE_YAMA_PLAN"].split(",")
+    mode, nrec = plan[min(k, len(plan) - 1)].split(":")
+    with open(os.environ["BIYORI_REQ_LOG"], "a", encoding="utf-8") as f:
+        for i in range(int(nrec)):
+            f.write(json.dumps({"n": i + 1, "host": "api.open-meteo.com", "path": "/v1/forecast", "status": 200,
+                                "hourly_vars": 49, "daily_vars": 0, "forecast_days": 15}) + "\n")
 here = Path(__file__).resolve().parent
 native = json.loads((here / "explore.json").read_text(encoding="utf-8"))
 if mode == "exit2":

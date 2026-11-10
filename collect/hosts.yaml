@@ -6,3 +6,5 @@ hosts:
     - api.open-meteo.com          # mountain_weather_core.py OPEN_METEO_URL
   meta:
     - api.open-meteo.com          # /data/<model>/static/meta.json(yamabiyori-backtest の手本と同じ)
+  diag:
+    - api.open-meteo.com          # 診断(collect/diag_probe.py)。/data/jma_msm/static/meta.json だけ。接続先の IP は名前解決の結果だけ

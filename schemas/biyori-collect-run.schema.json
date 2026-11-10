@@ -25,6 +25,9 @@
           "status": {"enum": ["ok", "incomplete", "failed", "rate_limited", "skipped"],
                      "description": "incomplete = 取得は終わったが、対象の山を全部は取れなかった(coverage.missing > 0)"},
           "coverage": {"$ref": "#/$defs/coverage"},
+          "attempts": {"$ref": "#/$defs/attempts"},
+          "used_run": {"type": "integer", "minimum": 1, "description": "棚に載せる出力を作った回(最も多く取れた回)"},
+          "retry_stop": {"type": ["string", "null"], "description": "取り直しを途中でやめた理由(max_runs・request_budget・time_budget・run_<回>_<理由>)。そろったか取り直しが要らなければ null"},
           "reason": {"type": ["string", "null"]},
           "requests": {"type": "integer", "minimum": 0},
           "runtime_s": {"type": "number", "minimum": 0},
@@ -48,6 +51,26 @@
         "fetched": {"type": "integer", "minimum": 0},
         "missing": {"type": "integer", "minimum": 0},
         "total_mountains": {"type": "integer", "minimum": 0}
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "description": "ヤマビヨリを実行した回ごとの結果(取り直しを含む)。requests は計測フックの数。2 回目以降は、取れた山がキャッシュで通信なしになるので少なくなるはず",
+      "items": {
+        "type": "object",
+        "required": ["n", "status", "reason", "requests", "runtime_s", "pool_size", "fetched"],
+        "additionalProperties": false,
+        "properties": {
+          "n": {"type": "integer", "minimum": 1},
+          "status": {"enum": ["ok", "failed", "rate_limited"]},
+          "reason": {"type": ["string", "null"]},
+          "detail": {"type": "string"},
+          "requests": {"type": "integer", "minimum": 0},
+          "runtime_s": {"type": "number", "minimum": 0},
+          "pool_size": {"type": ["integer", "null"], "minimum": 0},
+          "fetched": {"type": ["integer", "null"], "minimum": 0},
+          "cache_suspect": {"type": "boolean", "description": "通信が「前の回に欠けた山 × 3 × 3」を超えた(キャッシュが効いていない疑い)"}
+        }
       }
     }
   }

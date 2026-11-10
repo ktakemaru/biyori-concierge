@@ -1,0 +1,61 @@
+# 診断: api.open-meteo.com の IP アドレスごとに、GitHub のマシンから応答するかを調べる(手動実行だけ。定期実行はしない)。
+# 確かめたい見立て(未確認の仮説): 「一部のサーバーが GitHub のマシンから応答しない」(docs/collect-run4-analysis.md)。
+# 取得するのは meta.json(jma_msm)だけ。ヤマビヨリは実行しない。棚(data ブランチ)には何も書かない。
+# 通信は collect/diag_probe.py の子プロセスだけが行い、計測フックを付ける(許可ホストは hosts.yaml の diag、回数・時間の上限は config.yaml の diag)。
+name: diagnose
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "実通信を行う確認。yes-run-live と入れたときだけ実行する"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# collect と同時に走らせない(同じ group。待たせる。途中の実行は止めない)。
+concurrency:
+  group: biyori-collect
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20          # 仮置き(config.yaml diag.total_timeout_s 900 秒の外側)
+    permissions:
+      contents: read
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - name: Check confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "yes-run-live" ]; then
+            echo "confirm が yes-run-live と一致しないため中止します(実通信はしていません)"
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install concierge dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Diagnose (live)
+        id: run
+        run: python -X utf8 -m collect diagnose --out _diag
+      - name: Upload results
+        if: ${{ always() && steps.run.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnose-result
+          path: _diag/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Write the summary
+        if: ${{ always() && steps.run.outcome != 'skipped' }}
+        run: python -X utf8 -m collect diagnose-summary --artifact _diag >> "$GITHUB_STEP_SUMMARY"

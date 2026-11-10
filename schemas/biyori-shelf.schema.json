@@ -49,11 +49,34 @@
         "total_mountains": {"type": "integer", "minimum": 0}
       }
     },
+    "attempts": {
+      "type": "array",
+      "description": "ヤマビヨリを実行した回ごとの結果(取り直しを含む)。requests は計測フックの数。2 回目以降は、取れた山がキャッシュで通信なしになるので少なくなるはず",
+      "items": {
+        "type": "object",
+        "required": ["n", "status", "reason", "requests", "runtime_s", "pool_size", "fetched"],
+        "additionalProperties": false,
+        "properties": {
+          "n": {"type": "integer", "minimum": 1},
+          "status": {"enum": ["ok", "failed", "rate_limited"]},
+          "reason": {"type": ["string", "null"]},
+          "detail": {"type": "string"},
+          "requests": {"type": "integer", "minimum": 0},
+          "runtime_s": {"type": "number", "minimum": 0},
+          "pool_size": {"type": ["integer", "null"], "minimum": 0},
+          "fetched": {"type": ["integer", "null"], "minimum": 0},
+          "cache_suspect": {"type": "boolean", "description": "通信が「前の回に欠けた山 × 3 × 3」を超えた(キャッシュが効いていない疑い)"}
+        }
+      }
+    },
     "agent": {
       "type": "object",
       "required": ["status", "commit", "version", "data_time", "requests", "runtime_s", "kept_from", "files"],
       "properties": {
         "status": {"enum": ["ok", "incomplete", "kept_previous", "failed"], "description": "ok=この回に入れ替えた(全座そろった) / incomplete=この回に入れ替えたが、全座はそろっていない(coverage を見る) / kept_previous=前回のファイルを残した / failed=使えるファイルがない"},
+        "attempts": {"anyOf": [{"$ref": "#/$defs/attempts"}, {"type": "null"}], "description": "棚にあるファイルを作った実行の、ヤマビヨリの回ごとの結果(取り直しを含む)"},
+        "used_run": {"type": ["integer", "null"], "description": "棚にあるファイルを作った回"},
+        "retry_stop": {"type": ["string", "null"]},
         "coverage": {"anyOf": [{"$ref": "#/$defs/coverage"}, {"type": "null"}], "description": "棚にあるファイルの山の数。pool_size 座のうち fetched 座(missing 座は取得できなかった)。total_mountains は MOUNTAINS の全数"},
         "commit": {"$ref": "#/$defs/commit", "description": "棚にあるファイルを作ったビヨリの commit"},
         "version": {"type": ["string", "null"]},

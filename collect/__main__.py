@@ -6,6 +6,8 @@
   python -X utf8 -m collect prepare --artifact <dir> --existing <dir> --out <dir>   … 棚の木を組み立てる(通信なし)
   python -X utf8 -m collect summary --artifact <dir>                                … 実行の要約(Markdown。通信なし)
   python -X utf8 -m collect verdict --artifact <dir>                                … 要求したビヨリがすべて ok なら 0、そうでなければ 1
+  python -X utf8 -m collect diagnose --out <dir>                                    … 診断: IP アドレスごとの応答(実通信。diagnose.yml の中だけで使う)
+  python -X utf8 -m collect diagnose-summary --artifact <dir>                       … 診断の要約(Markdown。通信なし)
 """
 import argparse
 import json
@@ -34,6 +36,10 @@ def main(argv=None):
     s.add_argument("--artifact", required=True)
     v = sub.add_parser("verdict")
     v.add_argument("--artifact", required=True)
+    g = sub.add_parser("diagnose")
+    g.add_argument("--out", required=True)
+    gs = sub.add_parser("diagnose-summary")
+    gs.add_argument("--artifact", required=True)
     a = ap.parse_args(argv)
     sys.stdout.reconfigure(encoding="utf-8")
     if a.cmd == "run":
@@ -47,6 +53,14 @@ def main(argv=None):
     if a.cmd == "summary":
         sys.stdout.write(shelf.render_summary(a.artifact))
         return 0
+    if a.cmd in ("diagnose", "diagnose-summary"):
+        from . import diag
+        if a.cmd == "diagnose-summary":
+            sys.stdout.write(diag.render_summary(a.artifact))
+            return 0
+        d = diag.diagnose(a.out)
+        print(f"diagnose: returncode={d['returncode']} requests={d['hook']['requests']} by_status={d['hook']['by_status']}")
+        return 0 if isinstance(d.get("probe"), dict) else 1
     run = read_json(f"{a.artifact}/run.json") or {}
     agents = run.get("agents") or {}
     bad = [k for k in run.get("requested_agents", []) if agents.get(k, {}).get("status") != "ok"]

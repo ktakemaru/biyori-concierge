@@ -6,19 +6,20 @@
   yamabiyori/mountains.json     成功したときだけ
   proposals/yamabiyori.json     成功したときだけ
   logs/requests.json            通信の集計(ホスト別・ステータス別・失敗の種類(例外の名前)別の回数だけ)
-  raw/                          フックの記録(JSONL)と標準出力の末尾。artifact にだけ残し、棚には載せない
+  raw/                          フックの記録(JSONL)と標準出力の末尾(ヤマビヨリは回ごと: yamabiyori-<回>-*)。artifact にだけ残し、棚には載せない
 
 ビヨリの失敗(終了コード≠0・429・フックの中止・出力の形が違う)は、そのビヨリを status≠ok にするだけで、ほかのビヨリは続ける。
 ヤマビヨリが対象の山を全部は取れなかった回(explore.json の fetched < pool_size)は status: incomplete(ok にしない)。
 """
 import shutil
 import sys
+import time
 from pathlib import Path
 
 from . import meta as meta_mod
 from . import yamabiyori as yama
 from .common import allow_hosts, config, iso, now_jst, read_json, schema_errors, write_json
-from .runner import child_summary, read_request_log, run_hooked, summarize
+from .runner import read_request_log, run_hooked, summarize
 
 AGENTS = ("yamabiyori", "hoshibiyori")
 RUN_SCHEMA = "biyori-collect-run/1"
@@ -33,8 +34,35 @@ def _fail(reason, **kw):
     return dict({"status": "failed", "reason": reason}, **kw)
 
 
-def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None):
-    """ヤマビヨリを1回だけ実行して、成果物を out_dir に置く。→ run.json の agents.yamabiyori"""
+def _attempt_failure(res, native_problems=None, has_output=True):
+    """1 回の実行の結果 → (状態, 理由, 詳しく) または None(成功)。"""
+    if res.rate_limited:
+        return "rate_limited", "rate_limited", None
+    if res.timed_out:
+        return "failed", "timeout", None
+    if res.blocked_host:
+        return "failed", "blocked_host", res.blocked_host
+    if res.hook_aborted:
+        return "failed", "hook_aborted", res.abort
+    if res.returncode != 0:
+        return "failed", f"exit_{res.returncode}", None
+    if not has_output:
+        return "failed", "no_output", None
+    if native_problems:
+        return "failed", "unexpected_output", "; ".join(native_problems)[:500]
+    return None
+
+
+def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None, cfg=None, clock=time.monotonic):
+    """ヤマビヨリを実行して、成果物を out_dir に置く。→ run.json の agents.yamabiyori
+
+    取り直し: 1 回目のあと fetched < pool_size なら、同じコマンドをもう一度実行する(1 回目を含めて最大 max_runs 回)。
+    ヤマビヨリは変えない。取れた山の通信はヤマビヨリのキャッシュ(cache/、3 時間)で通信なしになる
+    (mountain_weather_core.py の fetch_open_meteo。docs/collect-run4-analysis.md 7 章)。回ごとの通信の回数を残すので、計測フックの数で確かめられる。
+    上限: 通信の回数(max_requests)は全部の回の合計。時間(total_timeout_s)も全部の回の合計で、超えたら次の回を始めない。
+    2 回目以降が失敗したとき: 429 ならこのビヨリは rate_limited(指示書 5.2: 429 は即中止)、許可外のホストなら failed。
+    それ以外(時間切れ・上限・終了コード≠0 など)は取り直しをやめ、それまでで最も多く取れた回の出力を使う。"""
+    cfg = cfg or config()["collect"]["agents"]["yamabiyori"]
     out_dir, raw = Path(out_dir), Path(out_dir) / "raw"
     raw.mkdir(parents=True, exist_ok=True)
     checkout = Path(checkout).resolve()
@@ -44,31 +72,66 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None):
         mountains = yama.load_mountains(checkout)
     except (OSError, ValueError, SyntaxError) as e:
         return dict(_fail("mountains_unreadable", detail=str(e)[:300]), **base, requests=0, runtime_s=0.0, data_time=None)
-    json_out = raw / "yamabiyori-explore.json"
-    cfg = config()["collect"]["agents"]["yamabiyori"]
-    res = run_hooked(yama.command(python, checkout, json_out, limit), cwd=checkout, req_log=(raw / "yamabiyori-requests.jsonl").resolve(),
-                     max_requests=cfg["max_requests"], allow=allow_hosts("yamabiyori"), timeout_s=cfg["timeout_s"])
-    (raw / "yamabiyori-output.txt").write_text(res.stdout_tail + "\n--- stderr ---\n" + res.stderr_tail, encoding="utf-8", newline="\n")
-    fetch = child_summary(res)
-    entry = dict(base, requests=fetch["requests"], runtime_s=res.runtime_s, data_time=None, fetch=fetch)
-    if res.rate_limited:
+    max_runs, max_req, total_s = int(cfg["max_runs"]), int(cfg["max_requests"]), float(cfg["total_timeout_s"])
+    t0 = clock()
+    attempts, results, best, stop = [], [], None, None
+    for n in range(1, max_runs + 1):
+        used = sum(len(r.records) for r in results)
+        elapsed = clock() - t0
+        if n > 1:
+            if used >= max_req:
+                stop = "request_budget"
+                break
+            if elapsed >= total_s:
+                stop = "time_budget"
+                break
+        json_out = raw / f"yamabiyori-{n}-explore.json"
+        res = run_hooked(yama.command(python, checkout, json_out, limit), cwd=checkout,
+                         req_log=(raw / f"yamabiyori-{n}-requests.jsonl").resolve(),
+                         max_requests=max_req - used, allow=allow_hosts("yamabiyori"),
+                         timeout_s=max(1.0, min(float(cfg["timeout_s"]), total_s - elapsed)))
+        (raw / f"yamabiyori-{n}-output.txt").write_text(res.stdout_tail + "\n--- stderr ---\n" + res.stderr_tail, encoding="utf-8", newline="\n")
+        results.append(res)
+        native = read_json(json_out) if res.returncode == 0 and not res.hook_aborted and not res.timed_out else None
+        fail = _attempt_failure(res, yama.output_problems(native) if native is not None else None, has_output=native is not None)
+        att = {"n": n, "status": "ok" if fail is None else fail[0], "reason": None if fail is None else fail[1],
+               "requests": len(res.records), "runtime_s": res.runtime_s, "pool_size": None, "fetched": None}
+        if fail is not None and fail[2]:
+            att["detail"] = str(fail[2])[:500]
+        if fail is None:
+            att.update(pool_size=native["pool_size"], fetched=native["fetched"])
+            prev_missing = attempts[-1]["pool_size"] - attempts[-1]["fetched"] if attempts and attempts[-1]["fetched"] is not None else None
+            # 取れた山がキャッシュで通信なしになっていれば、2 回目以降の通信は「前の回に欠けた山 × 3 回の通信 × ヤマビヨリの 3 回の試行」以下
+            if prev_missing is not None:
+                att["cache_suspect"] = len(res.records) > prev_missing * 3 * 3
+        attempts.append(att)
+        if fail is not None:
+            if n == 1 or fail[1] in ("rate_limited", "blocked_host"):
+                break
+            stop = f"run_{n}_{fail[1]}"
+            break
+        if best is None or native["fetched"] >= best[1]["fetched"]:
+            best = (n, native, json_out, res)
+        if native["fetched"] >= native["pool_size"]:
+            break
+    else:
+        if best is not None and best[1]["fetched"] < best[1]["pool_size"]:
+            stop = "max_runs"
+    all_recs = [x for r in results for x in r.records]
+    last = results[-1]
+    fetch = summarize(all_recs, last.abort)
+    fetch["blocked_host"] = next((r.blocked_host for r in results if r.blocked_host), None)
+    runtime = round(clock() - t0, 1)
+    entry = dict(base, requests=len(all_recs), runtime_s=runtime, data_time=None, fetch=fetch, attempts=attempts,
+                 retry_stop=stop)
+    if any(r.rate_limited for r in results):
         return dict(entry, status="rate_limited", reason="rate_limited")
-    if res.timed_out:
-        return dict(entry, status="failed", reason="timeout")
-    if res.blocked_host:
-        return dict(entry, status="failed", reason="blocked_host", detail=res.blocked_host)
-    if res.hook_aborted:
-        return dict(entry, status="failed", reason="hook_aborted", detail=res.abort)
-    if res.returncode != 0:
-        return dict(entry, status="failed", reason=f"exit_{res.returncode}")
-    native = read_json(json_out)
-    if native is None:
-        return dict(entry, status="failed", reason="no_output")
-    probs = yama.output_problems(native)
-    if probs:
-        return dict(entry, status="failed", reason="unexpected_output", detail="; ".join(probs)[:500])
-    cov = yama.coverage(native, mountains)
-    entry["coverage"] = cov
+    if fetch["blocked_host"]:
+        return dict(entry, status="failed", reason="blocked_host", detail=fetch["blocked_host"])
+    if best is None:
+        a = attempts[0]                     # 1 回目が失敗(取り直しはしない)
+        return dict(entry, status=a["status"], reason=a["reason"], **({"detail": a["detail"]} if a.get("detail") else {}))
+    n_best, native, json_out, res = best
     fetched_at = res.finished_at
     runs = model_runs_fn() if model_runs_fn else {}
     sun = yama.load_sun_times(checkout / "cache", mountains)
@@ -77,20 +140,22 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None):
                             agent_version=version, agent_commit=commit, mountains=mountains, model_runs=runs, sun_times=sun)
     except ValueError as e:
         return dict(entry, status="failed", reason="convert_failed", detail=str(e)[:500])
-    prop["diagnostics"].update(api_calls=fetch["requests"], cache_hit=(fetch["requests"] == 0), runtime_s=res.runtime_s)
+    prop["diagnostics"].update(api_calls=len(all_recs), cache_hit=(len(all_recs) == 0), runtime_s=runtime)
     errs = schema_errors(prop, "biyori-proposal")
     mdoc = yama.mountains_doc(mountains, commit, version)
     errs += schema_errors(mdoc, "biyori-mountains")
     if errs:
         return dict(entry, status="failed", reason="schema_invalid", detail="; ".join(errs)[:500])
     (out_dir / "yamabiyori").mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(json_out, out_dir / "yamabiyori" / "explore.json")          # --json-out そのまま
+    shutil.copyfile(json_out, out_dir / "yamabiyori" / "explore.json")          # --json-out そのまま(最も多く取れた回)
     write_json(out_dir / "yamabiyori" / "mountains.json", mdoc)
     write_json(out_dir / "proposals" / "yamabiyori.json", prop)
-    # 全座そろわない回は ok にしない(incomplete)。ファイルは作る(棚に載せるかは publish 側の決まり。shelf.py の PUBLISHABLE)
+    cov = yama.coverage(native, mountains)
     complete = cov["missing"] == 0
     extra = {} if complete else {"detail": yama.coverage_text(cov)}
-    return dict(entry, status="ok" if complete else "incomplete", reason=None if complete else "partial_fetch", **extra,
+    # 全座そろわない回は ok にしない(incomplete)。棚には載せる(利用者の決定 A。shelf.py の PUBLISHABLE)
+    return dict(entry, coverage=cov, used_run=n_best, status="ok" if complete else "incomplete",
+                reason=None if complete else "partial_fetch", **extra,
                 data_time=iso(fetched_at), proposal_status=prop["status"], proposals=len(prop["proposals"]), model_runs=runs)
 
 
@@ -190,6 +255,10 @@ def main_run(args):
         print(f"{a}: {r['status']}" + (f" ({r.get('reason')})" if r.get("reason") else "")
               + (f" 山={yama.coverage_text(r['coverage'])}" if "coverage" in r else "")
               + f" requests={r.get('requests')} runtime_s={r.get('runtime_s')}")
+        for t in r.get("attempts") or []:
+            print(f"  {a} {t['n']}回目: {t['status']}" + (f" ({t['reason']})" if t.get("reason") else "")
+                  + f" requests={t['requests']} fetched={t['fetched']}/{t['pool_size']} runtime_s={t['runtime_s']}"
+                  + (" キャッシュが効いていない疑い" if t.get("cache_suspect") else ""))
     logs = read_json(Path(args.out) / "logs" / "requests.json") or {}
     for name, x in (("metadata", logs.get("metadata") or {}), ("total", logs.get("total") or {})):
         print(f"{name}: by_status={x.get('by_status')} by_error={x.get('by_error') or 'なし'}")

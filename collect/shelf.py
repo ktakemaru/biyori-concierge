@@ -22,9 +22,10 @@ AGENT_FILES = {
                     "proposals/hoshibiyori.json": "biyori-proposal"},
 }
 NATIVE_SCHEMA = {"native_explore": "yamabiyori-report-data/1", "native_hoshi": "hoshibiyori-explore/1"}
-ENTRY_KEYS = ("commit", "version", "data_time", "model_runs", "proposal_status", "proposals", "limit", "coverage")
-# 全座そろわない回(run.json の status: incomplete)を棚に載せるか。利用者が決めるまでの暫定 = 載せる(段階 1 の最初の版と同じ動き)。
-# 載せるときは manifest の status を incomplete にし、coverage で何座そろったかを示す(ok とは書かない)。
+ENTRY_KEYS = ("commit", "version", "data_time", "model_runs", "proposal_status", "proposals", "limit", "coverage",
+              "attempts", "used_run", "retry_stop")
+# 全座そろわない回(run.json の status: incomplete)も棚に載せる(利用者の決定 A)。
+# manifest の status は incomplete にし、coverage で何座そろったかを示す(ok とは書かない)。
 PUBLISHABLE = ("ok", "incomplete")
 
 
@@ -90,7 +91,7 @@ def build_manifest(run, previous, outcome):
             "requests": run.get("requests"),
             "notes": ["時刻はすべて ISO 8601・オフセットつき。分からない値は null",
                       "agents.*.model_runs はそのビヨリのファイルを取得したときの予報の回。最上位の model_runs はこの回の実行のもの",
-                      "requests・runtime_s はこの回の実行の値。kept_previous のとき commit・version・data_time・coverage は残したファイルのもの",
+                      "requests・runtime_s はこの回の実行の値。kept_previous のとき commit・version・data_time・coverage・attempts は残したファイルのもの",
                       "status: incomplete は、この回のファイルに入れ替えたが全座はそろっていない(coverage の fetched / pool_size)"]}
 
 
@@ -159,6 +160,18 @@ def render_summary(artifact):
     for a, r in (run.get("agents") or {}).items():
         cov = coverage_text(r["coverage"]) if r.get("coverage") else "なし"
         lines.append(f"| {a} | {r.get('status')} | {r.get('reason') or ''} {r.get('detail') or ''} | {cov} | {r.get('requests')} | {r.get('runtime_s')} | {r.get('data_time') or 'なし'} |")
+    for a, r in (run.get("agents") or {}).items():
+        if r.get("attempts"):
+            lines += ["", f"{a} の回(取り直しを含む。通信は計測フックの数。2 回目以降は、取れた山がキャッシュで通信なしになるはず)", "",
+                      "| 回 | 状態 | 通信 | 山 | 所要(秒) | 備考 |", "|---|---|---|---|---|---|"]
+            for t in r["attempts"]:
+                got = f"{t['pool_size']}座のうち{t['fetched']}座" if t.get("fetched") is not None else "なし"
+                note = " ".join(x for x in (t.get("reason") or "", t.get("detail") or "",
+                                            "キャッシュが効いていない疑い" if t.get("cache_suspect") else "",
+                                            "← 使った回" if t["n"] == r.get("used_run") else "") if x)
+                lines.append(f"| {t['n']} | {t['status']} | {t['requests']} | {got} | {t['runtime_s']} | {note} |")
+            if r.get("retry_stop"):
+                lines.append(f"\n- 取り直しをやめた理由: {r['retry_stop']}")
     lines += ["", "| モデル | 初期時刻 | 公開 | 前後で同じ |", "|---|---|---|---|"]
     for m, r in (run.get("model_runs") or {}).items():
         lines.append(f"| {m} | {r.get('init') or 'なし'} | {r.get('available') or 'なし'} | {r.get('same_before_after')} |")

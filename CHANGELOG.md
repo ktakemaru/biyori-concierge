@@ -17,3 +17,9 @@
   Summary と `collect run` の出力に「76座のうち60座」の形で出す。全座そろわない回は `ok` でなく新しい状態 `incomplete`(理由 `partial_fetch`)。
   `pool_size`・`fetched` が無い・おかしい出力は `unexpected_output`。そろわない回を棚に載せるかは未決(暫定は載せる。`docs/collect-run4-analysis.md` 6 章)。
 - 手動実行 collect #4(全 76 座。60 座だけ取れた)の記録の調べ `docs/collect-run4-analysis.md`。
+- (段階 1 の追加の修正)全座そろわない回も棚に載せる(利用者の決定 A。状態 `incomplete` と `coverage`)。指示書 4 章・5.2・6.2(`lines.coverage`: 76 座のうち何座を調べたかを必ず言う)を直した。
+- (段階 1 の追加の修正)ヤマビヨリの取り直し: `fetched` < `pool_size` なら同じコマンドをもう一度実行する(1 回目を含めて最大 3 回)。
+  通信の上限(仮置き 450)と時間の上限(仮置き 4500 秒)は全部の回の合計。回ごとの通信の回数・`fetched` を run.json・manifest(`attempts`)・Summary に出す。
+  2 回目以降の通信が多すぎれば「キャッシュが効いていない疑い」と出す。2 回目以降の 429 は即中止(rate_limited)。
+- 診断のワークフロー `diagnose.yml`(手動実行だけ): api.open-meteo.com の IP アドレスごとに meta.json(jma_msm)を 10 回ずつ取り、
+  成功・失敗の数・失敗した段階(TCP・TLS・応答待ちなど)・所要時間を Summary の表に出す。計測フックつき。ヤマビヨリは実行しない。
