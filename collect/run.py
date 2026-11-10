@@ -153,9 +153,30 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, trigger="wo
     return run
 
 
+def parse_yama_limit(raw):
+    """--yama-limit の値 → 山の数(int)または None(全座)。
+    "all" = 全座、1 以上の整数 = その数。空・all 以外の文字・0 以下はエラー(ValueError)。
+    空を「全座」にしない: 手動実行の画面で欄を空にしても、初期値 3 で動いたことがあったため(原因は未確認)。"""
+    s = "" if raw is None else str(raw).strip()
+    if s == "all":
+        return None
+    if not s:
+        raise ValueError("山の数(yama_limit)が空です。全座なら all、一部なら 1 以上の整数を入れてください")
+    if not s.isascii() or not s.isdigit():
+        raise ValueError(f"山の数(yama_limit)は all か 1 以上の整数にしてください(入力: {s!r})")
+    n = int(s)
+    if n <= 0:
+        raise ValueError(f"山の数(yama_limit)は 1 以上にしてください(入力: {s!r})")
+    return n
+
+
 def main_run(args):
     agents = {"both": ["yamabiyori", "hoshibiyori"]}.get(args.agents, [args.agents])
-    limit = int(args.yama_limit) if args.yama_limit not in (None, "") else None
+    try:
+        limit = parse_yama_limit(args.yama_limit)            # 通信の前に検査する
+    except ValueError as e:
+        print(f"中止(通信していません): {e}", file=sys.stderr)
+        return 2
     run = collect(agents=agents, out_dir=args.out, checkouts={"yamabiyori": args.yamabiyori_checkout},
                   pythons={"yamabiyori": args.yamabiyori_python or sys.executable}, yama_limit=limit,
                   trigger=args.trigger, concierge_commit=args.concierge_commit or None)

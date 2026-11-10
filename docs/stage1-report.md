@@ -70,7 +70,7 @@ GitHub 上の `tests.yml` はまだ動かしていません(push 後に動きま
 
 ### 4. 手動実行 ②: 山 全 76 座・棚に残す
 
-1. ① と同じ手順で、`yama_limit` を **空にする**(消す)、`publish` に **チェックを入れる**。
+1. ① と同じ手順で、`yama_limit` に **`all`** と入れる(空にするとエラーで止まります)、`publish` に **チェックを入れる**。
 2. 成功の見分け方: `collect` と `publish` の両方に緑のチェック。リポジトリの **Code** タブでブランチ切り替え(`main` と書かれたボタン)から `data` を選ぶと、`manifest.json`・`ATTRIBUTION.md`・`yamabiyori/`・`proposals/`・`logs/` がある。
 3. `publish` が `403` などの権限エラーで落ちたとき: **Settings** → **Actions** → **General** → 下の **Workflow permissions** を見て、伝えてください(勝手には変えないでください)。
 

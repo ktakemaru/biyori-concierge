@@ -1,7 +1,7 @@
 """取得の側のコマンド。
 
   python -X utf8 -m collect run --agents yamabiyori|hoshibiyori|both --out <dir> --yamabiyori-checkout <dir>
-                               [--yamabiyori-python <venv の python>] [--yama-limit N] [--trigger schedule|workflow_dispatch]
+                               [--yamabiyori-python <venv の python>] --yama-limit all|N [--trigger schedule|workflow_dispatch]
                                [--concierge-commit <sha>]          … 実通信(Actions の collect ジョブの中だけで使う)
   python -X utf8 -m collect prepare --artifact <dir> --existing <dir> --out <dir>   … 棚の木を組み立てる(通信なし)
   python -X utf8 -m collect summary --artifact <dir>                                … 実行の要約(Markdown。通信なし)
@@ -23,7 +23,7 @@ def main(argv=None):
     r.add_argument("--out", required=True)
     r.add_argument("--yamabiyori-checkout")
     r.add_argument("--yamabiyori-python")
-    r.add_argument("--yama-limit", default=None)
+    r.add_argument("--yama-limit", required=True, help="山の数。all = 全座、または 1 以上の整数(空・0 以下はエラー)")
     r.add_argument("--trigger", default="workflow_dispatch")
     r.add_argument("--concierge-commit", default=None)
     p = sub.add_parser("prepare")

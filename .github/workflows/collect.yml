@@ -28,7 +28,7 @@ on:
         options: [yamabiyori, hoshibiyori, both]
         default: yamabiyori
       yama_limit:
-        description: "山の数(空 = 全 76 座。最初の確認は 3)"
+        description: "山の数。全 76 座は all と入れる。一部なら 1 以上の整数(初期値 3)。空・0 以下・それ以外の文字はエラーで止まる"
         required: false
         type: string
         default: "3"
@@ -56,7 +56,8 @@ jobs:
     env:
       PYTHONUTF8: "1"
       AGENTS: ${{ github.event_name == 'schedule' && 'both' || inputs.agents }}
-      YAMA_LIMIT: ${{ inputs.yama_limit }}          # 定期実行では空(= 全 76 座)
+      # 定期実行は all(全 76 座)。手動実行は入力のまま渡し、検査は collect run が通信の前に行う(空・0 以下などはエラー)
+      YAMA_LIMIT: ${{ github.event_name == 'schedule' && 'all' || inputs.yama_limit }}
     steps:
       - name: Check confirmation
         if: ${{ github.event_name == 'workflow_dispatch' }}

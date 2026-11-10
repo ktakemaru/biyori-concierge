@@ -105,6 +105,16 @@ class Collect(unittest.TestCase):
         self.assertEqual(inp["agents"]["options"], ["yamabiyori", "hoshibiyori", "both"])
         self.assertFalse(inp["publish"]["default"])
 
+    def test_yama_limit_default_3_and_all_for_every_mountain(self):
+        # 欄を空にしても 3 座で動いたため、全座は all と入れる方式(初期値 3 はそのまま)。定期実行は all
+        y = self.wf["on"]["workflow_dispatch"]["inputs"]["yama_limit"]
+        self.assertEqual((y["type"], y["default"]), ("string", "3"))
+        self.assertIn("all", y["description"])
+        self.assertNotIn("空 = 全", y["description"])
+        env = self.jobs["collect"]["env"]["YAMA_LIMIT"]
+        self.assertEqual(env, "${{ github.event_name == 'schedule' && 'all' || inputs.yama_limit }}")
+        self.assertIn('--yama-limit "$YAMA_LIMIT"', runs(self.jobs["collect"]))
+
     def test_runner_python_timeout_concurrency(self):
         for job in self.jobs.values():
             self.assertEqual(job["runs-on"], "ubuntu-24.04")
