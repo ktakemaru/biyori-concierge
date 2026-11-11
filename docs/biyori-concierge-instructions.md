@@ -150,7 +150,7 @@ ATTRIBUTION.md                出典と利用条件(Open-Meteo CC BY 4.0、気�
 - ジョブを2つに分ける(hub の `fetch-autumn.yml` と同じ考え方):
   - `collect`: 権限は `contents: read` だけ。実通信はここだけ。成果物は artifact に置く。
   - `publish`: `contents: write` はここだけ。取得のコードは実行しない(整形と git 操作だけ)。既存の `data` と artifact から木を組み立て、親なしの1コミットを **`data` にだけ**強制 push する。
-- `runs-on: ubuntu-24.04`(固定)、Python 3.13、`timeout-minutes: 90`(仮置き。実測で見直す)、`concurrency` で同時実行を1つにする。
+- `runs-on: ubuntu-24.04`(固定)、Python 3.13、`timeout-minutes: 90`(段階 1 の実測のあと、利用者の決定で 90 のまま。段階 3 で星の実測を見て見直す)、`concurrency` で同時実行を1つにする。
 - ヤマビヨリ・ホシビヨリは、`actions/checkout` で `ktakemaru/yamabiyori`・`ktakemaru/hoshibiyori` の **`main`** を取り出す(両方とも main が公開版のため)。取り出した commit を manifest に記録する。それぞれ別の venv に `requirements.txt` を入れる(Playwright は入れない)。
 - ホシビヨリの書き込み先は `HOSHIBIYORI_DATA_DIR` で作業用のフォルダに向ける。天文暦 `de421.bsp` と再利用できるキャッシュは `actions/cache` で持ち越す(毎回 JPL から落とさない)。
 - バックテストの収集(毎時 :20、3時間おき UTC。日本時間 3:20・6:20・15:20・18:20 ごろ)と重ならない時刻であることを、テストで検査する(cron の文字列を読むだけ)。
@@ -160,7 +160,9 @@ ATTRIBUTION.md                出典と利用条件(Open-Meteo CC BY 4.0、気�
 - 子プロセスは、シェルを介さず引数の配列で起動し、`-X utf8` を付ける。
 - ヤマビヨリ・ホシビヨリの子プロセスには**必ず計測フックを付ける**(`PYTHONPATH` にフックのフォルダ、`BIYORI_REQ_LOG`・`BIYORI_REQ_MAX`・`BIYORI_ALLOW_HOSTS`)。
   - 許可ホストは `collect/hosts.yaml` に宣言したものだけ。最初は `api.open-meteo.com`。ほかに要るホスト(天文暦の JPL など)は、**推測で足さず**、最初の手動実行のログで止められたホストを見てから足す。
-  - 上限(`BIYORI_REQ_MAX`)は、山 300・星 300 を仮置きにし、実測の 1.3 倍程度に直す。
+  - 上限(`BIYORI_REQ_MAX`)は、山 300・星 300 を仮置きにし、実測をもとに直す。上限は暴走を止める安全弁で、取り直しを途中で止めるためのものではない。考え方は「**1 回目の実測に、取り直しの分の余裕を足した値**」(利用者の決定 2026-11-11。もとは「実測の 1.3 倍程度」で、取り直しを入れる前の目安だった)。
+    山は **450**(利用者の決定 2026-11-11。良い日は 1 回目 228 件で全座、悪い日は 1 回目 281 件で、欠けた山を取り直すと合計 約 340 件)。
+  - 時間の上限は、ヤマビヨリの 1 回ごと・全部の回の合計とも **2700 秒**(利用者の決定 2026-11-11。悪い日の実測 2153 秒の約 1.25 倍)。
   - 429 が出たら即中止し、再試行しない。そのビヨリは `kept_previous`。
 - 実行するコマンド:
   - 山: `mountain_weather_mvp.py --json-out <file>`(確認のときは `--limit 3`)。終了コード 0 で、出力の `schema` が `yamabiyori-report-data/1` であること。
