@@ -29,3 +29,6 @@
   使った ref と commit を run.json・Summary・manifest に出す。main 以外の ref で取った回は棚に載せない(publish ジョブは skipped、`collect prepare` も止まる)。
   入力はヤマビヨリを取り出す前に `collect check-inputs` で検査する。診断 2 回目(新しい接続 60 回中 11 回失敗・使い回し 0 回)を受けて、使い回しを入れたヤマビヨリの版を試すため。
 - `docs/collect-run4-analysis.md` に診断 2 回目の結果、`docs/stage1-report.md` を今の状態に合わせて書き直した。
+- 段階 1 を締めた。ヤマビヨリ 1.9.1(接続の使い回し)の main で、全 76 座・失敗 0 件・約 137 秒、data ブランチに棚を公開(実行 B)。
+  `docs/collect-run4-analysis.md` 9 章に実行 A・B と collect #4 の比較と、公開された棚の検査(すべてのスキーマに通った)を書いた。
+  接続の開始が止まる根本の原因は未確認のまま。上限の値(通信 450・時間 4500 秒・ジョブ 90 分)の見直し案は `docs/stage1-report.md` に書き、値はまだ変えていない。

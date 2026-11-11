@@ -226,3 +226,45 @@ collect ジョブは赤になる(`verdict`)。publish ジョブは `always()` �
   1 回目の `fetched`・失敗の数と種類(`by_error`)・所要時間・取り直しの回数。
   失敗が大きく減れば、ヤマビヨリの PR をマージしてから、`main` で全 76 座・publish ありの実行に進む。
 
+## 9. 使い回しの版での実行 A・B(2026-11-11。利用者の報告と、公開された data ブランチ)
+
+- 実行 A(確認): `yamabiyori_ref` = `feature/reuse-connection`(commit `4a695e7`)、`yama_limit` = `all`、publish なし。
+- 実行 B(本番): ヤマビヨリの PR をマージしたあと(main の commit `29b04e7`、版 1.9.1)、`yamabiyori_ref` = `main`、`yama_limit` = `all`、publish あり。
+  data ブランチの manifest(`started_at` 2026-11-11T22:56:12+09:00・`finished_at` 22:58:32+09:00、concierge commit `6577cf6`)で値を確かめた。
+
+| 項目 | collect #4 | 実行 A | 実行 B |
+|---|---|---|---|
+| ヤマビヨリ | `b018355`(1.9.0。接続は毎回新しく張る) | `4a695e7`(使い回しの作業ブランチ) | `29b04e7`(1.9.1。main) |
+| 山 | 76 座のうち **60 座** | 76 座のうち **76 座** | 76 座のうち **76 座** |
+| 状態 | (`incomplete` の扱いを入れる前) | ok | ok |
+| ヤマビヨリの所要 | **2152.7 秒** | **137.1 秒** | **137.7 秒** |
+| ヤマビヨリの通信 | 281 件 | 228 件 | 228 件 |
+| 通信の合計(メタデータを含む) | 285 件 | 232 件 | 232 件 |
+| 失敗 | **91 件**(`ReadTimeout` 90・メタデータの `URLError` 1) | **0 件** | **0 件** |
+| 取り直し | (取り直しを入れる前) | なし(1 回目で全座) | なし(1 回目で全座) |
+| 429・止められたホスト | なし・なし | なし・なし | なし・なし |
+| 予報の回(前後で同じ) | — | jma_msm 11-11T09Z・ecmwf_ifs025 11-11T06Z(どちらも True) | 同じ(どちらも True) |
+
+**言える**:
+- 228 件 = 76 座 × 3 回の通信。ヤマビヨリの中の試し直しも一度も起きていない(collect #4 では 281 − 228 = 53 件が試し直しだった)。
+- 所要は約 16 分の 1(2152.7 → 約 137 秒)。collect #4 の時間の大部分は失敗の待ち(2.5)だったので、失敗が無くなればこの程度になることと合う。
+  1 件あたり約 0.6 秒で、collect #4 で成功した通信の中央値(0.56 秒。4 章)と近い。
+- 棚(実行 B)は、manifest・山の 2 ファイル・提案・通信の記録が、どれも `schemas/` のスキーマと `collect prepare` の検査に通った(手元で確かめた。下の 9.1)。
+
+**言えない / 未確認**:
+- **根本の原因(なぜ GitHub のマシンからだと、新しい接続の開始(TLS の途中)が一定の割合で止まるのか)は未確認のまま。**
+  相手側・経路・GitHub のマシンのどれかは、記録からは決められない。使い回しは、止まりやすい「接続の開始」の回数を減らして避けているだけで、原因を取り除いたわけではない。
+- 2 回とも同じ日の夜(日本時間 22 時台)の 1 回ずつ。定期実行の時刻(4:27・16:47)や、別の日にも同じように失敗が出ないか。
+- 使い回しの接続が切られて張り直すことになったか(実行 A・B の記録では失敗が 0 件なので、張り直しが起きたとしても失敗はしていない)。
+- collect #4 の 90 件の `ReadTimeout` が、診断で見た TLS の途中の止まりと同じものか。ただし、使い回しで 0 件になったことは、同じものと考えて矛盾しない。
+- 実行 A の `4a695e7` と実行 B の `29b04e7` のコードの差(マージの commit か、ほかの変更を含むか)は、コンシェル側では確かめていない。
+
+### 9.1 公開された棚の検査(手元。通信は GitHub への `git fetch origin data` だけ)
+
+- data ブランチは親なしの 1 コミット(`9844e0c`)。ファイルは `manifest.json`・`ATTRIBUTION.md`・`yamabiyori/explore.json`・`yamabiyori/mountains.json`・`proposals/yamabiyori.json`・`logs/requests.json` の 6 個だけ。
+- スキーマ: manifest → `biyori-shelf/1`、mountains → `biyori-mountains/1`、提案 → `biyori-proposal/1`、通信の記録 → `biyori-request-log/1`、explore の `schema` → `yamabiyori-report-data/1`。**すべて通った。** `collect/shelf.py` の `load_manifest`・`agent_files_problems` でも問題なし。
+- manifest の yamabiyori: `status` ok、`ref` main、`commit` `29b04e7…`、`version` 1.9.1、`coverage` 76/76、`attempts` 1 回(228 件・137.7 秒)、`retry_stop` null、`kept_from` null。
+- 提案 1,140 件 = 76 座 × 15 日(2026-11-11〜11-25。どの日も 76 件)。mountains は 76 座で、commit・版が manifest と同じ。
+- 通信の記録: 合計 232 件、すべて 200、`by_error` なし、推定 call 1,222(推定)。メタデータ 4 件すべて 200。
+- manifest と通信の記録に、出発地・座標の語は入っていない。
+
