@@ -1,0 +1,44 @@
+{
+ "schema": "biyori-request-log/1",
+ "started_at": "2026-11-11T22:56:12+09:00",
+ "finished_at": "2026-11-11T22:58:32+09:00",
+ "estimated_calls_note": "estimated_calls は推定(Open-Meteo の公式の換算式は未確認。config.yaml の estimated_calls)",
+ "total": {
+  "requests": 232,
+  "by_host": {
+   "api.open-meteo.com": 232
+  },
+  "by_status": {
+   "200": 232
+  },
+  "by_error": {},
+  "estimated_calls": 1222
+ },
+ "agents": {
+  "yamabiyori": {
+   "requests": 228,
+   "by_host": {
+    "api.open-meteo.com": 228
+   },
+   "by_status": {
+    "200": 228
+   },
+   "by_error": {},
+   "estimated_calls": 1222,
+   "aborted": null,
+   "blocked_host": null
+  }
+ },
+ "metadata": {
+  "requests": 4,
+  "by_host": {
+   "api.open-meteo.com": 4
+  },
+  "by_status": {
+   "200": 4
+  },
+  "by_error": {},
+  "estimated_calls": 0,
+  "aborted": null
+ }
+}

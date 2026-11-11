@@ -1,0 +1,84 @@
+{
+ "schema": "biyori-shelf/1",
+ "slot": "evening",
+ "trigger": "workflow_dispatch",
+ "started_at": "2026-11-11T22:56:12+09:00",
+ "finished_at": "2026-11-11T22:58:32+09:00",
+ "concierge_commit": "6577cf6c46d8fc9dc5c5177514421ad9060e9156",
+ "model_runs": {
+  "jma_msm": {
+   "init": "2026-11-11T09:00:00Z",
+   "available": "2026-11-11T12:32:04Z",
+   "same_before_after": true
+  },
+  "ecmwf_ifs025": {
+   "init": "2026-11-11T06:00:00Z",
+   "available": "2026-11-11T13:19:17Z",
+   "same_before_after": true
+  }
+ },
+ "agents": {
+  "yamabiyori": {
+   "status": "ok",
+   "ref": "main",
+   "commit": "29b04e79ee5882c52e2b54dff880bd7bab528c7b",
+   "version": "1.9.1",
+   "data_time": "2026-11-11T22:58:30+09:00",
+   "model_runs": {
+    "jma_msm": {
+     "init": "2026-11-11T09:00:00Z",
+     "available": "2026-11-11T12:32:04Z",
+     "same_before_after": true
+    },
+    "ecmwf_ifs025": {
+     "init": "2026-11-11T06:00:00Z",
+     "available": "2026-11-11T13:19:17Z",
+     "same_before_after": true
+    }
+   },
+   "proposal_status": "ok",
+   "proposals": 1140,
+   "limit": null,
+   "coverage": {
+    "pool_size": 76,
+    "fetched": 76,
+    "missing": 0,
+    "total_mountains": 76
+   },
+   "attempts": [
+    {
+     "n": 1,
+     "status": "ok",
+     "reason": null,
+     "requests": 228,
+     "runtime_s": 137.7,
+     "pool_size": 76,
+     "fetched": 76
+    }
+   ],
+   "used_run": 1,
+   "retry_stop": null,
+   "requests": 228,
+   "runtime_s": 137.7,
+   "kept_from": null,
+   "files": [
+    "proposals/yamabiyori.json",
+    "yamabiyori/explore.json",
+    "yamabiyori/mountains.json"
+   ]
+  }
+ },
+ "requests": {
+  "total": 232,
+  "by_host": {
+   "api.open-meteo.com": 232
+  },
+  "estimated_calls": 1222
+ },
+ "notes": [
+  "時刻はすべて ISO 8601・オフセットつき。分からない値は null",
+  "agents.*.model_runs はそのビヨリのファイルを取得したときの予報の回。最上位の model_runs はこの回の実行のもの",
+  "requests・runtime_s はこの回の実行の値。kept_previous のとき commit・version・data_time・coverage・attempts は残したファイルのもの",
+  "status: incomplete は、この回のファイルに入れ替えたが全座はそろっていない(coverage の fetched / pool_size)"
+ ]
+}
