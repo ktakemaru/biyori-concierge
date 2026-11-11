@@ -78,6 +78,7 @@
         "used_run": {"type": ["integer", "null"], "description": "棚にあるファイルを作った回"},
         "retry_stop": {"type": ["string", "null"]},
         "coverage": {"anyOf": [{"$ref": "#/$defs/coverage"}, {"type": "null"}], "description": "棚にあるファイルの山の数。pool_size 座のうち fetched 座(missing 座は取得できなかった)。total_mountains は MOUNTAINS の全数"},
+        "ref": {"type": ["string", "null"], "description": "棚にあるファイルを作ったときに取り出したビヨリの ref(ヤマビヨリは常に main。main 以外の回は棚に載せない)。この項目より前の棚では null"},
         "commit": {"$ref": "#/$defs/commit", "description": "棚にあるファイルを作ったビヨリの commit"},
         "version": {"type": ["string", "null"]},
         "data_time": {"$ref": "#/$defs/dt_or_null", "description": "棚にあるファイルの取得が終わった時刻"},

@@ -1,8 +1,10 @@
 """取得の側のコマンド。
 
   python -X utf8 -m collect run --agents yamabiyori|hoshibiyori|both --out <dir> --yamabiyori-checkout <dir>
-                               [--yamabiyori-python <venv の python>] --yama-limit all|N [--trigger schedule|workflow_dispatch]
-                               [--concierge-commit <sha>]          … 実通信(Actions の collect ジョブの中だけで使う)
+                               [--yamabiyori-python <venv の python>] --yama-limit all|N [--yamabiyori-ref <ref>(既定 main)]
+                               [--trigger schedule|workflow_dispatch] [--concierge-commit <sha>]
+                                                                   … 実通信(Actions の collect ジョブの中だけで使う)
+  python -X utf8 -m collect check-inputs --yama-limit all|N --yamabiyori-ref <ref>  … 手動実行の入力の検査(通信なし。取り出しの前に使う)
   python -X utf8 -m collect prepare --artifact <dir> --existing <dir> --out <dir>   … 棚の木を組み立てる(通信なし)
   python -X utf8 -m collect summary --artifact <dir>                                … 実行の要約(Markdown。通信なし)
   python -X utf8 -m collect verdict --artifact <dir>                                … 要求したビヨリがすべて ok なら 0、そうでなければ 1
@@ -26,8 +28,12 @@ def main(argv=None):
     r.add_argument("--yamabiyori-checkout")
     r.add_argument("--yamabiyori-python")
     r.add_argument("--yama-limit", required=True, help="山の数。all = 全座、または 1 以上の整数(空・0 以下はエラー)")
+    r.add_argument("--yamabiyori-ref", default="main", help="取り出したヤマビヨリのブランチ・commit(main 以外の回は棚に載せない)")
     r.add_argument("--trigger", default="workflow_dispatch")
     r.add_argument("--concierge-commit", default=None)
+    c = sub.add_parser("check-inputs")
+    c.add_argument("--yama-limit", required=True)
+    c.add_argument("--yamabiyori-ref", required=True)
     p = sub.add_parser("prepare")
     p.add_argument("--artifact", required=True)
     p.add_argument("--existing", required=True)
@@ -47,6 +53,16 @@ def main(argv=None):
             ap.error("--yamabiyori-checkout が必要")
         from .run import main_run
         return main_run(a)
+    if a.cmd == "check-inputs":
+        from .run import MAIN_REF, parse_yama_limit, parse_yamabiyori_ref
+        try:
+            limit, ref = parse_yama_limit(a.yama_limit), parse_yamabiyori_ref(a.yamabiyori_ref)
+        except ValueError as e:
+            print(f"中止(通信していません): {e}", file=sys.stderr)
+            return 2
+        print(f"yama_limit={'all' if limit is None else limit} yamabiyori_ref={ref}"
+              + ("" if ref == MAIN_REF else "(main でないので、この回は棚に載せません)"))
+        return 0
     if a.cmd == "prepare":
         print(json.dumps(shelf.prepare(a.artifact, a.existing, a.out), ensure_ascii=False, indent=1))
         return 0

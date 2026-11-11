@@ -11,6 +11,7 @@
 ビヨリの失敗(終了コード≠0・429・フックの中止・出力の形が違う)は、そのビヨリを status≠ok にするだけで、ほかのビヨリは続ける。
 ヤマビヨリが対象の山を全部は取れなかった回(explore.json の fetched < pool_size)は status: incomplete(ok にしない)。
 """
+import re
 import shutil
 import sys
 import time
@@ -23,6 +24,9 @@ from .runner import read_request_log, run_hooked, summarize
 
 AGENTS = ("yamabiyori", "hoshibiyori")
 RUN_SCHEMA = "biyori-collect-run/1"
+# 棚に載せてよいヤマビヨリの ref。定期実行は常にこれ。手動実行で別の ref(試しのブランチ・commit)を使った回は棚に載せない
+MAIN_REF = "main"
+REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,199}$")
 
 
 def slot_of(t):
@@ -53,7 +57,7 @@ def _attempt_failure(res, native_problems=None, has_output=True):
     return None
 
 
-def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None, cfg=None, clock=time.monotonic):
+def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs_fn=None, cfg=None, clock=time.monotonic):
     """ヤマビヨリを実行して、成果物を out_dir に置く。→ run.json の agents.yamabiyori
 
     取り直し: 1 回目のあと fetched < pool_size なら、同じコマンドをもう一度実行する(1 回目を含めて最大 max_runs 回)。
@@ -67,7 +71,7 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None, cfg=
     raw.mkdir(parents=True, exist_ok=True)
     checkout = Path(checkout).resolve()
     commit, version = yama.git_commit(checkout), yama.load_version(checkout)
-    base = {"commit": commit, "version": version, "limit": limit}
+    base = {"ref": ref, "commit": commit, "version": version, "limit": limit}
     try:
         mountains = yama.load_mountains(checkout)
     except (OSError, ValueError, SyntaxError) as e:
@@ -159,8 +163,8 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, model_runs_fn=None, cfg=
                 data_time=iso(fetched_at), proposal_status=prop["status"], proposals=len(prop["proposals"]), model_runs=runs)
 
 
-def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, trigger="workflow_dispatch", concierge_commit=None,
-            meta_fetch=None):
+def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_ref=MAIN_REF, trigger="workflow_dispatch",
+            concierge_commit=None, meta_fetch=None):
     """1回の取得。meta_fetch(phase) → meta.json の dict(テストでは偽物を渡す。既定は計測フックつきの子プロセス)。"""
     out_dir = Path(out_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -191,7 +195,7 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, trigger="wo
             results[a] = {"status": "rate_limited", "reason": "rate_limited_at_metadata", "requests": 0, "runtime_s": 0.0, "data_time": None}
         elif a == "yamabiyori":
             results[a] = run_yamabiyori(checkout=checkouts["yamabiyori"], python=pythons["yamabiyori"], out_dir=out_dir,
-                                        limit=yama_limit, model_runs_fn=runs_now)
+                                        limit=yama_limit, ref=yamabiyori_ref, model_runs_fn=runs_now)
         else:
             results[a] = {"status": "skipped", "reason": "not_implemented", "requests": 0, "runtime_s": 0.0, "data_time": None}
     model_runs = runs_now() if not rate_limited_early else meta_mod.model_runs(before, None)
@@ -212,6 +216,8 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, trigger="wo
            "started_at": iso(started), "finished_at": iso(finished), "concierge_commit": concierge_commit,
            "model_runs": {m: {k: v for k, v in r.items() if k != "init_before"} for m, r in model_runs.items()},
            "requested_agents": [a for a in AGENTS if a in agents], "yama_limit": yama_limit,
+           "yamabiyori_ref": yamabiyori_ref if "yamabiyori" in agents else None,
+           "publish_blocked": publish_blocked(agents, yamabiyori_ref),
            "agents": {a: {k: v for k, v in r.items() if k != "fetch"} for a, r in results.items()},
            "requests": {"total": totals["requests"], "by_host": totals["by_host"], "estimated_calls": totals["estimated_calls"]}}
     for a, r in run["agents"].items():
@@ -222,6 +228,24 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, trigger="wo
         raise RuntimeError("run.json がスキーマに合わない(コードの不具合): " + "; ".join(errs))
     write_json(out_dir / "run.json", run)
     return run
+
+
+def publish_blocked(agents, yamabiyori_ref):
+    """この回を棚に載せない理由(載せてよいなら None)。ヤマビヨリを main 以外の ref で取った回は載せない(利用者の決定)。"""
+    if "yamabiyori" in agents and yamabiyori_ref != MAIN_REF:
+        return "yamabiyori_ref_not_main"
+    return None
+
+
+def parse_yamabiyori_ref(raw):
+    """--yamabiyori-ref の値(ブランチ名・タグ名・commit)を検査して返す。空・空白・記号で始まる・".." を含むなどはエラー(ValueError)。
+    前後の空白も取り除かずエラーにする(" main" を main と見なして棚に載せないため)。"""
+    s = "" if raw is None else str(raw)
+    if not s.strip():
+        raise ValueError("ヤマビヨリの ref(yamabiyori_ref)が空です。いつもは main を入れてください")
+    if not REF_RE.fullmatch(s) or ".." in s or "//" in s or s.endswith(("/", ".", ".lock")):
+        raise ValueError(f"ヤマビヨリの ref(yamabiyori_ref)は、英数字と . _ / - だけのブランチ名か commit にしてください(入力: {s!r})")
+    return s
 
 
 def parse_yama_limit(raw):
@@ -245,12 +269,17 @@ def main_run(args):
     agents = {"both": ["yamabiyori", "hoshibiyori"]}.get(args.agents, [args.agents])
     try:
         limit = parse_yama_limit(args.yama_limit)            # 通信の前に検査する
+        ref = parse_yamabiyori_ref(getattr(args, "yamabiyori_ref", MAIN_REF))
     except ValueError as e:
         print(f"中止(通信していません): {e}", file=sys.stderr)
         return 2
     run = collect(agents=agents, out_dir=args.out, checkouts={"yamabiyori": args.yamabiyori_checkout},
-                  pythons={"yamabiyori": args.yamabiyori_python or sys.executable}, yama_limit=limit,
+                  pythons={"yamabiyori": args.yamabiyori_python or sys.executable}, yama_limit=limit, yamabiyori_ref=ref,
                   trigger=args.trigger, concierge_commit=args.concierge_commit or None)
+    if run.get("yamabiyori_ref") is not None:
+        print(f"yamabiyori: ref={run['yamabiyori_ref']} commit={run['agents'].get('yamabiyori', {}).get('commit')}")
+    if run.get("publish_blocked"):
+        print(f"この回は棚に載せません({run['publish_blocked']}: ヤマビヨリの ref が {MAIN_REF} でない)。publish にチェックがあっても載せません")
     for a, r in run["agents"].items():
         print(f"{a}: {r['status']}" + (f" ({r.get('reason')})" if r.get("reason") else "")
               + (f" 山={yama.coverage_text(r['coverage'])}" if "coverage" in r else "")

@@ -22,11 +22,22 @@ AGENT_FILES = {
                     "proposals/hoshibiyori.json": "biyori-proposal"},
 }
 NATIVE_SCHEMA = {"native_explore": "yamabiyori-report-data/1", "native_hoshi": "hoshibiyori-explore/1"}
-ENTRY_KEYS = ("commit", "version", "data_time", "model_runs", "proposal_status", "proposals", "limit", "coverage",
+ENTRY_KEYS = ("ref", "commit", "version", "data_time", "model_runs", "proposal_status", "proposals", "limit", "coverage",
               "attempts", "used_run", "retry_stop")
 # 全座そろわない回(run.json の status: incomplete)も棚に載せる(利用者の決定 A)。
 # manifest の status は incomplete にし、coverage で何座そろったかを示す(ok とは書かない)。
 PUBLISHABLE = ("ok", "incomplete")
+
+
+def publish_block_reason(run):
+    """この回を棚に載せない理由(載せてよいなら None)。ヤマビヨリを main 以外の ref で取った回は載せない(利用者の決定)。
+    run.json の publish_blocked と、ヤマビヨリの ref の両方を見る(どちらかが当てはまれば載せない)。"""
+    if run.get("publish_blocked"):
+        return run["publish_blocked"]
+    ref = ((run.get("agents") or {}).get("yamabiyori") or {}).get("ref")
+    if ref is not None and ref != "main":
+        return "yamabiyori_ref_not_main"
+    return None
 
 
 def _plain(p):
@@ -103,6 +114,9 @@ def prepare(artifact, existing, out):
     run = read_json(art / "run.json")
     if not isinstance(run, dict) or schema_errors(run, "biyori-collect-run"):
         raise ValueError("artifact の run.json がない・スキーマに合わない(公開しない)")
+    blocked = publish_block_reason(run)
+    if blocked:
+        raise ValueError(f"この回は棚に載せない({blocked}: ヤマビヨリの ref が main でない。ref={run.get('yamabiyori_ref')})")
     previous = load_manifest(ex)
     prev_agents = (previous or {}).get("agents") or {}
     outcome, reasons = {}, {}
@@ -155,7 +169,15 @@ def render_summary(artifact):
     lines = ["## 取得の結果", ""]
     if not isinstance(run, dict):
         return "\n".join(lines + ["run.json がありません(取得の前に止まった可能性。collect ジョブのログを見る)。", ""])
-    lines += [f"- 開始 {run.get('started_at')} / 終了 {run.get('finished_at')}(slot: {run.get('slot')}, trigger: {run.get('trigger')})", ""]
+    lines += [f"- 開始 {run.get('started_at')} / 終了 {run.get('finished_at')}(slot: {run.get('slot')}, trigger: {run.get('trigger')})"]
+    y = (run.get("agents") or {}).get("yamabiyori")
+    if y:
+        lines.append(f"- ヤマビヨリの取り出し: ref `{y.get('ref') or run.get('yamabiyori_ref')}`、commit `{y.get('commit')}`")
+    blocked = publish_block_reason(run)
+    if blocked:
+        lines.append(f"- **この回は棚(data ブランチ)に載せません**({blocked}): ヤマビヨリの ref が main でないため。"
+                     "publish にチェックがあっても載せません(publish ジョブは skipped になります)")
+    lines.append("")
     lines += ["| ビヨリ | 状態 | 理由 | 山の数 | 通信の回数 | 所要(秒) | データの時刻 |", "|---|---|---|---|---|---|---|"]
     for a, r in (run.get("agents") or {}).items():
         cov = coverage_text(r["coverage"]) if r.get("coverage") else "なし"

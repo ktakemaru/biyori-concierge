@@ -32,6 +32,11 @@ on:
         required: false
         type: string
         default: "3"
+      yamabiyori_ref:
+        description: "ヤマビヨリのブランチか commit(初期値 main)。main 以外で取った回は、publish にチェックがあっても棚に載せない。定期実行は常に main"
+        required: false
+        type: string
+        default: main
       publish:
         description: "取得の結果を棚(data ブランチ)に残す"
         required: false
@@ -58,6 +63,8 @@ jobs:
       AGENTS: ${{ github.event_name == 'schedule' && 'both' || inputs.agents }}
       # 定期実行は all(全 76 座)。手動実行は入力のまま渡し、検査は collect run が通信の前に行う(空・0 以下などはエラー)
       YAMA_LIMIT: ${{ github.event_name == 'schedule' && 'all' || inputs.yama_limit }}
+      # 定期実行は常に main。手動実行は入力のまま渡し、検査は check-inputs が取り出しの前に行う(空・記号で始まるなどはエラー)
+      YAMABIYORI_REF: ${{ github.event_name == 'schedule' && 'main' || inputs.yamabiyori_ref }}
     steps:
       - name: Check confirmation
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -71,19 +78,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Get yamabiyori (main)
-        if: ${{ env.AGENTS == 'yamabiyori' || env.AGENTS == 'both' }}
-        uses: actions/checkout@v4
-        with:
-          repository: ktakemaru/yamabiyori
-          ref: main
-          path: _agents/yamabiyori
-          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - name: Install concierge dependencies
         run: python -m pip install -r requirements.txt
+      # 山の数とヤマビヨリの ref を、ヤマビヨリを取り出す前に検査する(通信なし)。main 以外なら「棚に載せない」と表示する
+      - name: Check inputs (no network)
+        run: python -X utf8 -m collect check-inputs --yama-limit "$YAMA_LIMIT" --yamabiyori-ref="$YAMABIYORI_REF"
+      - name: Get yamabiyori (main, or yamabiyori_ref on a manual run)
+        if: ${{ env.AGENTS == 'yamabiyori' || env.AGENTS == 'both' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ktakemaru/yamabiyori
+          ref: ${{ env.YAMABIYORI_REF }}
+          path: _agents/yamabiyori
+          persist-credentials: false
       # ヤマビヨリは別の venv に、ヤマビヨリの requirements.txt だけを入れる(Playwright は入れない)。
       - name: Install yamabiyori dependencies (own venv)
         if: ${{ env.AGENTS == 'yamabiyori' || env.AGENTS == 'both' }}
@@ -97,7 +107,7 @@ jobs:
         run: |
           python -X utf8 -m collect run --agents "$AGENTS" --out _out \
             --yamabiyori-checkout _agents/yamabiyori --yamabiyori-python "$PWD/_venvs/yamabiyori/bin/python" \
-            --yama-limit "$YAMA_LIMIT" --trigger "$EVENT_NAME" --concierge-commit "$GITHUB_SHA"
+            --yama-limit "$YAMA_LIMIT" --yamabiyori-ref="$YAMABIYORI_REF" --trigger "$EVENT_NAME" --concierge-commit "$GITHUB_SHA"
       # 確認で止まったとき(取得していないとき)は、成果物も要約も作らない。
       - name: Upload results
         if: ${{ always() && steps.run.outcome != 'skipped' }}
@@ -114,9 +124,11 @@ jobs:
       - name: Fail if a requested agent is not ok
         run: python -X utf8 -m collect verdict --artifact _out
 
+  # ヤマビヨリを main 以外の ref で取った手動実行は、publish にチェックがあっても動かさない(棚に載せない。collect の Summary にその旨が出る)。
+  # 念のため collect prepare も、run.json の ref が main でなければ木を組み立てずに止まる。
   publish:
     needs: collect
-    if: ${{ always() && needs.collect.result != 'cancelled' && needs.collect.result != 'skipped' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == true)) }}
+    if: ${{ always() && needs.collect.result != 'cancelled' && needs.collect.result != 'skipped' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == true && (inputs.yamabiyori_ref == 'main' || inputs.agents == 'hoshibiyori'))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

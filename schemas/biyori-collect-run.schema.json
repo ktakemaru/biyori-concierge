@@ -15,6 +15,8 @@
     "model_runs": {"type": "object"},
     "requested_agents": {"type": "array", "items": {"enum": ["yamabiyori", "hoshibiyori"]}},
     "yama_limit": {"type": ["integer", "null"]},
+    "yamabiyori_ref": {"type": ["string", "null"], "description": "取り出したヤマビヨリの ref(手動実行の yamabiyori_ref。定期実行は main)。ヤマビヨリを取らない回は null"},
+    "publish_blocked": {"type": ["string", "null"], "description": "この回を棚に載せない理由(yamabiyori_ref_not_main)。載せてよいなら null"},
     "agents": {
       "type": "object",
       "propertyNames": {"enum": ["yamabiyori", "hoshibiyori"]},
@@ -32,6 +34,7 @@
           "requests": {"type": "integer", "minimum": 0},
           "runtime_s": {"type": "number", "minimum": 0},
           "data_time": {"anyOf": [{"$ref": "#/$defs/dt"}, {"type": "null"}]},
+          "ref": {"type": ["string", "null"], "description": "取り出したビヨリの ref(ブランチ・commit)"},
           "commit": {"$ref": "#/$defs/commit"},
           "version": {"type": ["string", "null"]}
         }

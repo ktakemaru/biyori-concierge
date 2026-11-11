@@ -101,7 +101,7 @@ class Collect(unittest.TestCase):
 
     def test_dispatch_inputs(self):
         inp = self.wf["on"]["workflow_dispatch"]["inputs"]
-        self.assertEqual(set(inp), {"confirm", "agents", "yama_limit", "publish"})
+        self.assertEqual(set(inp), {"confirm", "agents", "yama_limit", "yamabiyori_ref", "publish"})
         self.assertEqual(inp["agents"]["options"], ["yamabiyori", "hoshibiyori", "both"])
         self.assertFalse(inp["publish"]["default"])
 
@@ -115,6 +115,27 @@ class Collect(unittest.TestCase):
         self.assertEqual(env, "${{ github.event_name == 'schedule' && 'all' || inputs.yama_limit }}")
         self.assertIn('--yama-limit "$YAMA_LIMIT"', runs(self.jobs["collect"]))
 
+    def test_yamabiyori_ref_main_by_default_and_always_main_on_schedule(self):
+        y = self.wf["on"]["workflow_dispatch"]["inputs"]["yamabiyori_ref"]
+        self.assertEqual((y["type"], y["default"]), ("string", "main"))
+        env = self.jobs["collect"]["env"]["YAMABIYORI_REF"]
+        self.assertEqual(env, "${{ github.event_name == 'schedule' && 'main' || inputs.yamabiyori_ref }}")
+        r = runs(self.jobs["collect"])
+        self.assertIn('--yamabiyori-ref="$YAMABIYORI_REF"', r.split("-m collect run")[1])
+
+    def test_inputs_are_checked_before_yamabiyori_is_fetched(self):
+        steps = self.jobs["collect"]["steps"]
+        names = [s.get("name", s.get("uses", "")) for s in steps]
+        check = names.index("Check inputs (no network)")
+        get = next(i for i, s in enumerate(steps) if s.get("with", {}).get("repository") == "ktakemaru/yamabiyori")
+        self.assertLess(check, get)
+        self.assertIn('-m collect check-inputs --yama-limit "$YAMA_LIMIT" --yamabiyori-ref="$YAMABIYORI_REF"', steps[check]["run"])
+
+    def test_publish_skipped_when_yamabiyori_ref_is_not_main(self):
+        cond = self.jobs["publish"]["if"]
+        self.assertIn("inputs.publish == true && (inputs.yamabiyori_ref == 'main' || inputs.agents == 'hoshibiyori')", cond)
+        self.assertIn("github.event_name == 'schedule' ||", cond)        # 定期実行は常に main
+
     def test_runner_python_timeout_concurrency(self):
         for job in self.jobs.values():
             self.assertEqual(job["runs-on"], "ubuntu-24.04")
@@ -127,7 +148,7 @@ class Collect(unittest.TestCase):
         steps = self.jobs["collect"]["steps"]
         y = [s for s in steps if s.get("with", {}).get("repository") == "ktakemaru/yamabiyori"]
         self.assertEqual(len(y), 1)
-        self.assertEqual(y[0]["with"]["ref"], "main")
+        self.assertEqual(y[0]["with"]["ref"], "${{ env.YAMABIYORI_REF }}")       # 定期実行は main(下の test_yamabiyori_ref_…)
         for j in self.jobs.values():
             for s in j["steps"]:
                 if "actions/checkout" in s.get("uses", ""):

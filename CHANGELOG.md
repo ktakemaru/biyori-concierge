@@ -25,3 +25,7 @@
   成功・失敗の数・失敗した段階(TCP・TLS・応答待ちなど)・所要時間を Summary の表に出す。計測フックつき。ヤマビヨリは実行しない。
 - 診断に比べ方を足した: IP ごとに「新しい接続」30 回と「接続の使い回し」30 回(切れたら張り直し、その回数と失敗を記録)を交互に行い、
   方式ごとの成功・失敗・失敗した段階・接続を張った回と張らなかった回の失敗を Summary に並べる。上限は仮置きで 300 回・1800 秒、ジョブは 40 分。
+- (段階 1 の追加の修正)`collect.yml` の手動実行に `yamabiyori_ref`(ヤマビヨリのブランチか commit。初期値 `main`。定期実行は常に `main`)を足した。
+  使った ref と commit を run.json・Summary・manifest に出す。main 以外の ref で取った回は棚に載せない(publish ジョブは skipped、`collect prepare` も止まる)。
+  入力はヤマビヨリを取り出す前に `collect check-inputs` で検査する。診断 2 回目(新しい接続 60 回中 11 回失敗・使い回し 0 回)を受けて、使い回しを入れたヤマビヨリの版を試すため。
+- `docs/collect-run4-analysis.md` に診断 2 回目の結果、`docs/stage1-report.md` を今の状態に合わせて書き直した。
