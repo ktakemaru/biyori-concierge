@@ -293,8 +293,11 @@ def check(draft, brief):
             if not basis:
                 errs.append(_err("safety_without_basis", s, f"山の安全に関わる語「{'・'.join(sc[:3])}」に裏づけがない",
                                  "資料に無いなら「この予報からは判断できません」の形で書き、足りないものの印 [G…] を付ける"))
+            elif _has_any(exempt_re.sub(" ", t), W["safety_positive"]) and "K" not in kinds:
+                errs.append(_err("safety_assertion", s, f"安全の言い切り「{'・'.join(_has_any(t, W['safety_positive'])[:3])}」に知識カードの裏づけがない",
+                                 "行ける・安全だと言い切らない(予報の数字と危険信号の文だけを書く)"))
         # おすすめの語と、宣言したおすすめ
-        if picks is not None and _has_any(t, W["recommend"]):
+        if picks is not None and _has_any(t, W["recommend"]) and not _has_any(t, W["recommend_not"]):
             ys = [i for i in ids if X.ids[i][0] == "Y"]
             if ys and not set(ys) & set(picks):
                 errs.append(_err("pick_undeclared", s, f"すすめている山({', '.join(ys)})が [おすすめ] にない", "[おすすめ] の行にその事実の id を書く"))
@@ -365,7 +368,7 @@ def check(draft, brief):
 def strip_marks(body, mre):
     out = []
     for line in body.split(NL):
-        line = re.sub(r"\s*" + mre.pattern, "", line).rstrip()
+        line = re.sub(r"\s*" + mre.pattern + r"(?:[ \t　]+(?=\S))?", "", line).rstrip()   # 印の後ろの空白も取る(「です。[Y1] 次の文」)
         out.append(line)
     text = NL.join(out).strip(NL)
     return re.sub(r"\n{3,}", "\n\n", text) + NL

@@ -84,13 +84,25 @@ class Brief(unittest.TestCase):
 
     def test_named_mountain_outside_the_top_is_kept(self):
         cfg = B.config()
-        cfg["concierge"]["brief"]["top_per_day"] = 1
+        cfg["concierge"]["brief"].update(top_per_day=1, main_ok_min=0)
         with mock.patch("concierge.brief.config", return_value=cfg):
             doc = build(self.base, mountains=["横岳"])
         names = [(f["name"], f["date"], f["selected_by"]) for f in doc["facts"]]
         self.assertIn(("横岳", "2026-10-17", "named"), names)
         self.assertEqual(doc["candidates"][0]["counts"]["outside_top"], 2)
         self.assertEqual(doc["candidates"][0]["outside_top_names"], ["谷川岳"])      # 名指しの横岳は外した一覧に入れない
+
+    def test_main_ok_mountains_are_filled_from_outside_the_top(self):
+        base = base_with_shelf(self, edit=make_hazard("m002", "2026-10-17", "危険"))
+        cfg = B.config()
+        cfg["concierge"]["brief"].update(top_per_day=1, main_ok_min=2)
+        with mock.patch("concierge.brief.config", return_value=cfg):
+            doc = build(base)
+        sat = [(f["name"], f["selected_by"], f["main_ok"]) for f in doc["facts"] if f["date"] == "2026-10-17"]
+        self.assertEqual(sat, [("八ヶ岳(赤岳)", "top", False), ("横岳", "main_fill", True), ("谷川岳", "main_fill", True)])
+        self.assertEqual(doc["candidates"][0]["counts"]["outside_top"], 0)
+        sun = [f["selected_by"] for f in doc["facts"] if f["date"] == "2026-10-18"]
+        self.assertEqual(sun, ["top", "main_fill"])            # 1 座目が主役にできるので、足すのは 1 座
 
     def test_region_interest_origin(self):
         doc = build(self.base, region=["北陸信越", "九州"], interest=["stars", "hiking"], origin="どこか")
@@ -171,6 +183,9 @@ class Verify(unittest.TestCase):
         self.assertNotRegex(r["final"], r"\[[YLKG]\d+\]")
         self.assertNotIn("[おすすめ]", r["final"])
         self.assertIn("横岳という名前の由来", r["final"])
+        r = self.check(good_draft(self.doc).replace("約32 %の見込みです。[Y001]", "約32 %の見込みです。[Y001] 横浜から直線で約125kmです。[Y001]"))
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertIn("約32 %の見込みです。横浜から直線で約125kmです。\n", r["final"])     # 印の後ろの空白は残さない
         self.assertTrue(r["final"].startswith("今週末なら、土曜の八ヶ岳(赤岳)がいちばんのおすすめです。\n"))
 
     def test_added_number_date_and_mountain_fail(self):
@@ -207,6 +222,11 @@ class Verify(unittest.TestCase):
             with self.subTest(bad):
                 r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", bad))
                 self.assertIn("safety_without_basis", codes(r))
+        y1 = fact(self.doc, "八ヶ岳", "2026-10-17")["id"]                    # 危険信号(注意)つきの事実
+        r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", f"八ヶ岳(赤岳)は90.4点なので安全に登れます。[{y1}]"))
+        self.assertIn("safety_assertion", codes(r))                         # 安全の言い切りは危険信号の印では通さない
+        r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", f"八ヶ岳(赤岳)は低体温症注意なので防寒に気をつけます。[{y1}]"))
+        self.assertTrue(r["ok"], r["errors"])                               # 危険信号の事実の印があれば、注意の文は通す(作業指示書 6.2)
         ok = "凍結や積雪があるかどうかは、この予報からは判断できません。"
         r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", ok))
         self.assertTrue(r["ok"], r["errors"])
@@ -228,6 +248,10 @@ class Verify(unittest.TestCase):
         self.assertIn("picks_missing", codes(r))
         r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", f"土曜の横岳もおすすめです。[{y2['id']}]"))
         self.assertIn("pick_undeclared", codes(r))
+        # 見送りの文は、おすすめの語(「いちばん」など)があっても止めない(通しの試しで止めすぎた形)
+        r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。",
+                                 f"点数がいちばん高い横岳は、今回は見送るのがよさそうです。[{y2['id']}]"))
+        self.assertTrue(r["ok"], r["errors"])
 
     def test_cannot_recommend_a_mountain_marked_not_main(self):
         base = base_with_shelf(self, edit=make_hazard("m002", "2026-10-17", "危険"))

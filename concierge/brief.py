@@ -377,7 +377,18 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
             ex["outside_top"] = len(outside)
             day_facts = [_fact(p, mt, org, data_day, c, rank=ranks[mt["id"]], named=mt["id"] in named, selected_by="top")
                          for mt, p in top]
+            # 枠の中に主役にできる山が main_ok_min 件より少ないときは、枠の外から主役にできる山を点数の順に足す(仮置き。
+            # 冬は上位が危険信号「警戒・危険」の高い山で埋まり、おすすめにできる山が資料に 1 つも入らないことがあるため)
+            need = bc["main_ok_min"] - sum(1 for f in day_facts if f["main_ok"])
+            for mt, p in outside:
+                if need <= 0:
+                    break
+                f = _fact(p, mt, org, data_day, c, rank=ranks[mt["id"]], named=mt["id"] in named, selected_by="main_fill")
+                if f["main_ok"]:
+                    day_facts.append(f)
+                    need -= 1
             picked = {f["mountain_id"] for f in day_facts}
+            ex["outside_top"] = sum(1 for mt, _ in outside if mt["id"] not in picked)
             for mid in named:
                 if mid in picked:
                     continue
@@ -502,7 +513,7 @@ def render_md(b):
             out.append(f"- **[{f['id']}] {f['name']}**({f['region']}・標高 {num(f['elevation_m'])}m・{f['access']}・{f['distance_say']})"
                        f" {num(f['score'])} 点(基準 {num(f['threshold'])} 点){'・' + str(f['rank']) + ' 位' if f['rank'] else ''}"
                        f"・{f['lead_days']} 日先{'(信用してよい範囲の外)' if not f['reliable'] else ''}・{tag}"
-                       + ("・名指し" if f["named"] else ""))
+                       + ("・名指し" if f["named"] else "") + ("・枠の外から足した主役の候補" if f["selected_by"] == "main_fill" else ""))
             out.append(f"  - 危険信号: {hz}")
             for v in f["values"]:
                 out.append(f"  - {v['name']}: {v['say'][0]}" + (f"(約の表記: {'、'.join(v['say'][1:])})" if len(v["say"]) > 1 else ""))
