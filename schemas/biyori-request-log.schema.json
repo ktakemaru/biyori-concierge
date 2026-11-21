@@ -28,7 +28,9 @@
         "by_error": {"$ref": "#/$defs/tally"},
         "estimated_calls": {"type": ["integer", "null"], "minimum": 0},
         "aborted": {"type": ["string", "null"], "maxLength": 300},
-        "blocked_host": {"type": ["string", "null"], "maxLength": 253}
+        "blocked_host": {"type": ["string", "null"], "maxLength": 253},
+        "http_429": {"type": ["integer", "null"], "minimum": 0, "description": "HTTP 429 の回数。2026-11-22 に追加"},
+        "http_429_tolerated": {"type": ["integer", "null"], "minimum": 0, "description": "フックが通した 429 の回数。2026-11-22 に追加"}
       }
     }
   }

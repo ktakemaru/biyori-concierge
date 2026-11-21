@@ -1,5 +1,21 @@
 # 変更履歴
 
+## 未公開(段階 2 の前の見直し。2026-11-22)
+
+- 計測フックが 429 を決まった回数まで通すようにした(D11。ブランチ `feature/hook-tolerate-429`)。新しい環境変数 `BIYORI_HTTP_429_MAX_TOTAL`
+  (1〜10。未設定なら今までどおり 1 回で即中止)。ヤマビヨリには `config.yaml` の `http_429_max_total: 5`(ヤマビヨリの `MINUTELY_RETRY_MAX = 5`)を渡す。
+  メタデータの取得と診断には渡さない(今までどおり)。取得の側の判定: 429 があった回は、フックに止められず・終了コード 0・出力が正しく・
+  全部の山がそろったときだけ成功。それ以外は `rate_limited` で、取り直しの回を始めない。429 の回数(`http_429`・`http_429_tolerated`)を
+  run.json・manifest(`attempts[]` にも)・`logs/requests.json` に足した(スキーマは項目の追加だけ。版は上げない)。
+  まとめの「429」の行を「429: yamabiyori 2 回(待って取り直し、全座そろった)」のように回数と結果が分かる文にした。テスト `tests/test_rate_limit.py` を足した。
+- 指示書を改訂(2026-11-22)。答えの形を「資料 → AI が書く → 照合」に(D8・D9)、山の ID は `MOUNTAINS` の `id` を読む(D10)、
+  429 の扱いをそろえる(D11)、目標「専門家の AI 化」の 5 条件(D12)。6 章(`brief`・`verify`、資料 `biyori-brief/1`)・7 章(済んだもの・これから)・
+  8 章(段階 2 の受け入れ条件)・10 章(U8〜U10)を直し、12 章(改訂の記録)を足した。作業指示は `docs/revise-20261122-instructions.md`。
+- 山の ID を、並び順(`m{i + 1:03d}`)で作らず、ヤマビヨリの `MOUNTAINS` の `id` から読むようにした(D10)。`id` が無い・形が違う・重なっているときは
+  `mountains_unreadable`(子プロセスを起動する前)。ヤマビヨリの `--json-out` の行に `id` があれば `id` で山を引き、無い・`null` の行だけ名前と標高で引く。
+  `id` で引いた山の名前が行と違えば、提案にせず警告にする。提案の `id`・`site_ref`・`mountain_id` の形は変えていない。
+  テストの見本の `MOUNTAINS` に、ヤマビヨリ `fdadece`(1.10.1)と同じ `id` を足した(座標などは `b018355` のまま)。テスト `tests/test_mountain_ids.py` を足した。
+
 ## 未公開(段階 1)
 
 - リポジトリの骨組み(MIT、`config.yaml`、`config.local.example.yaml`、`schemas/`、`collect/`、`tests/`)。

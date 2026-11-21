@@ -2,6 +2,7 @@
 計測フックつきで起動される(collect/runner.py)。標準ライブラリだけ。
 読み取りに失敗したモデルだけ、RETRY_WAIT_S 秒あけて 1 回だけ読み直す(通信は計測フックの下のまま。回数もフックが数える)。
 4xx/5xx(HTTPError)は読み直さない(フックが即中止する。フックの外で動かしたときも読み直さない)。
+429 を通す設定(BIYORI_HTTP_429_MAX_TOTAL)は渡さないので、メタデータの取得では今までどおり 429 も 1 回で即中止(2026-11-22)。
 失敗の種類は例外の名前で残す(error)。URLError のように中の原因を持つ例外は、その名前も残す(error_reason)。
 手本: yamabiyori-backtest backtest/collect_forecast_snapshot.py の fetch_metadata(参照のみ。コードは写していない)。
 

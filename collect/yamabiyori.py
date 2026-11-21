@@ -2,6 +2,7 @@
 
 - 取得: GitHub から取り出した ktakemaru/yamabiyori(main)の `mountain_weather_mvp.py --json-out` を、計測フックつきの子プロセスで1回だけ実行する。
   ヤマビヨリのコードは書き換えない・写さない。山の一覧は `mountain_weather_core.MOUNTAINS` を ast で読むだけ(実行しない)。
+  山の ID は MOUNTAINS の "id"(m001〜)をそのまま使う。並び順では作らない(指示書 D10。2026-11-22)。
 - 変換: convert() は純粋関数(通信・ファイル読みなし)。同じ入力・同じ now なら同じ出力。
   元は biyori-hub adapters/yamabiyori_adapter.py の convert()(docs/ported-from-hub.md)。対応表は docs/yamabiyori-mapping.md。"""
 import ast
@@ -41,18 +42,38 @@ KNOWN_LIMITS = [
 ]
 NAME_RE = re.compile(r"^(?P<name>.+)\((?P<elev>\d+)m\)$")
 ROW_REQUIRED = ("mountain", "score")
+# 山の ID の形。ヤマビヨリ AGENTS.md「山の ID」: m で始まる ID は本家が付ける(m001〜)。利用者が足す山は u(例 u001)だが、
+# その仕組みはまだ無く、棚のスキーマ(schemas/biyori-mountains.schema.json)も ^m\d{3}$ だけなので、今は m だけを通す。
+MOUNTAIN_ID_RE = re.compile(r"^m\d{3}$")
 
 
 # ---------------------------------------------------------------- 取り出した版を読むだけ
 def load_mountains(checkout):
-    """mountain_weather_core.py の MOUNTAINS を ast で読む(実行しない)。id は並び順の 1 始まり mNNN
-    (イキモノビヨリ data/sites.yaml の site_ref と同じ付け方)。"""
+    """mountain_weather_core.py の MOUNTAINS を ast で読む(実行しない)。id は各要素の "id"(m001〜)をそのまま使う
+    (ヤマビヨリ 1.10.0 から。イキモノビヨリ data/sites.yaml の site_ref yamabiyori:mNNN と同じ名前)。並び順では作らない。
+    次のときは ValueError(呼び出し側は mountains_unreadable): id が無い要素がある(古い版のヤマビヨリ)、
+    id が文字列でない・m + 数字 3 桁の形でない、同じ id が 2 つ以上ある。並び順で作る形に戻す逃げ道は作らない。"""
     src = (Path(checkout) / "mountain_weather_core.py").read_text(encoding="utf-8")
     for node in ast.parse(src).body:
         if isinstance(node, ast.Assign) and any(getattr(t, "id", None) == "MOUNTAINS" for t in node.targets):
             raw = ast.literal_eval(node.value)
-            return [dict({"id": f"m{i + 1:03d}"}, **{k: m.get(k) for k in ("name", "lat", "lon", "elevation_m", "region", "access")})
-                    for i, m in enumerate(raw)]
+            if not isinstance(raw, list):
+                raise ValueError("MOUNTAINS がリストでない")
+            out, seen = [], {}
+            for i, m in enumerate(raw):
+                if not isinstance(m, dict):
+                    raise ValueError(f"MOUNTAINS[{i}] が dict でない")
+                if "id" not in m:
+                    raise ValueError(f"MOUNTAINS[{i}]({m.get('name')})に id が無い。ヤマビヨリが古い版"
+                                     "(山の ID は 1.10.0 から)。並び順では ID を作らない")
+                mid = m["id"]
+                if not isinstance(mid, str) or not MOUNTAIN_ID_RE.fullmatch(mid):
+                    raise ValueError(f"MOUNTAINS[{i}]({m.get('name')})の id が m + 数字 3 桁の形でない: {mid!r}")
+                if mid in seen:
+                    raise ValueError(f"id {mid} が 2 つ以上ある: MOUNTAINS[{seen[mid]}] と MOUNTAINS[{i}]")
+                seen[mid] = i
+                out.append(dict({"id": mid}, **{k: m.get(k) for k in ("name", "lat", "lon", "elevation_m", "region", "access")}))
+            return out
     raise ValueError("mountain_weather_core.py に MOUNTAINS が見つからない")
 
 
@@ -78,7 +99,7 @@ def mountains_doc(mountains, commit, version):
     return {"schema": MOUNTAINS_SCHEMA, "agent": AGENT,
             "source": {"repo": "ktakemaru/yamabiyori", "commit": commit, "version": version,
                        "file": "mountain_weather_core.py", "variable": "MOUNTAINS"},
-            "id_rule": "id = MOUNTAINS の並び順の 1 始まり(m001〜)。イキモノビヨリの site_ref(yamabiyori:mNNN)と同じ",
+            "id_rule": "id = MOUNTAINS の各要素の id をそのまま(m001〜。並び順では作らない)。イキモノビヨリの site_ref(yamabiyori:mNNN)と同じ",
             "count": len(mountains), "mountains": mountains}
 
 
@@ -213,6 +234,23 @@ def _find_mountain(mountains, name, elev):
     return hits[0] if len(hits) == 1 else None
 
 
+def _resolve_mountain(row, mountains, by_id):
+    """行 → (山 または None, 除外したときの理由)。行に id があれば id で引く(ヤマビヨリ 1.10.0 からの --json-out)。
+    id が無い・null の行だけ、名前と標高で引く(古い棚・76 座に無い山)。id で引いた山の名前が行の名前と違えば、
+    ID のずれを黙って通さないよう除外する。"""
+    m = NAME_RE.match(row.get("mountain") or "")
+    rid = row.get("id")
+    if rid is None:
+        mtn = _find_mountain(mountains, m["name"], int(m["elev"])) if m else None
+        return mtn, None if mtn else "座標またはスコアを確定できず除外"
+    mtn = by_id.get(rid) if isinstance(rid, str) else None
+    if mtn is None:
+        return None, f"行の id {rid!r} が山の一覧に無いため除外"
+    if not m or m["name"] != mtn["name"]:
+        return None, f"行の id {rid} は山の一覧では {mtn['name']} で、行の名前と違うため除外(ID のずれ)"
+    return mtn, None
+
+
 def _time_window(date_str, mtn, sun_times):
     """日の出・日没があれば activity_window(日の出−1h 〜 日没+30分)。なければ calendar_day(暦日で代用。粗い値)。"""
     sun = ((sun_times or {}).get(f"{mtn['lat']:.4f},{mtn['lon']:.4f}") or {}).get(date_str)
@@ -258,6 +296,7 @@ def convert(native, *, now, fetched_at, native_path, agent_version, agent_commit
     today = now.astimezone(JST).date()
     warnings = ["確信度は explore では出力されないため null"]
     proposals, dropped, below = [], 0, 0
+    by_id = {m["id"]: m for m in mountains}
     for day in native["days"]:
         rows = day["rows"]
         in_rows = {r.get("mountain") for r in rows}
@@ -266,11 +305,10 @@ def convert(native, *, now, fetched_at, native_path, agent_version, agent_commit
         lead = (date(y, m_, d_) - today).days
         for row in rows + simple:
             score_only = row not in rows
-            m = NAME_RE.match(row.get("mountain") or "")
-            mtn = _find_mountain(mountains, m["name"], int(m["elev"])) if m else None
+            mtn, why = _resolve_mountain(row, mountains, by_id)
             if mtn is None or band(row.get("score")) is None:
                 dropped += 1
-                warnings.append(f"{day['date']} {row.get('mountain')}: 座標またはスコアを確定できず除外")
+                warnings.append(f"{day['date']} {row.get('mountain')}: {why or '座標またはスコアを確定できず除外'}")
                 continue
             proposals.append(_proposal(date_str=day["date"], label=day.get("label") or day["date"], mtn=mtn, row=row,
                                        native_path=native_path, lead_days=lead, score_only=score_only, sun_times=sun_times))

@@ -14,10 +14,15 @@
   2) 許可リスト外のホストへの送信は、送る前に中止
   0) 最初の送信の前に、BIYORI_REQ_LOG(と BIYORI_COUNT_LOG)が絶対パスで書き込めることを確かめる。だめなら通信せずに中止
      (段階10: 子プロセスの作業ディレクトリは runtime なので、相対パスだと記録できないまま通信してしまった)
-  3) ステータス 4xx/5xx(429 を含む)なら即中止
+  3) ステータス 4xx/5xx(429 を含む)なら即中止(429 は BIYORI_HTTP_429_MAX_TOTAL を渡されたときだけ、その回数まで通す。下)
      例外(オプトイン。段階9b): BIYORI_HTTP_RETRY_STATUSES(例 "502,503,504")を渡された子プロセスだけ、その一時的なサーバー障害を
      『呼び出し側が再試行する』前提で中止せず、記録に retry_tolerated を付ける。429・500・その他の 4xx/5xx は、設定があっても即中止(対象にできるのは 502/503/504 だけ)。
      連続(BIYORI_HTTP_RETRY_MAX_CONSEC)または実行全体(BIYORI_HTTP_RETRY_MAX_TOTAL)の上限を超えたら中止する。どちらかが未設定・不正ならオプトインなし(従来どおり全部中止)。
+     例外(オプトイン。ビヨリコンシェル 2026-11-22。指示書 5.2・D11): BIYORI_HTTP_429_MAX_TOTAL(1 以上の整数。上の限り _429_CAP = 10)を渡された子プロセスだけ、
+     429 を実行全体でその回数まで中止せずに通し、記録に rate_limit_tolerated を付ける。429 の種類(1分・1時間・1日)の判定と、待つ・やめるの判断は
+     ビヨリに任せ、フックは回数の上限だけを守る。回数を超えた 429 は即中止(理由に「429 を通す回数の上限」)。
+     未設定なら従来どおり 429 は 1 回で即中止。不正な値・0 以下・_429_CAP を超える値は無効(従来どおり)にして stderr に記録する。
+     BIYORI_HTTP_RETRY_STATUSES の仕組みには 429 を入れない(_RETRYABLE は 502/503/504 のまま)。
 非 200 のときだけ、応答本文の先頭 200 文字(制御文字は除去。URL のクエリ文字列は伏せる)を body_head に記録する。
 許可リストは環境変数でのみ決まる(既定は全拒否)。コード側で勝手に広げない。"""
 import io
@@ -92,6 +97,29 @@ _HTTP_RETRY, _HTTP_CONSEC_MAX, _HTTP_TOTAL_MAX, _http_note = _resolve_http_retry
     os.environ.get("BIYORI_HTTP_RETRY_STATUSES"), os.environ.get("BIYORI_HTTP_RETRY_MAX_CONSEC"), os.environ.get("BIYORI_HTTP_RETRY_MAX_TOTAL"))
 if _http_note:
     sys.stderr.write(f"[biyori-measure] {_http_note}\n")
+_429_CAP = 10              # BIYORI_HTTP_429_MAX_TOTAL の上の限り。仮置き(暴走を止める安全弁なので大きな値は受け付けない)
+
+
+def _resolve_429_max(raw, cap=_429_CAP):
+    """BIYORI_HTTP_429_MAX_TOTAL → (実行全体で通す 429 の回数, ログの文 または None)。未設定は 0(従来どおり即中止)・ログなし。
+    1〜cap の整数だけ有効。数値でない・0 以下・cap 超は 0(無効)にしてログを返す。"""
+    if raw is None:
+        return 0, None
+    try:
+        v = int(str(raw).strip())
+    except ValueError:
+        return 0, f"BIYORI_HTTP_429_MAX_TOTAL={raw!r} は整数でないため無効(429 は 1 回で中止)"
+    if v < 1:
+        return 0, f"BIYORI_HTTP_429_MAX_TOTAL={raw!r} が 1 未満のため無効(429 は 1 回で中止)"
+    if v > cap:
+        return 0, f"BIYORI_HTTP_429_MAX_TOTAL={raw!r} は上の限り {cap} 回を超えるため無効(429 は 1 回で中止)"
+    return v, f"429 を通す回数を有効化: 実行全体で {v} 回まで(超えたら中止)"
+
+
+_429_MAX, _429_note = _resolve_429_max(os.environ.get("BIYORI_HTTP_429_MAX_TOTAL"))
+if _429_note:
+    sys.stderr.write(f"[biyori-measure] {_429_note}\n")
+_429_total = 0             # 実行全体で通した 429 の件数
 _http_consec = 0           # 連続して許容した件数(200 台・300 台の応答で 0 に戻る)
 _http_total = 0            # 実行全体で許容した件数
 _last_start = None
@@ -151,8 +179,14 @@ def _body_head(raw, url=None, limit=_BODY_HEAD_MAX):
 
 
 def _judge_http(status):
-    """非 200(>= 400)の扱い。→ 中止の理由 または None(許容)。許容するのはオプトイン済みの 502/503/504 で、連続・全体の上限内のときだけ。"""
-    global _http_consec, _http_total
+    """非 200(>= 400)の扱い。→ 中止の理由 または None(許容)。許容するのはオプトイン済みの 502/503/504 で、連続・全体の上限内のときと、
+    BIYORI_HTTP_429_MAX_TOTAL が有効なときの 429(実行全体の回数の上限内)だけ。"""
+    global _http_consec, _http_total, _429_total
+    if status == 429 and _429_MAX > 0:
+        if _429_total + 1 > _429_MAX:
+            return f"HTTP 429(429 を通す回数の上限 {_429_MAX} 回を超えた)"
+        _429_total += 1
+        return None
     if status in _HTTP_RETRY:
         if _http_consec + 1 > _HTTP_CONSEC_MAX:
             return f"HTTP {status}(再試行の連続の上限 {_HTTP_CONSEC_MAX} 回を超えた。再試行を使い切った)"
@@ -242,7 +276,7 @@ def _after(rec, status, t0, nbytes=None, body=None, url=None):
         rec["body_head"] = _body_head(body, url)         # 非 200 のときだけ(200 の本文は記録しない)
         stop = _judge_http(status)
         if stop is None:
-            rec["retry_tolerated"] = True
+            rec["rate_limit_tolerated" if status == 429 else "retry_tolerated"] = True
     elif status is not None:
         _http_consec = 0
     _write(rec)
