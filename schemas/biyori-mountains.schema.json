@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "biyori-mountains/1",
   "title": "biyori-mountains/1(棚の yamabiyori/mountains.json)",
-  "description": "ヤマビヨリ mountain_weather_core.MOUNTAINS を読み出した写し(コードは実行しない)。id は並び順の 1 始まり。",
+  "description": "ヤマビヨリ mountain_weather_core.MOUNTAINS を読み出した写し(コードは実行しない)。id は MOUNTAINS の各要素の id をそのまま使う(並び順では作らない。2026-11-22)。",
   "type": "object",
   "required": ["schema", "agent", "source", "count", "mountains"],
   "properties": {
