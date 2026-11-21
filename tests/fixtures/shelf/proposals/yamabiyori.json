@@ -1,0 +1,4651 @@
+{
+ "schema": "biyori-proposal/1",
+ "request_id": "shelf",
+ "agent": {
+  "id": "yamabiyori",
+  "version": "1.9.0",
+  "commit": "1f02d8c6d3452f19324eb73e18aff15b3c443724"
+ },
+ "status": "ok",
+ "generated_at": "2026-10-15T05:00:00+09:00",
+ "data_as_of": [
+  {
+   "source": "Open-Meteo (yamabiyori)",
+   "source_type": "forecast",
+   "run_time": null,
+   "fetched_at": "2026-10-15T05:00:00+09:00"
+  },
+  {
+   "source": "Open-Meteo jma_msm",
+   "source_type": "forecast",
+   "run_time": "2026-09-24T03:00:00Z",
+   "fetched_at": "2026-10-15T05:00:00+09:00"
+  },
+  {
+   "source": "Open-Meteo ecmwf_ifs025",
+   "source_type": "forecast",
+   "run_time": "2026-09-24T00:00:00Z",
+   "fetched_at": "2026-10-15T05:00:00+09:00"
+  }
+ ],
+ "proposals": [
+  {
+   "id": "yamabiyori:explore:2026-10-12:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-12(月)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-12T04:40+09:00",
+    "end": "2026-10-12T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 97.9,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 1.5,
+     "unit": "m/s",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 10.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 8.2,
+     "unit": "%",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 1.4,
+     "unit": "%",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 59232,
+     "unit": "m",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.0,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 7.3,
+     "unit": "degC",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 3.3,
+     "unit": "m/s",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [],
+   "uncertainty": {
+    "lead_days": -3,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 1,
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 97.9,
+     "ridge_wind_ms": 1.5,
+     "cape": 10.0,
+     "cloud_pct": 8.2,
+     "cloud_pct_raw": 1.4,
+     "ridge_visibility": 59232,
+     "precip_wet_pct": 0.0,
+     "precip_wet_hours": 0.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 13,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 0,
+     "precip_total_mm": 0.0,
+     "chill": 7.3,
+     "day_peak_wind_ms": 3.3,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "-",
+      "any": false
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 3,
+      "neutral_hours": 10,
+      "mean_w_ms": 0.25,
+      "max_w_ms": 0.39,
+      "label": "並",
+      "from": "西南西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 5,
+      "neutral_hours": 8,
+      "mean_w_ms": 0.21,
+      "max_w_ms": 0.57,
+      "label": "並",
+      "from": "北西"
+     },
+     "hazard_class": "none",
+     "cells": {
+      "hazard": "-",
+      "wet": "0.0(0/13h M)",
+      "cloud": "8.2/1.4",
+      "terrain": "頂:並(西南西) 底:並(北西)5h w0.2"
+     }
+    },
+    "date": "2026-10-12",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-12:m003",
+   "title": "横岳 2026-10-12(月)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-12T00:00:00+09:00",
+    "end": "2026-10-13T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 97.9,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 1.5,
+     "unit": "m/s",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 10.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 8.2,
+     "unit": "%",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 1.8,
+     "unit": "%",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 59232,
+     "unit": "m",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.0,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 7.7,
+     "unit": "degC",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 3.4,
+     "unit": "m/s",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-12T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [],
+   "uncertainty": {
+    "lead_days": -3,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 2,
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 97.9,
+     "ridge_wind_ms": 1.5,
+     "cape": 10.0,
+     "cloud_pct": 8.2,
+     "cloud_pct_raw": 1.8,
+     "ridge_visibility": 59232,
+     "precip_wet_pct": 0.0,
+     "precip_wet_hours": 0.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 13,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 0,
+     "precip_total_mm": 0.0,
+     "chill": 7.7,
+     "day_peak_wind_ms": 3.4,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "-",
+      "any": false
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 3,
+      "neutral_hours": 10,
+      "mean_w_ms": 0.21,
+      "max_w_ms": 0.31,
+      "label": "並",
+      "from": "西南西"
+     },
+     "terrain_base": {
+      "windward_hours": 1,
+      "lee_hours": 5,
+      "neutral_hours": 7,
+      "mean_w_ms": 0.19,
+      "max_w_ms": 0.5,
+      "label": "並",
+      "from": "北西"
+     },
+     "hazard_class": "none",
+     "cells": {
+      "hazard": "-",
+      "wet": "0.0(0/13h M)",
+      "cloud": "8.2/1.8",
+      "terrain": "頂:並(西南西) 底:並(北西)5h w0.2"
+     }
+    },
+    "date": "2026-10-12",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-12:m001",
+   "title": "谷川岳 2026-10-12(月)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-12T00:00:00+09:00",
+    "end": "2026-10-13T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "no",
+    "score": {
+     "value": 54.6,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [],
+   "constraints": [],
+   "uncertainty": {
+    "lead_days": -3,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)",
+     "band=no は yamabiyori の go 基準(70点)未満の意味。行ってはいけない、ではない"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "score": 54.6,
+     "hazard_class": "none"
+    },
+    "date": "2026-10-12",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "score_only"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-13:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-13(火)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-13T04:40+09:00",
+    "end": "2026-10-13T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 97.9,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 6.2,
+     "unit": "m/s",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 8.2,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 1.4,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 51440,
+     "unit": "m",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 3.2,
+     "unit": "degC",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 9.4,
+     "unit": "m/s",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 17,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    },
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": -2,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 1,
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 97.9,
+     "ridge_wind_ms": 6.2,
+     "cape": 0.0,
+     "cloud_pct": 8.2,
+     "cloud_pct_raw": 1.4,
+     "ridge_visibility": 51440,
+     "precip_wet_pct": 0.0,
+     "precip_wet_hours": 0.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 13,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 0,
+     "precip_total_mm": 0.0,
+     "chill": 3.2,
+     "day_peak_wind_ms": 9.4,
+     "day_peak_wind_hour": 17,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 1.16,
+      "max_w_ms": 1.66,
+      "label": "並",
+      "from": "南西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.82,
+      "max_w_ms": 1.41,
+      "label": "並",
+      "from": "南南西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(17時9.4m/s)・低体温症注意(体感3.2℃)",
+      "wet": "0.0(0/13h M)",
+      "cloud": "8.2/1.4",
+      "terrain": "頂:並(南西) 底:並(南南西)0h w0.8"
+     }
+    },
+    "date": "2026-10-13",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-13:m003",
+   "title": "横岳 2026-10-13(火)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-13T00:00:00+09:00",
+    "end": "2026-10-14T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 97.9,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 5.9,
+     "unit": "m/s",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 8.2,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 1.8,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 51440,
+     "unit": "m",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 3.6,
+     "unit": "degC",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 9.2,
+     "unit": "m/s",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 17,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    },
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": -2,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 2,
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 97.9,
+     "ridge_wind_ms": 5.9,
+     "cape": 0.0,
+     "cloud_pct": 8.2,
+     "cloud_pct_raw": 1.8,
+     "ridge_visibility": 51440,
+     "precip_wet_pct": 0.0,
+     "precip_wet_hours": 0.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 13,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 0,
+     "precip_total_mm": 0.0,
+     "chill": 3.6,
+     "day_peak_wind_ms": 9.2,
+     "day_peak_wind_hour": 17,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.96,
+      "max_w_ms": 1.5,
+      "label": "並",
+      "from": "南西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.66,
+      "max_w_ms": 1.22,
+      "label": "並",
+      "from": "南南西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(17時9.2m/s)・低体温症注意(体感3.6℃)",
+      "wet": "0.0(0/13h M)",
+      "cloud": "8.2/1.8",
+      "terrain": "頂:並(南西) 底:並(南南西)0h w0.7"
+     }
+    },
+    "date": "2026-10-13",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-13:m001",
+   "title": "谷川岳 2026-10-13(火)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-13T00:00:00+09:00",
+    "end": "2026-10-14T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 85.1,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 5.9,
+     "unit": "m/s",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 26.8,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 10.9,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 31476,
+     "unit": "m",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 15.4,
+     "unit": "%",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 2.0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 2,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 7.1,
+     "unit": "degC",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 11.1,
+     "unit": "m/s",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 17,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-13T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": -2,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 3,
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "access": "ロープウェイ/ゴンドラ",
+     "score": 85.1,
+     "ridge_wind_ms": 5.9,
+     "cape": 0.0,
+     "cloud_pct": 26.8,
+     "cloud_pct_raw": 10.9,
+     "ridge_visibility": 31476,
+     "precip_wet_pct": 15.4,
+     "precip_wet_hours": 2.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 13,
+     "precip_moist_hours": 2,
+     "precip_prob_hours": 0,
+     "precip_total_mm": 0.0,
+     "chill": 7.1,
+     "day_peak_wind_ms": 11.1,
+     "day_peak_wind_hour": 17,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "-",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 11,
+      "lee_hours": 1,
+      "neutral_hours": 1,
+      "mean_w_ms": 0.98,
+      "max_w_ms": 1.5,
+      "label": "風上",
+      "from": "南"
+     },
+     "terrain_base": {
+      "windward_hours": 13,
+      "lee_hours": 0,
+      "neutral_hours": 0,
+      "mean_w_ms": 0.8,
+      "max_w_ms": 1.07,
+      "label": "風上",
+      "from": "南南東"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(17時11.1m/s)",
+      "wet": "15.4(2/13h M 湿2)",
+      "cloud": "26.8/10.9",
+      "terrain": "頂:風上(南) 底:風上(南南東)13h w0.8"
+     }
+    },
+    "date": "2026-10-13",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-14:m001",
+   "title": "谷川岳 2026-10-14(水)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-14T00:00:00+09:00",
+    "end": "2026-10-15T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "no",
+    "score": {
+     "value": 39.4,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "text": "危険信号:警戒以上(種別はネイティブの簡易行にない)",
+     "hard": true,
+     "level": "警戒以上"
+    }
+   ],
+   "uncertainty": {
+    "lead_days": -1,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)",
+     "band=no は yamabiyori の go 基準(70点)未満の意味。行ってはいけない、ではない"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "score": 39.4,
+     "hazard_class": "warning"
+    },
+    "date": "2026-10-14",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "score_only"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-14:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-14(水)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-14T04:40+09:00",
+    "end": "2026-10-14T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "no",
+    "score": {
+     "value": 25.8,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "text": "危険信号:警戒以上(種別はネイティブの簡易行にない)",
+     "hard": true,
+     "level": "警戒以上"
+    }
+   ],
+   "uncertainty": {
+    "lead_days": -1,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)",
+     "band=no は yamabiyori の go 基準(70点)未満の意味。行ってはいけない、ではない"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "score": 25.8,
+     "hazard_class": "warning"
+    },
+    "date": "2026-10-14",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "score_only"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-14:m003",
+   "title": "横岳 2026-10-14(水)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-14T00:00:00+09:00",
+    "end": "2026-10-15T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "no",
+    "score": {
+     "value": 25.8,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "text": "危険信号:警戒以上(種別はネイティブの簡易行にない)",
+     "hard": true,
+     "level": "警戒以上"
+    }
+   ],
+   "uncertainty": {
+    "lead_days": -1,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)",
+     "band=no は yamabiyori の go 基準(70点)未満の意味。行ってはいけない、ではない"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "score": 25.8,
+     "hazard_class": "warning"
+    },
+    "date": "2026-10-14",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "score_only"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-15:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-15(木)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-15T04:40+09:00",
+    "end": "2026-10-15T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 95.0,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 10.0,
+     "unit": "m/s",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 18.6,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 38784,
+     "unit": "m",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.0,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 11,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 2,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": -2.4,
+     "unit": "degC",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 10.3,
+     "unit": "m/s",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 10,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    },
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 0,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 1,
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 95.0,
+     "ridge_wind_ms": 10.0,
+     "cape": 0.0,
+     "cloud_pct": 18.6,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 38784,
+     "precip_wet_pct": 0.0,
+     "precip_wet_hours": 0.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 11,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 2,
+     "precip_total_mm": 0.0,
+     "chill": -2.4,
+     "day_peak_wind_ms": 10.3,
+     "day_peak_wind_hour": 10,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 1.58,
+      "max_w_ms": 1.81,
+      "label": "並",
+      "from": "西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.92,
+      "max_w_ms": 1.12,
+      "label": "並",
+      "from": "西南西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(10時10.3m/s)・低体温症注意(体感-2.4℃)",
+      "wet": "0.0(0/13h M11 確2)",
+      "cloud": "18.6/0.0",
+      "terrain": "頂:並(西) 底:並(西南西)0h w0.9"
+     }
+    },
+    "date": "2026-10-15",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-15:m003",
+   "title": "横岳 2026-10-15(木)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-15T00:00:00+09:00",
+    "end": "2026-10-16T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 95.0,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 9.5,
+     "unit": "m/s",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 18.6,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 38784,
+     "unit": "m",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.0,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 11,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 2,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": -1.8,
+     "unit": "degC",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 9.7,
+     "unit": "m/s",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 11,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    },
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 0,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 2,
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 95.0,
+     "ridge_wind_ms": 9.5,
+     "cape": 0.0,
+     "cloud_pct": 18.6,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 38784,
+     "precip_wet_pct": 0.0,
+     "precip_wet_hours": 0.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 11,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 2,
+     "precip_total_mm": 0.0,
+     "chill": -1.8,
+     "day_peak_wind_ms": 9.7,
+     "day_peak_wind_hour": 11,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 1.4,
+      "max_w_ms": 1.61,
+      "label": "並",
+      "from": "西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.77,
+      "max_w_ms": 0.96,
+      "label": "並",
+      "from": "西南西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(11時9.7m/s)・低体温症注意(体感-1.8℃)",
+      "wet": "0.0(0/13h M11 確2)",
+      "cloud": "18.6/0.0",
+      "terrain": "頂:並(西) 底:並(西南西)0h w0.8"
+     }
+    },
+    "date": "2026-10-15",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-15:m001",
+   "title": "谷川岳 2026-10-15(木)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-15T00:00:00+09:00",
+    "end": "2026-10-16T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 91.6,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 7.1,
+     "unit": "m/s",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 29.6,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.6,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 15148,
+     "unit": "m",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.0,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 11,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 2,
+     "unit": "h",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 2.0,
+     "unit": "degC",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 9.0,
+     "unit": "m/s",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-15T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    },
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 0,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 3,
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "access": "ロープウェイ/ゴンドラ",
+     "score": 91.6,
+     "ridge_wind_ms": 7.1,
+     "cape": 0.0,
+     "cloud_pct": 29.6,
+     "cloud_pct_raw": 0.6,
+     "ridge_visibility": 15148,
+     "precip_wet_pct": 0.0,
+     "precip_wet_hours": 0.0,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 11,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 2,
+     "precip_total_mm": 0.0,
+     "chill": 2.0,
+     "day_peak_wind_ms": 9.0,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.7,
+      "max_w_ms": 0.98,
+      "label": "並",
+      "from": "西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.69,
+      "max_w_ms": 1.21,
+      "label": "並",
+      "from": "北北西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(05時9.0m/s)・低体温症注意(体感2.0℃)",
+      "wet": "0.0(0/13h M11 確2)",
+      "cloud": "29.6/0.6",
+      "terrain": "頂:並(西) 底:並(北北西)0h w0.7"
+     }
+    },
+    "date": "2026-10-15",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-16:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-16(金)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-16T04:40+09:00",
+    "end": "2026-10-16T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 98.3,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 8.2,
+     "unit": "m/s",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 5.4,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 57116,
+     "unit": "m",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.6,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.1,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": -1.0,
+     "unit": "degC",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 11.6,
+     "unit": "m/s",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    },
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 1,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 1,
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 98.3,
+     "ridge_wind_ms": 8.2,
+     "cape": 0.0,
+     "cloud_pct": 5.4,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 57116,
+     "precip_wet_pct": 0.6,
+     "precip_wet_hours": 0.1,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": -1.0,
+     "day_peak_wind_ms": 11.6,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 1.28,
+      "max_w_ms": 2.05,
+      "label": "並",
+      "from": "西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 3,
+      "neutral_hours": 10,
+      "mean_w_ms": 0.77,
+      "max_w_ms": 1.3,
+      "label": "並",
+      "from": "南南西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(05時11.6m/s)・低体温症注意(体感-1.0℃)",
+      "wet": "0.6(0.1/13h 確13)",
+      "cloud": "5.4/0.0",
+      "terrain": "頂:並(西) 底:並(南南西)3h w0.8"
+     }
+    },
+    "date": "2026-10-16",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-16:m003",
+   "title": "横岳 2026-10-16(金)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-16T00:00:00+09:00",
+    "end": "2026-10-17T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 98.3,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 7.9,
+     "unit": "m/s",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 5.4,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 57116,
+     "unit": "m",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.6,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.1,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": -0.4,
+     "unit": "degC",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 11.2,
+     "unit": "m/s",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "wind",
+     "level": "注意",
+     "text": "強風:注意",
+     "hard": false
+    },
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 1,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 2,
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 98.3,
+     "ridge_wind_ms": 7.9,
+     "cape": 0.0,
+     "cloud_pct": 5.4,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 57116,
+     "precip_wet_pct": 0.6,
+     "precip_wet_hours": 0.1,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": -0.4,
+     "day_peak_wind_ms": 11.2,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "注意",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 1.16,
+      "max_w_ms": 1.87,
+      "label": "並",
+      "from": "西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 3,
+      "neutral_hours": 10,
+      "mean_w_ms": 0.62,
+      "max_w_ms": 1.01,
+      "label": "並",
+      "from": "南南西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠強風注意(05時11.2m/s)・低体温症注意(体感-0.4℃)",
+      "wet": "0.6(0.1/13h 確13)",
+      "cloud": "5.4/0.0",
+      "terrain": "頂:並(西) 底:並(南南西)3h w0.6"
+     }
+    },
+    "date": "2026-10-16",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-16:m001",
+   "title": "谷川岳 2026-10-16(金)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-16T00:00:00+09:00",
+    "end": "2026-10-17T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 98.2,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 4.6,
+     "unit": "m/s",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 5.4,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 17840,
+     "unit": "m",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 0.8,
+     "unit": "%",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.1,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 5.2,
+     "unit": "degC",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 5.7,
+     "unit": "m/s",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-16T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [],
+   "uncertainty": {
+    "lead_days": 1,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 3,
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "access": "ロープウェイ/ゴンドラ",
+     "score": 98.2,
+     "ridge_wind_ms": 4.6,
+     "cape": 0.0,
+     "cloud_pct": 5.4,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 17840,
+     "precip_wet_pct": 0.8,
+     "precip_wet_hours": 0.1,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": 5.2,
+     "day_peak_wind_ms": 5.7,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "-",
+      "any": false
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 1,
+      "lee_hours": 3,
+      "neutral_hours": 9,
+      "mean_w_ms": 0.56,
+      "max_w_ms": 0.68,
+      "label": "並",
+      "from": "北北西"
+     },
+     "terrain_base": {
+      "windward_hours": 1,
+      "lee_hours": 3,
+      "neutral_hours": 9,
+      "mean_w_ms": 0.32,
+      "max_w_ms": 0.51,
+      "label": "並",
+      "from": "北北西"
+     },
+     "hazard_class": "none",
+     "cells": {
+      "hazard": "-",
+      "wet": "0.8(0.1/13h 確13)",
+      "cloud": "5.4/0.0",
+      "terrain": "頂:並(北北西) 底:並(北北西)3h w0.3"
+     }
+    },
+    "date": "2026-10-16",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-17:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-17(土)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-17T04:40+09:00",
+    "end": "2026-10-17T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 90.4,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 5.4,
+     "unit": "m/s",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 10.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 31.5,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 59100,
+     "unit": "m",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 1.2,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.2,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": -1.9,
+     "unit": "degC",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 5.6,
+     "unit": "m/s",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 2,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 1,
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 90.4,
+     "ridge_wind_ms": 5.4,
+     "cape": 10.0,
+     "cloud_pct": 31.5,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 59100,
+     "precip_wet_pct": 1.2,
+     "precip_wet_hours": 0.2,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": -1.9,
+     "day_peak_wind_ms": 5.6,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.92,
+      "max_w_ms": 0.99,
+      "label": "並",
+      "from": "西北西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 9,
+      "neutral_hours": 4,
+      "mean_w_ms": 0.44,
+      "max_w_ms": 0.64,
+      "label": "風下",
+      "from": "北"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠低体温症注意(体感-1.9℃)",
+      "wet": "1.2(0.2/13h 確13)",
+      "cloud": "31.5/0.0",
+      "terrain": "頂:並(西北西) 底:風下(北)9h w0.4"
+     }
+    },
+    "date": "2026-10-17",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-17:m003",
+   "title": "横岳 2026-10-17(土)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-17T00:00:00+09:00",
+    "end": "2026-10-18T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 90.4,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 5.2,
+     "unit": "m/s",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 10.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 31.5,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 59100,
+     "unit": "m",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 1.2,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.2,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": -1.2,
+     "unit": "degC",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 5.4,
+     "unit": "m/s",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 5,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 2,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 2,
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 90.4,
+     "ridge_wind_ms": 5.2,
+     "cape": 10.0,
+     "cloud_pct": 31.5,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 59100,
+     "precip_wet_pct": 1.2,
+     "precip_wet_hours": 0.2,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": -1.2,
+     "day_peak_wind_ms": 5.4,
+     "day_peak_wind_hour": 5,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 0,
+      "neutral_hours": 13,
+      "mean_w_ms": 0.8,
+      "max_w_ms": 0.89,
+      "label": "並",
+      "from": "西北西"
+     },
+     "terrain_base": {
+      "windward_hours": 0,
+      "lee_hours": 9,
+      "neutral_hours": 4,
+      "mean_w_ms": 0.38,
+      "max_w_ms": 0.54,
+      "label": "風下",
+      "from": "北"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠低体温症注意(体感-1.2℃)",
+      "wet": "1.2(0.2/13h 確13)",
+      "cloud": "31.5/0.0",
+      "terrain": "頂:並(西北西) 底:風下(北)9h w0.4"
+     }
+    },
+    "date": "2026-10-17",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-17:m001",
+   "title": "谷川岳 2026-10-17(土)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-17T00:00:00+09:00",
+    "end": "2026-10-18T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 89.6,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 5.5,
+     "unit": "m/s",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 31.5,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 20876,
+     "unit": "m",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 3.0,
+     "unit": "%",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 0.4,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 2.9,
+     "unit": "degC",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 6.7,
+     "unit": "m/s",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 15,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-17T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "hazard": "cold",
+     "level": "注意",
+     "text": "低体温症:注意",
+     "hard": false
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 2,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 3,
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "access": "ロープウェイ/ゴンドラ",
+     "score": 89.6,
+     "ridge_wind_ms": 5.5,
+     "cape": 0.0,
+     "cloud_pct": 31.5,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 20876,
+     "precip_wet_pct": 3.0,
+     "precip_wet_hours": 0.4,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": 2.9,
+     "day_peak_wind_ms": 6.7,
+     "day_peak_wind_hour": 15,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "注意",
+      "any": true
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 8,
+      "lee_hours": 0,
+      "neutral_hours": 5,
+      "mean_w_ms": 0.72,
+      "max_w_ms": 0.8,
+      "label": "風上",
+      "from": "北西"
+     },
+     "terrain_base": {
+      "windward_hours": 8,
+      "lee_hours": 0,
+      "neutral_hours": 5,
+      "mean_w_ms": 0.49,
+      "max_w_ms": 0.64,
+      "label": "風上",
+      "from": "北西"
+     },
+     "hazard_class": "caution",
+     "cells": {
+      "hazard": "⚠低体温症注意(体感2.9℃)",
+      "wet": "3.0(0.4/13h 確13)",
+      "cloud": "31.5/0.0",
+      "terrain": "頂:風上(北西) 底:風上(北西)8h w0.5"
+     }
+    },
+    "date": "2026-10-17",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-18:m001",
+   "title": "谷川岳 2026-10-18(日)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-18T00:00:00+09:00",
+    "end": "2026-10-19T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 84.9,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 1.9,
+     "unit": "m/s",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 31.5,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 57700,
+     "unit": "m",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 12.9,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 1.7,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 7.7,
+     "unit": "degC",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 5.1,
+     "unit": "m/s",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 17,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [],
+   "uncertainty": {
+    "lead_days": 3,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 1,
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "access": "ロープウェイ/ゴンドラ",
+     "score": 84.9,
+     "ridge_wind_ms": 1.9,
+     "cape": 0.0,
+     "cloud_pct": 31.5,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 57700,
+     "precip_wet_pct": 12.9,
+     "precip_wet_hours": 1.7,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": 7.7,
+     "day_peak_wind_ms": 5.1,
+     "day_peak_wind_hour": 17,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "-",
+      "any": false
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 9,
+      "lee_hours": 0,
+      "neutral_hours": 4,
+      "mean_w_ms": 0.37,
+      "max_w_ms": 0.63,
+      "label": "風上",
+      "from": "南"
+     },
+     "terrain_base": {
+      "windward_hours": 9,
+      "lee_hours": 0,
+      "neutral_hours": 4,
+      "mean_w_ms": 0.3,
+      "max_w_ms": 0.53,
+      "label": "風上",
+      "from": "南"
+     },
+     "hazard_class": "none",
+     "cells": {
+      "hazard": "-",
+      "wet": "12.9(1.7/13h 確13)",
+      "cloud": "31.5/0.0",
+      "terrain": "頂:風上(南) 底:風上(南)9h w0.3"
+     }
+    },
+    "date": "2026-10-18",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-18:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-18(日)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-18T04:40+09:00",
+    "end": "2026-10-18T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 84.2,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 1.1,
+     "unit": "m/s",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 31.5,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 59848,
+     "unit": "m",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 14.3,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 1.9,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 5.0,
+     "unit": "degC",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 5.8,
+     "unit": "m/s",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 17,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [],
+   "uncertainty": {
+    "lead_days": 3,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 2,
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 84.2,
+     "ridge_wind_ms": 1.1,
+     "cape": 0.0,
+     "cloud_pct": 31.5,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 59848,
+     "precip_wet_pct": 14.3,
+     "precip_wet_hours": 1.9,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": 5.0,
+     "day_peak_wind_ms": 5.8,
+     "day_peak_wind_hour": 17,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "-",
+      "any": false
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 2,
+      "neutral_hours": 11,
+      "mean_w_ms": 0.44,
+      "max_w_ms": 1.02,
+      "label": "並",
+      "from": "南西"
+     },
+     "terrain_base": {
+      "windward_hours": 3,
+      "lee_hours": 0,
+      "neutral_hours": 10,
+      "mean_w_ms": 0.35,
+      "max_w_ms": 0.76,
+      "label": "並",
+      "from": "南南東"
+     },
+     "hazard_class": "none",
+     "cells": {
+      "hazard": "-",
+      "wet": "14.3(1.9/13h 確13)",
+      "cloud": "31.5/0.0",
+      "terrain": "頂:並(南西) 底:並(南南東)3h w0.3"
+     }
+    },
+    "date": "2026-10-18",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-18:m003",
+   "title": "横岳 2026-10-18(日)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-18T00:00:00+09:00",
+    "end": "2026-10-19T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "go",
+    "score": {
+     "value": 84.2,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [
+    {
+     "metric": "ridge_wind_ms",
+     "value": 1.1,
+     "unit": "m/s",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cape",
+     "value": 0.0,
+     "unit": "J/kg",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct",
+     "value": 31.5,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "cloud_pct_raw",
+     "value": 0.0,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "ridge_visibility",
+     "value": 59848,
+     "unit": "m",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_pct",
+     "value": 14.3,
+     "unit": "%",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_wet_hours",
+     "value": 1.9,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_msm_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_moist_hours",
+     "value": 0,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_prob_hours",
+     "value": 13,
+     "unit": "h",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "precip_total_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "chill",
+     "value": 5.3,
+     "unit": "degC",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_ms",
+     "value": 5.7,
+     "unit": "m/s",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_peak_wind_hour",
+     "value": 17,
+     "unit": "hour_of_day",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    },
+    {
+     "metric": "day_total_precip_mm",
+     "value": 0.0,
+     "unit": "mm",
+     "valid_time": "2026-10-18T00:00:00+09:00",
+     "source": "yamabiyori (Open-Meteo)",
+     "source_type": "forecast"
+    }
+   ],
+   "constraints": [],
+   "uncertainty": {
+    "lead_days": 3,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "rank": 3,
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "access": "登山",
+     "score": 84.2,
+     "ridge_wind_ms": 1.1,
+     "cape": 0.0,
+     "cloud_pct": 31.5,
+     "cloud_pct_raw": 0.0,
+     "ridge_visibility": 59848,
+     "precip_wet_pct": 14.3,
+     "precip_wet_hours": 1.9,
+     "precip_total_hours": 13,
+     "precip_msm_hours": 0,
+     "precip_moist_hours": 0,
+     "precip_prob_hours": 13,
+     "precip_total_mm": 0.0,
+     "chill": 5.3,
+     "day_peak_wind_ms": 5.7,
+     "day_peak_wind_hour": 17,
+     "hazards": {
+      "thunder": "-",
+      "wind": "-",
+      "cold": "-",
+      "any": false
+     },
+     "day_total_precip_mm": 0.0,
+     "terrain": {
+      "windward_hours": 0,
+      "lee_hours": 2,
+      "neutral_hours": 11,
+      "mean_w_ms": 0.37,
+      "max_w_ms": 0.84,
+      "label": "並",
+      "from": "南西"
+     },
+     "terrain_base": {
+      "windward_hours": 1,
+      "lee_hours": 0,
+      "neutral_hours": 12,
+      "mean_w_ms": 0.31,
+      "max_w_ms": 0.65,
+      "label": "並",
+      "from": "南南東"
+     },
+     "hazard_class": "none",
+     "cells": {
+      "hazard": "-",
+      "wet": "14.3(1.9/13h 確13)",
+      "cloud": "31.5/0.0",
+      "terrain": "頂:並(南西) 底:並(南南東)1h w0.3"
+     }
+    },
+    "date": "2026-10-18",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "full"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-19:m001",
+   "title": "谷川岳 2026-10-19(月)",
+   "place": {
+    "name": "谷川岳",
+    "lat": 36.837,
+    "lon": 138.9297,
+    "elevation_m": 1977,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m001"
+   },
+   "time_window": {
+    "start": "2026-10-19T00:00:00+09:00",
+    "end": "2026-10-20T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "no",
+    "score": {
+     "value": 65.2,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "text": "危険信号:警戒以上(種別はネイティブの簡易行にない)",
+     "hard": true,
+     "level": "警戒以上"
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 4,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)",
+     "band=no は yamabiyori の go 基準(70点)未満の意味。行ってはいけない、ではない"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "mountain": "谷川岳(1977m)",
+     "region": "関東甲信",
+     "score": 65.2,
+     "hazard_class": "warning"
+    },
+    "date": "2026-10-19",
+    "mountain_id": "m001",
+    "access": "ロープウェイ/ゴンドラ",
+    "detail_level": "score_only"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-19:m002",
+   "title": "八ヶ岳(赤岳) 2026-10-19(月)",
+   "place": {
+    "name": "八ヶ岳(赤岳)",
+    "lat": 35.9722,
+    "lon": 138.3672,
+    "elevation_m": 2899,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m002"
+   },
+   "time_window": {
+    "start": "2026-10-19T04:40+09:00",
+    "end": "2026-10-19T17:40+09:00",
+    "kind": "activity_window"
+   },
+   "suitability": {
+    "band": "no",
+    "score": {
+     "value": 51.1,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "text": "危険信号:警戒以上(種別はネイティブの簡易行にない)",
+     "hard": true,
+     "level": "警戒以上"
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 4,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)",
+     "band=no は yamabiyori の go 基準(70点)未満の意味。行ってはいけない、ではない"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "mountain": "八ヶ岳(赤岳)(2899m)",
+     "region": "関東甲信",
+     "score": 51.1,
+     "hazard_class": "warning"
+    },
+    "date": "2026-10-19",
+    "mountain_id": "m002",
+    "access": "登山",
+    "detail_level": "score_only"
+   }
+  },
+  {
+   "id": "yamabiyori:explore:2026-10-19:m003",
+   "title": "横岳 2026-10-19(月)",
+   "place": {
+    "name": "横岳",
+    "lat": 35.9858,
+    "lon": 138.3728,
+    "elevation_m": 2830,
+    "region": "関東甲信",
+    "location_precision": "exact",
+    "site_ref": "yamabiyori:m003"
+   },
+   "time_window": {
+    "start": "2026-10-19T00:00:00+09:00",
+    "end": "2026-10-20T00:00:00+09:00",
+    "kind": "calendar_day"
+   },
+   "suitability": {
+    "band": "no",
+    "score": {
+     "value": 51.1,
+     "scale": "yamabiyori-0-100",
+     "go_threshold": 70.0
+    }
+   },
+   "evidence": [],
+   "constraints": [
+    {
+     "kind": "hazard",
+     "text": "危険信号:警戒以上(種別はネイティブの簡易行にない)",
+     "hard": true,
+     "level": "警戒以上"
+    }
+   ],
+   "uncertainty": {
+    "lead_days": 4,
+    "reliable_up_to_days": 3,
+    "confidence": {
+     "value": null,
+     "scale": null,
+     "method": "none",
+     "validated": false
+    },
+    "known_limits": [
+     "点数・確信度の閾値や換算は yamabiyori 側で暫定・未検証の部分がある(README「精度と限界」)",
+     "信用してよいのは3日前まで(README)",
+     "band=no は yamabiyori の go 基準(70点)未満の意味。行ってはいけない、ではない"
+    ]
+   },
+   "native_ref": {
+    "format": "yamabiyori-report-data/1",
+    "path": "yamabiyori/explore.json"
+   },
+   "details": {
+    "native_row": {
+     "mountain": "横岳(2830m)",
+     "region": "関東甲信",
+     "score": 51.1,
+     "hazard_class": "warning"
+    },
+    "date": "2026-10-19",
+    "mountain_id": "m003",
+    "access": "登山",
+    "detail_level": "score_only"
+   }
+  }
+ ],
+ "diagnostics": {
+  "api_calls": 0,
+  "cache_hit": true,
+  "runtime_s": 0.5,
+  "fetch_finished_at": "2026-10-15T05:00:00+09:00",
+  "warnings": [
+   "確信度は explore では出力されないため null",
+   "7 件は70点未満でネイティブが簡易行(mountain/region/score/hazard_class)しか出さないため、evidence は空(details.detail_level=score_only)",
+   "time_window が calendar_day(暦日で代用)の提案が 16 件: 日の出・日没を取れなかった(粗い値)"
+  ]
+ },
+ "details": {
+  "native_generated": "2026-10-12",
+  "native_mode": "explore",
+  "pool_size": 3,
+  "fetched": 3,
+  "model_runs": {
+   "jma_msm": {
+    "init": "2026-09-24T03:00:00Z",
+    "available": "2026-09-24T08:09:54Z",
+    "same_before_after": true,
+    "init_before": "2026-09-24T03:00:00Z"
+   },
+   "ecmwf_ifs025": {
+    "init": "2026-09-24T00:00:00Z",
+    "available": "2026-09-24T07:50:06Z",
+    "same_before_after": true,
+    "init_before": "2026-09-24T00:00:00Z"
+   }
+  }
+ }
+}

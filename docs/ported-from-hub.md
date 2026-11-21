@@ -31,12 +31,14 @@
 | `tests/fixtures/net_probe.py` | `tests/fixtures/stage11/agents/netbiyori/net_proposal.py` | `6940b27a826ca0e49badbac9a01fc4d532ec5ed2` | 引数を減らし、回数(`--times`)を足した |
 | `tests/test_hook.py` | `tests/test_stage11_phase2.py`(`0ff696f`)・`test_stage10_phase3.py`(`9f324bf`)・`test_stage9b.py`(`97e678c`)・`test_stage5a.py`(`73e8a4d`)のフックの部分 | 左のとおり | hub の他の部品(snapshotter など)に頼らない形にした |
 | `requirements.txt` | `requirements-hub.txt` | `846bc2b932a6170492a91db7dc3e315897aa761a` | 答える側・取得の側に要るもの(jsonschema・PyYAML とその依存)だけ。requests は入れない |
+| `concierge/dates.py` | `hub/core/dates.py` の `weekend()`・`_day_label()`・`_range()` | `97e678cacb25cfcb43870a46f58263b7b2a3c5ae` | 段階 2(2026-11-22)。`weekend` の規則はそのまま。import 先をこのパッケージ(`concierge.common` の `JST`・`WEEKDAY_JA`・`iso`)に直した(hub は `from common import …`)。`来週末`・`明日`・日付・範囲を足した。`tonight`・`days` は使わないので写していない |
+| `docs/dates.md` | `docs/dates.md` | `102700e` | 段階 2。`weekend` の表の行はそのまま。コマンドの名前と、足した規則(来週末・明日・日付・範囲)を書き直した |
+| `docs/qa.md` の試験問題(山に関係するもの)と採点の観点 | `docs/concierge-qa.md`(`8756be0`)・`docs/concierge-rubric.md`(`6b05629`) | 左のとおり | 段階 2。山に関係する問い(Q3・Q18・Q24 の状況と期待)を写した。採点の観点は R1・R5・R7・R10・R11 の考え方を、D12 の 5 条件の欄の説明に使った。R8(最後に好みを 1 つ聞く)は「答えに質問を入れない」決まり(開発指示書 2 章)と食い違うので写していない |
 
-## まだ写していないもの(段階 2 で写す)
+## まだ写していないもの
 
 | hub での場所 | 用途 |
 |---|---|
-| `hub/core/dates.py`(`97e678c`)・`docs/dates.md`(`102700e`) | 「今週末」「来週末」の計算(答える側の `--when`) |
 | `adapters/hoshibiyori_transform.py`・`docs/hoshibiyori-mapping.md` | 星の変換(段階 3。入力の形は H1 に合わせて直す) |
 
 ## 写さなかったもの(指示書 3.2)

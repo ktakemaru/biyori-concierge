@@ -1,0 +1,34 @@
+{
+ "schema": "biyori-request-log/1",
+ "started_at": "2026-10-15T05:00:00+09:00",
+ "finished_at": "2026-10-15T05:00:00+09:00",
+ "estimated_calls_note": "estimated_calls は推定(Open-Meteo の公式の換算式は未確認。config.yaml の estimated_calls)",
+ "total": {
+  "requests": 0,
+  "by_host": {},
+  "by_status": {},
+  "by_error": {},
+  "estimated_calls": 0
+ },
+ "agents": {
+  "yamabiyori": {
+   "requests": 0,
+   "by_host": {},
+   "by_status": {},
+   "by_error": {},
+   "estimated_calls": 0,
+   "aborted": null,
+   "blocked_host": null,
+   "http_429": 0,
+   "http_429_tolerated": 0
+  }
+ },
+ "metadata": {
+  "requests": 0,
+  "by_host": {},
+  "by_status": {},
+  "by_error": {},
+  "estimated_calls": 0,
+  "aborted": null
+ }
+}

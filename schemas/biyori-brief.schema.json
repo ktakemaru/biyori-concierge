@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "biyori-brief/1",
+  "title": "biyori-brief/1(答える側の資料)",
+  "description": "concierge brief が質問ごとに作る資料。答えに書いてよい事実(id つき)・決まった文・組み合わせ・知識カード・足りないもの・書くときの決まり。互換性規則: 項目の追加のみ。削除・意味の変更は版を上げる。段階 2 は山だけ(段階 3・4 で星・生き物を足す)。",
+  "type": "object",
+  "required": ["schema", "id", "question", "now", "when", "origin", "filters", "shelf", "facts", "candidates", "lines", "plans", "cards", "gaps", "rules", "limits"],
+  "properties": {
+    "schema": {"const": "biyori-brief/1"},
+    "id": {"anyOf": [{"type": "string", "pattern": "^b\\d{8}-\\d{6}-[0-9a-f]{8}$"}, {"type": "null"}]},
+    "question": {"type": "string"},
+    "now": {"$ref": "#/$defs/datetime_offset"},
+    "when": {
+      "type": "object",
+      "required": ["spec", "rule", "days", "today"],
+      "properties": {
+        "spec": {"type": "string"},
+        "rule": {"enum": ["weekend", "next_weekend", "tomorrow", "date", "range"]},
+        "days": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/day"}},
+        "today": {"type": "object", "required": ["date", "weekday"]}
+      }
+    },
+    "origin": {
+      "type": "object",
+      "required": ["name", "lat", "lon", "source"],
+      "properties": {"name": {"type": "string"}, "lat": {"type": "number"}, "lon": {"type": "number"}, "source": {"enum": ["config", "argument"]}}
+    },
+    "filters": {"type": "object", "required": ["region", "interest", "mountains"]},
+    "shelf": {
+      "type": "object",
+      "required": ["available", "problem"],
+      "properties": {
+        "available": {"type": "boolean"},
+        "problem": {"type": ["string", "null"]},
+        "data_time": {"type": ["string", "null"]},
+        "age_hours": {"type": ["number", "null"]},
+        "stale": {"type": "boolean"}
+      }
+    },
+    "facts": {"type": "array", "items": {"$ref": "#/$defs/mountain_day"}},
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["date", "counts", "outside_top_names"],
+        "properties": {
+          "counts": {
+            "type": "object",
+            "required": ["out_of_range", "region", "no_forecast", "below_threshold", "outside_top"],
+            "additionalProperties": {"type": "integer", "minimum": 0}
+          },
+          "outside_top_names": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "lines": {
+      "type": "object",
+      "required": ["data_time", "coverage", "lead_time", "attribution", "hazards"],
+      "properties": {
+        "data_time": {"$ref": "#/$defs/line_or_null"},
+        "coverage": {"$ref": "#/$defs/line_or_null"},
+        "lead_time": {"$ref": "#/$defs/line_or_null"},
+        "attribution": {"$ref": "#/$defs/line_or_null"},
+        "hazards": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["fact"]}]}}
+      }
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "date", "main", "adds"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^P\\d+$"},
+          "main": {"type": "object", "required": ["kind", "fact"], "properties": {"kind": {"enum": ["mountain", "stars", "nature"]}, "fact": {"type": "string"}}},
+          "adds": {"type": "array", "description": "添えるもの(段階 3・4 で足す。段階 2 は空)"}
+        }
+      }
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "card_id", "mountains", "text", "source", "checked", "say"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^K\\d{3}$"},
+          "source": {"type": "object", "required": ["name", "url"]},
+          "say": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "text", "say"],
+        "properties": {"id": {"type": "string", "pattern": "^G\\d+$"}, "text": {"type": "string", "minLength": 1}, "say": {"type": "array", "items": {"type": "string"}}}
+      }
+    },
+    "rules": {"type": "array", "items": {"type": "string"}},
+    "limits": {"type": "object", "required": ["max_chars", "reliable_up_to_days"]}
+  },
+  "$defs": {
+    "datetime_offset": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?(Z|[+-]\\d{2}:\\d{2})$"},
+    "day": {
+      "type": "object",
+      "required": ["date", "weekday", "label"],
+      "properties": {"date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}, "weekday": {"type": "string"}, "label": {"type": "string"}}
+    },
+    "line": {
+      "type": "object",
+      "required": ["id", "text"],
+      "properties": {"id": {"type": "string", "pattern": "^L\\d+$"}, "text": {"type": "string", "minLength": 1}, "fact": {"type": "string"}}
+    },
+    "line_or_null": {"anyOf": [{"$ref": "#/$defs/line"}, {"type": "null"}]},
+    "mountain_day": {
+      "type": "object",
+      "required": ["id", "kind", "mountain_id", "name", "elevation_m", "region", "access", "date", "weekday", "label", "score", "threshold",
+                   "rank", "detail_level", "hazards", "hazard_level", "main_ok", "main_ng", "distance_km", "distance_say", "lead_days",
+                   "reliable", "named", "selected_by", "values", "say"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^Y\\d{3}$"},
+        "kind": {"const": "mountain_day"},
+        "mountain_id": {"type": "string", "pattern": "^m\\d{3}$"},
+        "score": {"type": "number"},
+        "rank": {"type": ["integer", "null"], "minimum": 1},
+        "detail_level": {"enum": ["full", "score_only"]},
+        "hazards": {
+          "type": "array",
+          "items": {"type": "object", "required": ["kind", "label", "level"],
+                    "properties": {"kind": {"enum": ["thunder", "wind", "cold", null]}, "level": {"enum": ["注意", "警戒", "危険", "警戒以上"]}}}
+        },
+        "hazard_level": {"enum": ["注意", "警戒", "危険", null]},
+        "main_ok": {"type": "boolean"},
+        "main_ng": {"type": "array", "items": {"enum": ["below_threshold", "hazard_hard", "score_only"]}},
+        "selected_by": {"enum": ["top", "named"]},
+        "values": {
+          "type": "array",
+          "items": {"type": "object", "required": ["key", "name", "value", "unit", "say"],
+                    "properties": {"say": {"type": "array", "minItems": 1, "items": {"type": "string"}}}}
+        },
+        "say": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    }
+  }
+}

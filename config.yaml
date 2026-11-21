@@ -20,6 +20,22 @@ combo:
 answer:
   # 答えの字数の上限。仮置き(指示書 6.5)。
   max_chars: 2000
+  # 書き直しの回数の上限(verify)。3 回目も不合格なら控えの文を出す。
+  # 出典: 指示書 6.5「2 回まで。イキモノビヨリと同じ」(イキモノビヨリ data/ask/guide_mode.yaml の rewrites.max と同じ考え方)。
+  max_rewrites: 2
+
+concierge:
+  # 答える側(concierge/。段階 2)の値。棚が古いとみなす時間は collect.stale_after_hours を使う(ここには重ねて書かない)。
+  brief:
+    # 日ごとに資料へ入れる、基準点以上の山の数。仮置き(段階 2 の作業指示書 5.2)。名指しの山はこの枠と別に入れる。
+    top_per_day: 8
+    # 出発地からの直線距離の丸め方。仮置き(段階 2 の作業指示書 5.2: 10km 未満は 1km、それ以上は 5km の刻み)。
+    distance:
+      fine_below_km: 10
+      fine_step_km: 1
+      coarse_step_km: 5
+    # 山の予報で答える興味の語(schemas/biyori-vocabulary.yaml の note が yamabiyori の語)。ほかの語は「足りないもの」に入る。
+    mountain_interests: [hiking, mountains, clear_sky_summit, landscape_photo]
 
 collect:
   # 取得の側(collect/)の値。
