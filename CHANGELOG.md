@@ -1,5 +1,15 @@
 # 変更履歴
 
+## 未公開(段階 2: 山だけで、質問から答えまで通す。2026-11-22)
+
+- 答える側 `concierge/` を作った: `sync`(`git fetch origin data` → 検査してから置き場に写す。失敗しても止めない)・`status`・
+  `brief`(資料 `biyori-brief/1`。事実と書いてよい表記・決まった文・組み合わせ・知識カードの仕組み・足りないもの・書くときの決まり)・
+  `verify`(検査の一覧は `docs/answer-checks.md`。書き直し 2 回まで、3 回目は控えの文)。日付の規則は hub から写して足した(`docs/dates.md`)。
+- 手順の文書: `AGENTS.md`(正本)・`CLAUDE.md`・`.claude/skills/biyori-concierge/SKILL.md`・`docs/answer-voice.md`(書き方の手本)・`docs/brief-fields.md`。
+- 試験問題 `docs/qa.md`(10 問と採点の表)。
+- 見本の棚 `tests/fixtures/shelf/`(`tests/make_shelf_fixture.py` で今の `collect/` から作る)と、答える側のテスト。
+- 仮置きの値: `config.yaml` の `concierge.brief`(上位の件数 8・距離の丸め)と `concierge/data/verify.yaml` の語の一覧。
+
 ## 未公開(段階 2 の前の見直し。2026-11-22)
 
 - 計測フックが 429 を決まった回数まで通すようにした(D11。ブランチ `feature/hook-tolerate-429`)。新しい環境変数 `BIYORI_HTTP_429_MAX_TOTAL`

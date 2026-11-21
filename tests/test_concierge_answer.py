@@ -267,6 +267,13 @@ class Verify(unittest.TestCase):
         with mock.patch.dict(self.doc["limits"], {"max_chars": 100}):
             self.assertIn("too_long", codes(self.check(g)))
 
+    def test_the_example_in_answer_voice_passes(self):
+        from helpers import ROOT
+        text = (ROOT / "docs" / "answer-voice.md").read_text(encoding="utf-8")
+        example = text.split("## 6.", 1)[1].split("```", 2)[1].strip("\n") + "\n"
+        r = self.check(example)
+        self.assertTrue(r["ok"], r["errors"])
+
     def test_no_pick_answer_passes(self):
         L = self.doc["lines"]
         text = "\n".join(["今週末は、見送るのがよさそうです。", f"{L['data_time']['text']}[{L['data_time']['id']}]",
