@@ -6,16 +6,17 @@ from .common import NL
 
 MAX_PICKS = 3
 MAX_SKIP = 2
+MAX_NAMED_SKIP = 4      # 名指しの山の見送りの文の数の上限(長い範囲で名指しが多いとき)。仮置き
 
 
 def picks(brief):
     """日ごとの上位(順位の高い順)から、主役にできる山を日をまたいで順に 3 つまで。"""
     by_day = {}
     for f in brief["facts"]:
-        if f["main_ok"] and f["rank"]:
+        if f["main_ok"]:
             by_day.setdefault(f["date"], []).append(f)
-    for v in by_day.values():
-        v.sort(key=lambda f: (f["rank"], f["mountain_id"]))
+    for v in by_day.values():                       # 名指しで枠の外(順位なし)の山は、その日の順位つきの山のあと
+        v.sort(key=lambda f: (f["rank"] is None, f["rank"] or 0, -f["score"], f["mountain_id"]))
     out, i = [], 0
     days = sorted(by_day)
     while len(out) < MAX_PICKS and any(i < len(by_day[d]) for d in days):
@@ -41,7 +42,8 @@ def _n(v):
     return num(v)
 
 
-def draft(brief):
+def draft(brief, compact=False):
+    """compact=True: 字数の上限を超えたときの短い形(見送り・足りないものの一部を省く)。"""
     L = brief["lines"]
     chosen = picks(brief)
     hz = {h["fact"]: h for h in L["hazards"]}
@@ -52,6 +54,10 @@ def draft(brief):
         out.append(f"いちばんのおすすめは、{f['label']}の{f['name']}です。[{f['id']}]")
     elif not brief["shelf"]["available"]:
         g = next(g for g in gaps if g["kind"] == "shelf_unavailable")
+        out.append(f"{g['text']}[{g['id']}]")
+        gaps.remove(g)
+    elif not brief["facts"] and any(g["kind"] == "day_not_in_forecast" for g in gaps):
+        g = next(g for g in gaps if g["kind"] == "day_not_in_forecast")
         out.append(f"{g['text']}[{g['id']}]")
         gaps.remove(g)
     else:
@@ -66,8 +72,10 @@ def draft(brief):
             out.append(f"{hz[f['id']]['text']}[{hz[f['id']]['id']}]")
     if L["lead_time"] and any(not f["reliable"] for f in chosen):
         out.append(f"{L['lead_time']['text']}[{L['lead_time']['id']}]")
-    skip = [f for f in brief["facts"] if not f["main_ok"] and f["named"]]
+    skip = [f for f in brief["facts"] if not f["main_ok"] and f["named"]][:MAX_NAMED_SKIP]
     skip += [f for f in brief["facts"] if not f["main_ok"] and not f["named"] and "hazard_hard" in f["main_ng"]][:MAX_SKIP]
+    if compact:
+        skip, gaps = skip[:1], [g for g in gaps if g["kind"] in ("no_safety_info", "shelf_unavailable", "day_not_in_forecast")]
     if skip:
         out.append("")
     for f in skip:

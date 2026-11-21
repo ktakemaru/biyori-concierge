@@ -289,7 +289,8 @@ def check(draft, brief):
         # 種類 C(山の安全): 危険信号の事実・知識カード・足りないものの印、または「判断できません」の形
         sc = _has_any(exempt_re.sub(" ", t), W["safety"])
         if sc and not exempt:
-            basis = "G" in kinds or "K" in kinds or any(X.ids[i][0] == "Y" and X.ids[i][1]["hazards"] for i in ids)
+            hazard_fact = any(X.ids[i][0] == "Y" and X.ids[i][1]["hazards"] for i in ids)
+            basis = "G" in kinds or "K" in kinds or (hazard_fact and all(w in W["safety_hazard_ok"] for w in sc))
             if not basis:
                 errs.append(_err("safety_without_basis", s, f"山の安全に関わる語「{'・'.join(sc[:3])}」に裏づけがない",
                                  "資料に無いなら「この予報からは判断できません」の形で書き、足りないものの印 [G…] を付ける"))
@@ -409,6 +410,8 @@ def run(draft_text, bid, base, now):
         status, text = "PASS", r["final"]
     elif rewrites >= mx:
         fb = check(F.draft(b), b)
+        if not fb["ok"]:                         # 長すぎるなどで控えの文が通らなければ、短い形にする(必ず答えを出す)
+            fb = check(F.draft(b, compact=True), b)
         status, text = "FALLBACK", fb["final"]
     else:
         status, text = "FAIL", None

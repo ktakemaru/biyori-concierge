@@ -15,12 +15,12 @@ from pathlib import Path
 
 import yaml
 
-from collect.common import SCHEMAS, schema_errors
+from collect.common import SCHEMAS
 from collect.yamabiyori import GO_THRESHOLD, HAZARD_HARD, RELIABLE_UP_TO_DAYS
 
 from . import dates as D
 from . import shelf as S
-from .common import DATA, JST, WEEKDAY_JA, config, dump_json, iso, md_label, parse_iso, read_json, write_text
+from .common import DATA, JST, WEEKDAY_JA, brief_schema_errors, config, dump_json, iso, md_label, parse_iso, read_json, write_text
 from .texts import coverage_counts, data_time_label, runs_text
 
 SCHEMA = "biyori-brief/1"
@@ -318,7 +318,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
         else:
             lines["data_time"] = f"山の予報は {lab} 時点のものです({runs_text(e.get('model_runs'))})。"
         if e.get("status") == "kept_previous":
-            lines["data_time"] = lines["data_time"][:-1] + "最新の取得がうまくいかなかったため、前の回の予報を使っています。"
+            lines["data_time"] += "最新の取得がうまくいかなかったため、前の回の予報を使っています。"
         total, pool, fetched = coverage_counts(e)
         if e.get("status") == "incomplete" or (pool is not None and fetched is not None and fetched < pool):
             lines["coverage"] = f"山は、ヤマビヨリの {total} 座のうち {fetched} 座だけを調べた予報です(調べられなかった山があります)。"
@@ -463,7 +463,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
                       "top_per_day": bc["top_per_day"], "max_straight_line_km": max_km}}
     h = hashlib.sha256(json.dumps(doc, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:8]
     doc["id"] = f"b{now.astimezone(JST).strftime('%Y%m%d-%H%M%S')}-{h}"
-    errs = schema_errors(doc, "biyori-brief")
+    errs = brief_schema_errors(doc)
     if errs:
         raise RuntimeError("資料がスキーマに合わない(コードの不具合): " + "; ".join(errs[:5]))
     return doc

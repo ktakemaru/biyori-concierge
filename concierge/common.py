@@ -58,6 +58,21 @@ def config():
     return _merge(base_config(), _local_config())
 
 
+SCHEMA_DIR = PKG / "schemas"     # 答える側のスキーマ(資料 biyori-brief/1)。リポジトリ直下の schemas/ は棚・提案の契約
+
+
+@lru_cache(maxsize=None)
+def _brief_schema():
+    return json.loads((SCHEMA_DIR / "biyori-brief.schema.json").read_text(encoding="utf-8"))
+
+
+def brief_schema_errors(doc):
+    """資料のスキーマの検査。→ エラーの文のリスト(空なら合格)。"""
+    from jsonschema import Draft202012Validator
+    v = Draft202012Validator(_brief_schema())
+    return [f"{'/'.join(map(str, e.absolute_path)) or '(root)'}: {e.message}" for e in v.iter_errors(doc)]
+
+
 @lru_cache(maxsize=None)
 def verify_rules():
     return yaml.safe_load((DATA / "verify.yaml").read_text(encoding="utf-8"))

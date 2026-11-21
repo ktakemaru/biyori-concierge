@@ -6,7 +6,7 @@ from unittest import mock
 
 from concierge_helpers import NOW, QUESTION, base_with_shelf, build, edit_json, fact, line_for, make_hazard
 
-from collect.common import schema_errors
+from concierge.common import brief_schema_errors
 from helpers import tmpdir
 from concierge import brief as B
 from concierge import fallback as F
@@ -45,7 +45,7 @@ class Brief(unittest.TestCase):
 
     def test_schema_and_candidates(self):
         doc = build(self.base)
-        self.assertEqual(schema_errors(doc, "biyori-brief"), [])
+        self.assertEqual(brief_schema_errors(doc), [])
         self.assertEqual([d["date"] for d in doc["when"]["days"]], ["2026-10-17", "2026-10-18"])
         self.assertEqual([(f["id"], f["name"], f["rank"]) for f in doc["facts"]],
                          [("Y001", "八ヶ岳(赤岳)", 1), ("Y002", "横岳", 2), ("Y003", "谷川岳", 3),
@@ -64,6 +64,22 @@ class Brief(unittest.TestCase):
         self.assertEqual(doc["cards"], [])
         self.assertIn("no_safety_info", [g["kind"] for g in doc["gaps"]])
         self.assertIn("no_stars_creatures", [g["kind"] for g in doc["gaps"]])
+
+    def test_brief_schema_is_a_valid_schema(self):
+        from jsonschema import Draft202012Validator
+        from concierge.common import SCHEMA_DIR
+        d = json.loads((SCHEMA_DIR / "biyori-brief.schema.json").read_text(encoding="utf-8"))
+        Draft202012Validator.check_schema(d)
+        self.assertEqual(d["$id"], "biyori-brief/1")
+
+    def test_kept_previous_line_is_two_sentences(self):
+        def kept(d):
+            edit_json(d / "manifest.json", lambda m: m["agents"]["yamabiyori"].update(status="kept_previous", kept_from="2026-10-15T05:00:00+09:00", reason="rate_limited"))
+        doc = build(base_with_shelf(self, edit=kept))
+        t = doc["lines"]["data_time"]["text"]
+        self.assertIn("の回)。最新の取得がうまくいかなかったため、前の回の予報を使っています。", t)
+        r = V.check(F.draft(doc), doc)
+        self.assertTrue(r["ok"], r["errors"])
 
     def test_same_input_same_bytes(self):
         a = B.save(build(self.base), self.base)[0].read_bytes()
@@ -224,9 +240,16 @@ class Verify(unittest.TestCase):
                 self.assertIn("safety_without_basis", codes(r))
         y1 = fact(self.doc, "八ヶ岳", "2026-10-17")["id"]                    # 危険信号(注意)つきの事実
         r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", f"八ヶ岳(赤岳)は90.4点なので安全に登れます。[{y1}]"))
-        self.assertIn("safety_assertion", codes(r))                         # 安全の言い切りは危険信号の印では通さない
+        self.assertTrue({"safety_assertion", "safety_without_basis"} & set(codes(r)), codes(r))   # 安全の言い切りは危険信号の印では通さない
+        r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", f"防寒すれば安全に歩けます。[{self.doc['gaps'][0]['id']}]"))
+        self.assertIn("safety_assertion", codes(r))                         # 足りないものの印でも、言い切りは通さない
         r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", f"八ヶ岳(赤岳)は低体温症注意なので防寒に気をつけます。[{y1}]"))
         self.assertTrue(r["ok"], r["errors"])                               # 危険信号の事実の印があれば、注意の文は通す(作業指示書 6.2)
+        for bad in (f"八ヶ岳(赤岳)は初心者向けの山です。[{y1}]", f"八ヶ岳(赤岳)に岩場はありません。[{y1}]",
+                    f"八ヶ岳(赤岳)は凍結の心配がない見込みです。[{y1}]"):
+            with self.subTest(bad):                                         # 危険信号の事実の印では、難しさ・岩場・凍結は通さない
+                r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", bad))
+                self.assertIn("safety_without_basis", codes(r))
         ok = "凍結や積雪があるかどうかは、この予報からは判断できません。"
         r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", ok))
         self.assertTrue(r["ok"], r["errors"])
@@ -347,6 +370,22 @@ class Rewrites(unittest.TestCase):
                 r = V.check(F.draft(doc), doc)
                 self.assertTrue(r["ok"], (label, r["errors"]))
                 self.assertIn(doc["lines"]["attribution"]["text"], r["final"])
+
+    def test_fallback_conclusion_matches_the_plans(self):
+        base = base_with_shelf(self)
+        doc = build(base, mountains=["谷川岳", "見本山"], region=["北陸信越"])
+        self.assertTrue(doc["plans"])
+        self.assertTrue(F.draft(doc).startswith("いちばんのおすすめは、"))          # 名指しで主役にできる山を落とさない
+        doc = build(base, when="来週末")
+        self.assertTrue(F.draft(doc).startswith("10月24日(土)・10月25日(日)の山の予報は、今回の予報の範囲にありません。"))
+
+    def test_long_fallback_is_shortened_and_still_passes(self):
+        base = base_with_shelf(self)
+        doc = build(base, when="2026-10-12..2026-10-19", mountains=["谷川岳", "八ヶ岳"])
+        with mock.patch.dict(doc["limits"], {"max_chars": 900}):
+            self.assertFalse(V.check(F.draft(doc), doc)["ok"])
+            r = V.check(F.draft(doc, compact=True), doc)
+            self.assertTrue(r["ok"], r["errors"])
 
 
 if __name__ == "__main__":

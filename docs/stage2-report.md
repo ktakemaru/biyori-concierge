@@ -11,7 +11,7 @@
 | 変更前のテスト | 165 件、OK |
 | 棚(`origin/data`) | ヤマビヨリ `version` 1.10.1・`data_time` 2026-11-22T07:32:20+09:00・`status` ok・`coverage` 76 座のうち 76 座(手動実行、229 件・333 秒・429 なし)。新しい棚なので、本物の棚で確かめられた |
 | `C:/biyori-hub` | あり(HEAD `694371c`)。`hub/core/dates.py`(`97e678c`)・`docs/dates.md`(`102700e`)・`docs/concierge-qa.md`(`8756be0`)・`docs/concierge-rubric.md`(`6b05629`) |
-| イキモノビヨリ | `docs/guide-mode.md`・`docs/guide-voice.md`・`guide_brief.py`・`guide_verify.py` を読んだ(import・写しはしていない。書き直しの回数の数え方・文の分け方・行の頭の印の扱いをそろえた) |
+| イキモノビヨリ | `docs/guide-mode.md`・`docs/guide-voice.md` は全部、`guide_verify.py` は下書きの読み方・文の分け方・書き直しの回数の数え方(`run()`)・不合格の理由の出し方、`guide_brief.py` は資料の id の作り方(`brief_id()`。質問と時刻のハッシュ)と控えの文の持ち方だけを読んだ(import・写しはしていない)。そろえたもの: 書き直し 2 回・3 回目で控え、行の頭の印は前の文のもの、標準出力 3 行。違うもの: 資料の id は内容と `--now` のハッシュ、控えの文は照合のときに資料から作る(イキモノビヨリは資料を作るときに今までの形の答えを入れておく) |
 | ヤマビヨリ(`fdadece`) | (a) 信用してよい範囲: README「精度と限界」(3日前まで・14日表示は傾向)、`skills/yamabiyori/SKILL.md` の description。(b) `--json-out` の列: `mountain_weather_mvp.py` の `print_ranking_table()` の列名、README 探索モードの表の説明、`report_data.py` の `ROW_KEYS`。(c) 危険信号の段階の語: README「危険信号はスコアに混ぜない…注意 / 警戒 / 危険」、`hazard_warning_cell()`、`report_data.py` の `hazard_class()` |
 
 **開発指示書・この指示書との食い違い(開発指示書を正として進めた)**
@@ -19,7 +19,8 @@
 1. 名指しの山が直線 250km より遠いとき: 作業指示書 5.1 は「名指しの山は必ず資料に入れる」、開発指示書 2 章は「250km を超える候補は出さない」。2 章を正とし、「足りないもの」に入れた。
 2. 開発指示書 5.1 に「定期実行は段階 5 までは on にしない」とあり、8 章の段階 2 には「山だけの定期実行を on にする手順を報告書に書く」とある。手順は 7 章に書いた。on にするかどうかは利用者が決める(8 章)。
 3. `collect/__init__.py` の説明に「答える側はこのパッケージを import しない」とある。作業指示書 4.1 は「通信しない部品は使ってよい」。作業指示書に従った(`collect.common`・`collect.shelf` の検査・`collect.yamabiyori` の定数だけを使う)。`collect/` は変えられないので、説明の文は直していない。
-4. 新しいスキーマ `schemas/biyori-brief.schema.json` を置いたので、`tests/test_repo_rules.py` の「スキーマのファイルの一覧」に 1 つ足した。期待値の変更だが、作業指示書が求めるファイルを足すための変更なので、止まる条件 4 には当たらないと判断した(8 章で確かめてほしい)。
+4. **止まる条件 4 に当たった(この部分だけ)。** 作業指示書は資料のスキーマを `schemas/biyori-brief.schema.json` に置くよう求めている。ところが既存のテスト `tests/test_repo_rules.py` が `schemas/*.schema.json` の一覧を 5 つに決めて確かめているため、そこに置くとテストの期待値を書き換えないと通らない。
+   いったん一覧に 1 行足したが、決まりに合わないので戻し(`tests/test_repo_rules.py` は main と同じ)、スキーマを **`concierge/schemas/biyori-brief.schema.json`** に置いた(読み込みは `concierge.common.brief_schema_errors`。正しいスキーマであることは `tests/test_concierge_answer.py` で確かめる)。`schemas/` に移すかは 8 章。
 5. hub の評価表の R8(最後に好みを 1 つ聞く)は「答えに質問を入れない」決まりと食い違うので、`docs/qa.md` に写していない。
 
 ## 2. できたこと
@@ -31,7 +32,8 @@
 | 4 | `5550df6` | `AGENTS.md`(正本)・`CLAUDE.md`・`.claude/skills/biyori-concierge/SKILL.md`・`docs/answer-voice.md`・README・CHANGELOG |
 | 5 | `6bccb57` | `docs/qa.md`。通しの試しで見つけた止めすぎ・通しすぎの直し(下の 4 章) |
 | 6 | `703cd13` | `collect.yml`: 定期実行で取るビヨリを変数 `BIYORI_COLLECT_AGENTS` で選ぶ(未設定・それ以外は `yamabiyori`)。別の commit |
-| 7 | (この報告書の commit) | `docs/stage2-report.md` |
+| 7 | `ca73d45` | `docs/stage2-report.md` と CHANGELOG |
+| 見直し | (このあとの最後の commit) | スキーマを `concierge/schemas/` へ移し、`tests/test_repo_rules.py` を main に戻した。種類 C の検査を締めた。`kept_previous` の決まった文の句点。控えの文(名指しの山・予報の範囲の外・長すぎるとき) |
 
 設計で決めたこと(作業指示書に書いていない細部):
 
@@ -44,12 +46,12 @@
 
 ## 3. テストの結果
 
-- 変更前 165 件 → 変更後 **209 件、OK**(`python -X utf8 -m unittest discover -s tests`)。ソケット禁止のまま。
+- 変更前 165 件 → 変更後 **213 件、OK**(`python -X utf8 -m unittest discover -s tests`)。ソケット禁止のまま。
 - 足したテスト:
-  - `tests/test_concierge_answer.py` 28 件(資料・照合・書き直しと控えの文。受け入れ条件を 1 つずつ。手本 `docs/answer-voice.md` の例が照合に通ること)
+  - `tests/test_concierge_answer.py` 32 件(資料・照合・書き直しと控えの文。受け入れ条件を 1 つずつ。手本 `docs/answer-voice.md` の例が照合に通ること。資料のスキーマが正しいこと)
   - `tests/test_concierge_base.py` 14 件(日付・置き場・`sync`(一時の git リポジトリ)・`status`・コマンドの形・通信の部品を import しないこと・リポジトリに書かないこと)
   - `tests/test_workflows.py` に 2 件(変数 `BIYORI_COLLECT_AGENTS` の値ごとの `AGENTS`、停止スイッチと publish の条件が変わらないこと)
-  - `tests/test_repo_rules.py` のスキーマの一覧に 1 つ足した(件数は同じ)
+  - `tests/test_repo_rules.py` は変えていない(1 章の 4)
 
 ## 4. 通しの試しの結果
 
@@ -77,6 +79,13 @@
 2. 「点数が**いちばん**高い権現岳は見送る」を、おすすめの文として止めていた(止めすぎ)。おすすめの語から「いちばん・一番」を外し、「見送」を含む文は見ないようにした。
 3. 「富士山(剣ヶ峰)は100点なので登れます。[危険信号つきの事実]」が通った(通しすぎ)。作業指示書 6.2 は「種類 C の語は、危険信号の事実の印があれば通す」だが、安全の言い切り(登れます・安全・大丈夫・初心者でも など)は、知識カードの印があるときだけ通すように締めた(`safety_assertion`)。
 4. 印を取り除いたあとに空白が残っていた(「です。 次の文」)。取り除くようにした。
+5. 見直しで分かったこと: 危険信号のある事実の印があれば、「初心者向けの山です」「岩場はありません」「凍結の心配がない」も通っていた(作業指示書 6.2 のとおりだが、これでは問い 3・6 の答えを守れない)。危険信号の事実の印で通すのは、防寒・雨具・引き返す・装備の語だけにした(`safety_hazard_ok`)。
+6. 前回のファイルを残した回(`kept_previous`)の決まった文が「…の回)最新の取得が…」と句点が抜けていた。直してテストを足した。
+7. 控えの文の直し:
+   - 名指しで枠の外にある、主役にできる山を落として「条件のそろった山はありません」と書いていた。
+   - 予報の範囲の外の日に「見送るのがよさそう」と書いていた。範囲の外だと言うようにした。
+   - 長い範囲で字数を超えたら、短い形にして必ず答えを出すようにした。
+   - 本物の棚の 10 問と、14 日の範囲(名指し 2 座・事実 147 件)で、控えの文が照合に通ることを確かめた。
 
 **直していないもの(通しすぎ・止めすぎ)**
 
@@ -136,6 +145,7 @@
 | `concierge/brief.py` `VALUE_FIELDS` | 「約」の表記の丸めの刻み(各単位で 1。視程は km にして 1) |
 | `concierge/dates.py` `MAX_RANGE_DAYS` | 31 日(範囲の長さの上限) |
 | `concierge/shelf.py` `GIT_TIMEOUT_S` | 120 秒(git の 1 コマンドの上限) |
+| `concierge/fallback.py` `MAX_SKIP`・`MAX_NAMED_SKIP` | 控えの文の見送りの文の数: 危険信号で外した山 2・名指しの山 4 |
 | `concierge/data/verify.yaml` | 全部: 単位・数え方の語、天気の語(と、天気でない語)、危険信号の語、安全の語・言い切りの語・通す言い方、おすすめの語、内部の言葉、問いかけ・提案の形、英語の形(3 語)、宿の名前の形、山の名前の形とふつうの語、ほかのビヨリの語 |
 
 出典のある値: 基準点 70 点・信用してよい範囲 3 日(`collect/yamabiyori.py` の定数とヤマビヨリの README)、書き直し 2 回(開発指示書 6.5)、半日 12 時間(`collect.stale_after_hours`)、250km・横浜(開発指示書 2 章)、山に関係する興味の語(語彙の note)。
@@ -158,7 +168,7 @@
 
 ### 2. 自分で 1 問試す(Claude Code のウィンドウ)
 
-1. スキルを読み込ませるため、`C:\biyori-concierge` の Claude Code を閉じて、開き直す(`/clear` でもよい)。ブランチは `feature/stage2-mountain-answers` のまま。
+1. スキルを読み込ませるため、`C:\biyori-concierge` の Claude Code を閉じて、開き直す。ブランチは `feature/stage2-mountain-answers` のまま。
 2. 入力欄に「今週末、登山に行くならどこ?」と打つ。
 3. 成功の見分け方:
    - 途中で `python -X utf8 -m concierge sync`・`brief`・`verify` が動く(許可を聞かれたら許可する)。
@@ -185,8 +195,10 @@
 
 1. **Stop フック**(`verify` を通さずに答えを送ると止める仕組み。イキモノビヨリにある)を作るか。今は `AGENTS.md` の手順で守るだけ。
 2. **枠の外から主役にできる山を足す規則**(`main_ok_min` 3)を残すか。残さないと、冬は「おすすめにできる山がない」答えが多くなる。上位 8 座の数・同点の並べ方(今は山の ID の順)も。
-3. **安全の言い切りの扱い**: 知識カードの印だけで通す(作業指示書 6.2 より厳しくした)ままでよいか。足りないものの印 `[G…]` だけで種類 C の語が通る点も締めるか。
-4. **`tests/test_repo_rules.py` のスキーマの一覧に 1 つ足した**こと(1 章の 4)を受け入れるか。
+3. **種類 C の扱い**: 作業指示書 6.2 より厳しくした 2 点のままでよいか。足りないものの印 `[G…]` だけで種類 C の語が通る点も締めるか。
+   - 安全の言い切りは、知識カードの印があるときだけ通す。
+   - 危険信号の事実の印で通す語は、防寒・雨具・引き返す・装備だけ。
+4. **資料のスキーマの置き場**: 今は `concierge/schemas/biyori-brief.schema.json`。`schemas/` に移すなら、`tests/test_repo_rules.py` のスキーマの一覧に `biyori-brief.schema.json` の 1 行を足してよいと決めてもらう必要がある(1 章の 4)。
 5. **山だけの定期実行を今 on にするか**(開発指示書 5.1「段階 5 までは on にしない」との関係)。
 6. 好みで決まる仮置き: 距離の丸め(5km の刻み)、答えの字数の上限(2,000 字)、「約」の表記の丸めの刻み。
 
