@@ -11,7 +11,13 @@
 
 ## 1. 山の一覧(`yamabiyori/mountains.json`、スキーマ `biyori-mountains/1`)
 
-`mountain_weather_core.py` の `MOUNTAINS` を ast で読む(実行しない)。`id` は並び順の 1 始まり `m001`〜。イキモノビヨリ `data/sites.yaml` の `site_ref: yamabiyori:mNNN` と同じ付け方(イキモノビヨリ側は commit `de66f10` の並びを一度だけ写したもの。並びが変わったときの突き合わせは段階 4 で確かめる)。
+`mountain_weather_core.py` の `MOUNTAINS` を ast で読む(実行しない)。`id` は各要素の `"id"`(`m001`〜。ヤマビヨリ 1.10.0 から)をそのまま使い、並び順では作らない(指示書 D10。2026-11-22)。イキモノビヨリ `data/sites.yaml` の `site_ref: yamabiyori:mNNN` と同じ名前(ヤマビヨリの最初の ID は 2026-11-16 時点の並び順の番号を固定したもの)。
+
+次のときは山の一覧を読めないとして、そのビヨリを `failed`(理由 `mountains_unreadable`)にする(子プロセスを起動する前に分かる。`load_mountains()`):
+
+- `id` が無い要素がある(古い版のヤマビヨリ)。並び順で作る形に戻す逃げ道は作らない。
+- `id` が文字列でない、または `m` + 数字 3 桁の形でない(ヤマビヨリの決まりでは利用者が足す山は `u001`〜 だが、その仕組みはまだ無く、棚のスキーマも `^m\d{3}$` なので今は通さない)。
+- 同じ `id` が 2 つ以上ある。
 
 ## 2. 提案(proposals[])
 
@@ -20,7 +26,7 @@
 | `id` | `yamabiyori:explore:{date}:{山のID}` | 例 `yamabiyori:explore:2026-10-12:m002` |
 | `title` | `{山名} {label}` | `label` は `2026-10-12(月)` 形式 |
 | `place.name` | `rows[].mountain` の末尾 `(NNNNm)` を除いた名前 | |
-| `place.lat`/`lon`/`elevation_m`/`region` | `MOUNTAINS` の、名前と標高が一致する 1 件 | 0 件・複数件なら提案を作らず警告(座標を推測しない)。`status: partial` |
+| `place.lat`/`lon`/`elevation_m`/`region` | 行に `id` があれば、山の一覧の同じ `id` の山(ヤマビヨリ 1.10.0 からの `--json-out`。`rows[]`・`all[]` とも)。行に `id` が無い・`null` のときだけ、`MOUNTAINS` の名前と標高が一致する 1 件(古い棚・76 座に無い山)(2026-11-22) | 名前と標高で 0 件・複数件、行の `id` が一覧に無い、`id` で引いた山の名前が行の名前(末尾の `(NNNNm)` を除く)と違う(ID のずれ)ときは、提案を作らず `diagnostics.warnings` に書く(座標を推測しない)。`status: partial` |
 | `place.site_ref` | `yamabiyori:{山のID}` | |
 | `time_window` | 日の出・日没があれば `activity_window` = 日の出−1 時間 〜 日没+30 分(`mountain_weather_mvp.py:89` `TRIP_START_OFFSET_HOURS = -1`、`:149` `ACTIVITY_END_GRACE_MINUTES = 30`)。日の出・日没は、取得のあとにヤマビヨリの `cache/ecmwf_ifs025_{lat:.4f}_{lon:.4f}_15d.json` の `daily.sunrise/sunset` を読むだけで取る。なければ暦日(00:00〜翌 00:00 +09:00)で `calendar_day`(粗い値) | |
 | `suitability.band` | `score >= 70` → `go`、未満 → `no`(ちょうど 70 は go) | `mountain_weather_mvp.py:63` `MIN_SCORE_THRESHOLD = 70.0`。`no` は「ヤマビヨリの基準(70 点)未満」の意味で「行ってはいけない」ではない |

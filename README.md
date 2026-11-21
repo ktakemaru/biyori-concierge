@@ -8,6 +8,7 @@
 - **取得の側**(`collect/`、GitHub Actions の `collect.yml`): ヤマビヨリ(`ktakemaru/yamabiyori` の main)を取り出して通常のコマンドで実行し、
   結果を `data` ブランチ(棚)に置きます。Open-Meteo への通信はここだけで、計測フック(`collect/measure/`)で
   許可ホスト以外への送信を止め、回数を数え、429 で即中止します。定期実行はリポジトリの変数 `BIYORI_COLLECT_SCHEDULE` が `on` のときだけ動きます。
+  山の ID(`m001`〜)は、ヤマビヨリの `MOUNTAINS` の `id` をそのまま使います(並び順では作りません。`id` の無い古いヤマビヨリは読めないとして止まります)。
 - **答える側**(`concierge/`): 段階 2 から。棚を読むだけで、Open-Meteo には通信しません。
 
 棚の形式は `schemas/biyori-shelf.schema.json`(manifest)ほか。対応表は `docs/yamabiyori-mapping.md`。
