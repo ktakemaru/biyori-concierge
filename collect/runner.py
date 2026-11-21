@@ -3,7 +3,9 @@
 - 起動はシェルを介さず引数の配列で、`-X utf8` を付ける(呼び出し側が argv に入れる。ここで検査する)。
 - フック(collect/measure/sitecustomize.py)を PYTHONPATH で必ず付ける。許可ホスト・上限・記録先は環境変数で渡す。
 - 記録先は絶対パス(フックは相対パスなら通信前に止まる)。
-- 429 はフックが即中止する(終了コード 75)。ここでは再試行しない。"""
+- 429 はフックが即中止する(終了コード 75)。ただし max_429(config.yaml の http_429_max_total)を渡したときだけ、
+  フックは実行全体でその回数まで 429 を通す(BIYORI_HTTP_429_MAX_TOTAL。指示書 5.2・D11)。待つ・やめるの判断はビヨリが行う。
+  ここでは再試行しない。メタデータの取得(meta_fetch.py)と診断(diag_probe.py)は max_429 を渡さないので、今までどおり 429 は即中止。"""
 import math
 import os
 import subprocess
@@ -35,6 +37,16 @@ class ChildResult:
     @property
     def rate_limited(self):
         return any(r.get("status") == 429 for r in self.records)
+
+    @property
+    def http_429(self):
+        """この回の 429 の回数(フックに通されたものも、中止のきっかけになったものも数える)。"""
+        return sum(r.get("status") == 429 for r in self.records)
+
+    @property
+    def http_429_tolerated(self):
+        """フックが通した(子プロセスを止めなかった)429 の回数。"""
+        return sum(bool(r.get("rate_limit_tolerated")) for r in self.records)
 
     @property
     def hook_aborted(self):
@@ -90,12 +102,15 @@ def read_request_log(path):
     return recs, abort
 
 
-def run_hooked(argv, *, cwd, req_log, max_requests, allow, timeout_s, extra_env=None, base_env=None):
-    """計測フックつきで1回だけ起動する(再試行しない)。"""
+def run_hooked(argv, *, cwd, req_log, max_requests, allow, timeout_s, extra_env=None, base_env=None, max_429=None):
+    """計測フックつきで1回だけ起動する(再試行しない)。max_429 が 1 以上なら BIYORI_HTTP_429_MAX_TOTAL として渡す
+    (無い・0 なら渡さない = 429 は 1 回で即中止)。親の環境の同じ名前の変数は hook_env が捨てる(BIYORI_*)。"""
     check_argv(argv)
     req_log = Path(req_log)
     req_log.parent.mkdir(parents=True, exist_ok=True)
     env = hook_env(req_log, max_requests, allow, base=base_env, extra=extra_env)
+    if max_429:
+        env["BIYORI_HTTP_429_MAX_TOTAL"] = str(int(max_429))
     started = now_jst()
     t0 = time.perf_counter()
     timed_out = False
@@ -156,5 +171,6 @@ def child_summary(res: ChildResult):
     s = summarize(res.records, res.abort)
     s.update(started_at=iso(res.started_at), finished_at=iso(res.finished_at), runtime_s=res.runtime_s,
              returncode=res.returncode, timed_out=res.timed_out, rate_limited=res.rate_limited,
+             http_429=res.http_429, http_429_tolerated=res.http_429_tolerated,
              blocked_host=res.blocked_host)
     return s

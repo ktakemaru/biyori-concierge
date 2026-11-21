@@ -79,6 +79,8 @@ def build_manifest(run, previous, outcome):
         if how is None:
             continue
         this_run = {"requests": (r or {}).get("requests", 0), "runtime_s": (r or {}).get("runtime_s", 0.0)}
+        if r and r.get("http_429") is not None:         # 429 の回数(この回の実行の値。成功した回でも残す。指示書 5.2)
+            this_run.update(http_429=r["http_429"], http_429_tolerated=r.get("http_429_tolerated") or 0)
         if how == "new":
             e = {"status": r["status"], **{k: r.get(k) for k in ENTRY_KEYS}, **this_run, "kept_from": None,
                  "files": sorted(AGENT_FILES[agent])}
@@ -104,6 +106,19 @@ def build_manifest(run, previous, outcome):
                       "agents.*.model_runs はそのビヨリのファイルを取得したときの予報の回。最上位の model_runs はこの回の実行のもの",
                       "requests・runtime_s はこの回の実行の値。kept_previous のとき commit・version・data_time・coverage・attempts は残したファイルのもの",
                       "status: incomplete は、この回のファイルに入れ替えたが全座はそろっていない(coverage の fetched / pool_size)"]}
+
+
+def rate_limit_text(run):
+    """まとめの「429」の行: 回数と結果が分かる文。どのビヨリにも 429 が無ければ「なし」。"""
+    parts = []
+    for a, r in (run.get("agents") or {}).items():
+        n, st = r.get("http_429") or 0, r.get("status")
+        if st == "rate_limited":
+            parts.append(f"{a} {n} 回({r.get('reason')}。取り直しの回は始めず、棚は前回のまま)" if n
+                         else f"{a}({r.get('reason')}。棚は前回のまま)")
+        elif n:
+            parts.append(f"{a} {n} 回(待って取り直し、全座そろった)" if st == "ok" else f"{a} {n} 回({st})")
+    return "、".join(parts) if parts else "なし"
 
 
 def prepare(artifact, existing, out):
@@ -204,6 +219,5 @@ def render_summary(artifact):
     lines.append(f"- メタデータ(meta.json): {md.get('requests')} 件、ステータス別 {md.get('by_status')}、失敗の種類 {_tally(md.get('by_error'))}")
     blocked = [f"{a}: {x.get('blocked_host')}" for a, x in (logs.get("agents") or {}).items() if x.get("blocked_host")]
     lines.append(f"- 止められたホスト: {', '.join(blocked) if blocked else 'なし'}")
-    rl = [a for a, r in (run.get("agents") or {}).items() if r.get("status") == "rate_limited"]
-    lines.append(f"- 429: {'あり(' + ', '.join(rl) + ')' if rl else 'なし'}")
+    lines.append(f"- 429: {rate_limit_text(run)}")
     return "\n".join(lines) + "\n"

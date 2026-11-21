@@ -9,6 +9,8 @@
   raw/                          フックの記録(JSONL)と標準出力の末尾(ヤマビヨリは回ごと: yamabiyori-<回>-*)。artifact にだけ残し、棚には載せない
 
 ビヨリの失敗(終了コード≠0・429・フックの中止・出力の形が違う)は、そのビヨリを status≠ok にするだけで、ほかのビヨリは続ける。
+429 があった回は、フックに止められず・終了コード 0・出力が正しく・全部の山がそろった(fetched = pool_size)ときだけ成功(待って取り直せた回)。
+それ以外は rate_limited で、取り直しの回を始めない(指示書 5.2・D11。2026-11-22)。
 ヤマビヨリが対象の山を全部は取れなかった回(explore.json の fetched < pool_size)は status: incomplete(ok にしない)。
 """
 import re
@@ -38,10 +40,16 @@ def _fail(reason, **kw):
     return dict({"status": "failed", "reason": reason}, **kw)
 
 
-def _attempt_failure(res, native_problems=None, has_output=True):
-    """1 回の実行の結果 → (状態, 理由, 詳しく) または None(成功)。"""
+def _attempt_failure(res, native_problems=None, has_output=True, native=None, tolerate_429=False):
+    """1 回の実行の結果 → (状態, 理由, 詳しく) または None(成功)。
+    429 があった回: tolerate_429(config.yaml の http_429_max_total が 1 以上)のときだけ、フックに止められず・終了コード 0・
+    出力が正しく・fetched = pool_size なら成功(待って取り直せた回)。それ以外は rate_limited。
+    tolerate_429 でなければ、今までどおり 429 があれば rate_limited。"""
     if res.rate_limited:
-        return "rate_limited", "rate_limited", None
+        clean = (tolerate_429 and not res.hook_aborted and not res.timed_out and res.returncode == 0 and has_output
+                 and not native_problems and isinstance(native, dict))
+        if not (clean and native["fetched"] >= native["pool_size"]):
+            return "rate_limited", "rate_limited", None
     if res.timed_out:
         return "failed", "timeout", None
     if res.blocked_host:
@@ -64,7 +72,9 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs
     ヤマビヨリは変えない。取れた山の通信はヤマビヨリのキャッシュ(cache/、3 時間)で通信なしになる
     (mountain_weather_core.py の fetch_open_meteo。docs/collect-run4-analysis.md 7 章)。回ごとの通信の回数を残すので、計測フックの数で確かめられる。
     上限: 通信の回数(max_requests)は全部の回の合計。時間(total_timeout_s)も全部の回の合計で、超えたら次の回を始めない。
-    2 回目以降が失敗したとき: 429 ならこのビヨリは rate_limited(指示書 5.2: 429 は即中止)、許可外のホストなら failed。
+    429(指示書 5.2・D11): http_429_max_total を、フックが実行全体で通す 429 の回数として子プロセスに渡す(ヤマビヨリが 1 分の上限で待って取り直せるように)。
+    429 があった回は、全部の山がそろったときだけ成功。そろわなければ rate_limited で、取り直しの回を始めない(1 回目でも 2 回目以降でも)。
+    2 回目以降が失敗したとき: 429 ならこのビヨリは rate_limited、許可外のホストなら failed。
     それ以外(時間切れ・上限・終了コード≠0 など)は取り直しをやめ、それまでで最も多く取れた回の出力を使う。"""
     cfg = cfg or config()["collect"]["agents"]["yamabiyori"]
     out_dir, raw = Path(out_dir), Path(out_dir) / "raw"
@@ -77,6 +87,7 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs
     except (OSError, ValueError, SyntaxError) as e:
         return dict(_fail("mountains_unreadable", detail=str(e)[:300]), **base, requests=0, runtime_s=0.0, data_time=None)
     max_runs, max_req, total_s = int(cfg["max_runs"]), int(cfg["max_requests"]), float(cfg["total_timeout_s"])
+    max_429 = int(cfg.get("http_429_max_total") or 0)        # 無い・0 なら今までどおり 429 は 1 回で即中止
     t0 = clock()
     attempts, results, best, stop = [], [], None, None
     for n in range(1, max_runs + 1):
@@ -93,13 +104,16 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs
         res = run_hooked(yama.command(python, checkout, json_out, limit), cwd=checkout,
                          req_log=(raw / f"yamabiyori-{n}-requests.jsonl").resolve(),
                          max_requests=max_req - used, allow=allow_hosts("yamabiyori"),
-                         timeout_s=max(1.0, min(float(cfg["timeout_s"]), total_s - elapsed)))
+                         timeout_s=max(1.0, min(float(cfg["timeout_s"]), total_s - elapsed)), max_429=max_429 or None)
         (raw / f"yamabiyori-{n}-output.txt").write_text(res.stdout_tail + "\n--- stderr ---\n" + res.stderr_tail, encoding="utf-8", newline="\n")
         results.append(res)
         native = read_json(json_out) if res.returncode == 0 and not res.hook_aborted and not res.timed_out else None
-        fail = _attempt_failure(res, yama.output_problems(native) if native is not None else None, has_output=native is not None)
+        probs = yama.output_problems(native) if native is not None else None
+        fail = _attempt_failure(res, probs, has_output=native is not None, native=None if probs else native,
+                                tolerate_429=max_429 > 0)
         att = {"n": n, "status": "ok" if fail is None else fail[0], "reason": None if fail is None else fail[1],
-               "requests": len(res.records), "runtime_s": res.runtime_s, "pool_size": None, "fetched": None}
+               "requests": len(res.records), "runtime_s": res.runtime_s, "pool_size": None, "fetched": None,
+               "http_429": res.http_429}
         if fail is not None and fail[2]:
             att["detail"] = str(fail[2])[:500]
         if fail is None:
@@ -126,9 +140,11 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs
     fetch = summarize(all_recs, last.abort)
     fetch["blocked_host"] = next((r.blocked_host for r in results if r.blocked_host), None)
     runtime = round(clock() - t0, 1)
+    fetch["http_429"] = sum(r.http_429 for r in results)
+    fetch["http_429_tolerated"] = sum(r.http_429_tolerated for r in results)
     entry = dict(base, requests=len(all_recs), runtime_s=runtime, data_time=None, fetch=fetch, attempts=attempts,
-                 retry_stop=stop)
-    if any(r.rate_limited for r in results):
+                 retry_stop=stop, http_429=fetch["http_429"], http_429_tolerated=fetch["http_429_tolerated"])
+    if any(a["status"] == "rate_limited" for a in attempts):
         return dict(entry, status="rate_limited", reason="rate_limited")
     if fetch["blocked_host"]:
         return dict(entry, status="failed", reason="blocked_host", detail=fetch["blocked_host"])
@@ -208,7 +224,8 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_
     logs = {"schema": "biyori-request-log/1", "started_at": iso(started), "finished_at": iso(finished),
             "estimated_calls_note": "estimated_calls は推定(Open-Meteo の公式の換算式は未確認。config.yaml の estimated_calls)",
             "total": totals,
-            "agents": {a: {k: r.get("fetch", {}).get(k) for k in ("requests", "by_host", "by_status", "by_error", "estimated_calls", "aborted", "blocked_host")}
+            "agents": {a: {k: r.get("fetch", {}).get(k) for k in ("requests", "by_host", "by_status", "by_error", "estimated_calls", "aborted", "blocked_host",
+                                                                   "http_429", "http_429_tolerated")}
                        for a, r in results.items()},
             "metadata": summarize([x for m in meta_results for x in m.records])}
     write_json(out_dir / "logs" / "requests.json", logs)
@@ -283,7 +300,8 @@ def main_run(args):
     for a, r in run["agents"].items():
         print(f"{a}: {r['status']}" + (f" ({r.get('reason')})" if r.get("reason") else "")
               + (f" 山={yama.coverage_text(r['coverage'])}" if "coverage" in r else "")
-              + f" requests={r.get('requests')} runtime_s={r.get('runtime_s')}")
+              + f" requests={r.get('requests')} runtime_s={r.get('runtime_s')}"
+              + (f" 429={r['http_429']}回(フックが通した {r.get('http_429_tolerated') or 0} 回)" if r.get("http_429") else ""))
         for t in r.get("attempts") or []:
             print(f"  {a} {t['n']}回目: {t['status']}" + (f" ({t['reason']})" if t.get("reason") else "")
                   + f" requests={t['requests']} fetched={t['fetched']}/{t['pool_size']} runtime_s={t['runtime_s']}"

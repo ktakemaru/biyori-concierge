@@ -42,6 +42,12 @@ collect:
       # 利用者の決定(2026-11-11): 2700 秒(45 分)。悪い日の実測 2153 秒の約 1.25 倍。collect.yml の timeout-minutes 90(5400 秒)の内側。
       # 1 回目が悪い日ほど長くかかると、取り直しに使える時間は残り(2700 − 1 回目)だけになる(超えたら次の回を始めない)。
       total_timeout_s: 2700
+      # 計測フックが、子プロセス 1 回の中で通す 429 の回数(BIYORI_HTTP_429_MAX_TOTAL。指示書 5.2・D11。2026-11-22)。
+      # 出典: ヤマビヨリ mountain_weather_core.py の MINUTELY_RETRY_MAX = 5(1 分の上限の 429 で 65 秒待って取り直すのは 1 回の実行で 5 回まで。
+      # commit fdadece・1.10.1 で確認)。回数を超えた 429 はフックが即中止する。この行を消すか 0 にすると、今までどおり 429 は 1 回で即中止。
+      # 429 があった回は、全部の山がそろったときだけ成功。そろわなければ rate_limited(取り直しの回を始めない)。
+      # 待ちが 5 回なら 65 秒 × 5 = 325 秒が足されうるが、時間の上限(2700 秒)は変えない(U8 の実測のあとで利用者が決める)。
+      http_429_max_total: 5
       # 出力の schema の文字列(mountain_weather_mvp.py --json-out。report_data.py)
       expected_schema: yamabiyori-report-data/1
   # Open-Meteo のメタデータ(利用上限に数えられない。yamabiyori-backtest backtest/collect_forecast_snapshot.py の説明)で記録するモデル
