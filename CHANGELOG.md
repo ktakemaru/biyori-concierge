@@ -8,7 +8,11 @@
 - 手順の文書: `AGENTS.md`(正本)・`CLAUDE.md`・`.claude/skills/biyori-concierge/SKILL.md`・`docs/answer-voice.md`(書き方の手本)・`docs/brief-fields.md`。
 - 試験問題 `docs/qa.md`(10 問と採点の表)。
 - 見本の棚 `tests/fixtures/shelf/`(`tests/make_shelf_fixture.py` で今の `collect/` から作る)と、答える側のテスト。
-- 仮置きの値: `config.yaml` の `concierge.brief`(上位の件数 8・距離の丸め)と `concierge/data/verify.yaml` の語の一覧。
+- 仮置きの値: `config.yaml` の `concierge.brief`(上位の件数 8・主役にできる山を足す数 3・距離の丸め)と `concierge/data/verify.yaml` の語の一覧。
+- 通しの試し(本物の棚で 10 問)で直したもの: 上位の枠が危険信号「警戒・危険」の山で埋まるときに主役にできる山を足す、
+  「点数がいちばん高い○○は見送る」を止めない、安全の言い切りは知識カードの印だけで通す(`safety_assertion`)、印の後ろの空白を残さない。
+- `collect.yml`: 定期実行で取るビヨリを変数 `BIYORI_COLLECT_AGENTS`(`yamabiyori` / `hoshibiyori` / `both`。未設定・それ以外は `yamabiyori`)で選ぶ。
+  停止スイッチ・手動実行・publish の条件は変えていない。報告は `docs/stage2-report.md`。
 
 ## 未公開(段階 2 の前の見直し。2026-11-22)
 
