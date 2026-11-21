@@ -13,7 +13,7 @@
 | 変更前のテスト | **141 件すべて成功**(Windows の手元、Python 3.13、約 65 秒) |
 | ヤマビヨリ `C:/yamabiyori` | `fdadecea87a53cce4384c77d4bd1493400e0b52c` 2026-11-22 02:00:11 +0900(Merge PR #27)、版 1.10.1。`MOUNTAINS` に `id` あり(76 座、m001〜m076)。`MINUTELY_RETRY_MAX = 5`、`PACING_LIMIT_PER_MINUTE = 300.0` |
 | ホシビヨリ `C:/hoshibiyori` | `73c1f43c0a5d8b3dd51663be4d9031bbbd50e61e` 2026-11-16 06:50:37 +0900(Fix/no terrain horizon #37)、版 1.1.0 |
-| イキモノビヨリ `C:/ikimonobiyori` | `8d9a15e25d87f409c7538ae42e17839bb6af803d` 2026-11-15 11:44:20 +0900(Merge PR #70)、版 0.2.0(`plugin.json` に版が無く、`CHANGELOG.md` の先頭「0.2.0(2026-11-15。段階75〜85)」) |
+| イキモノビヨリ `C:/ikimonobiyori` | `8d9a15e25d87f409c7538ae42e17839bb6af803d` 2026-11-15 11:44:20 +0900(Merge PR #70)、版 0.2.0(`.claude-plugin/plugin.json` が無いため、`CHANGELOG.md` の先頭「0.2.0(2026-11-15。段階75〜85)」) |
 
 止まる条件(1〜4)には当たりませんでした。
 
@@ -180,7 +180,7 @@ collect.yml は手動実行のときに、使うブランチを選べる作り�
 4. 成功の見分け方: 実行を開き、collect ジョブが緑で、publish ジョブが skipped になっていること。collect の Summary は次のとおりになっていること。
    - 表の yamabiyori の状態が `ok`。
    - 山が「3座のうち3座(全76座の先頭3座)」。
-   - 「ヤマビヨリの取り出し」の commit が `fdadece…`。
+   - 「ヤマビヨリの取り出し」の commit が、実行した時点のヤマビヨリ main の commit(2026-11-22 時点では `fdadece…`)。
    - 「429: なし」(または「429: yamabiyori N 回(待って取り直し、全座そろった)」)。
    - 「止められたホスト: なし」。
 
@@ -203,7 +203,7 @@ collect.yml は手動実行のときに、使うブランチを選べる作り�
 - 手順 2・3 に問題がなければ: **Pull requests** → **New pull request** で、base `main` ← compare `feature/hook-tolerate-429` の PR を 1 本作り、tests が緑なのを見て **Merge pull request** を押す。このブランチは第 1 部・第 2 部を含むので、PR は 1 本でよいです。
 - 第 3 部に問題があれば: base `main` ← compare `feature/revise-and-mountain-ids` の PR だけを作ってマージする。
   - このブランチの報告書は第 0〜2 部の分だけです。
-  - 第 3 部の分は `feature/hook-tolerate-429` に残ります。
+  - 第 3 部の分は `feature/hook-tolerate-429` に残ります。この手順(5 章)も、`feature/hook-tolerate-429` の報告書にだけあります。
 
 ### 5. main から、全 76 座・publish ありで実行する(ブラウザの GitHub)
 
@@ -217,7 +217,7 @@ collect.yml は手動実行のときに、使うブランチを選べる作り�
 2. 成功の見分け方: collect と publish の両方が緑。
 3. 棚の確かめ方(ブラウザ):
    1. リポジトリの **Code** タブで、ブランチの選択を `data` にする。
-   2. `manifest.json` を開き、`agents` → `yamabiyori` → `version` が `"1.10.1"`、`commit` が `fdadece` で始まること、`status` が `"ok"` であることを見る。
+   2. `manifest.json` を開き、`agents` → `yamabiyori` → `version` が `"1.10.1"`、`commit` が実行した時点のヤマビヨリ main の commit(2026-11-22 時点では `fdadece` で始まる)であること、`status` が `"ok"` であることを見る。
    3. 429 があった回なら、同じ所に `http_429` の回数が出ます。
    4. `yamabiyori/mountains.json` を開き、`"count": 76`、`mountains` の最初の `id` が `"m001"`(谷川岳)、最後が `"m076"` であることを見る。`id_rule` が「MOUNTAINS の各要素の id をそのまま…」になっていること。
 
