@@ -11,7 +11,8 @@
 
 - 回と回のあいだは interval_s 秒以上あける(始まりから次の始まりまで。1 未満は 1)。打ち切りは timeout_s 秒(TCP の接続・TLS・応答待ち・受信の各段階ごと)。
 - 回数の上限: max_requests(計測フックも同じ上限で止める)。時間の上限: total_timeout_s(超えたら次の回を始めない)。
-- 通信はどちらの方式も urllib(OpenerDirector.open)を通すので、計測フックが数え・許可ホストを検査し・4xx/5xx(429 を含む)なら即中止する。
+- 通信はどちらの方式も urllib(OpenerDirector.open)を通すので、計測フックが数え・許可ホストを検査し・4xx/5xx(429 を含む)なら即中止する
+  (429 を通す設定 BIYORI_HTTP_429_MAX_TOTAL は渡さないので、診断では今までどおり 429 も 1 回で即中止。2026-11-22)。
   接続先の IP だけを固定し、TLS の名前(SNI)と証明書の検査・Host は api.open-meteo.com のまま。
 - 失敗した段階を記録する: tcp(TCP の接続)/ tls(TLS の途中)/ request(リクエストの送信)/ response(応答待ち)/ body(本文の受信)/ check(中身が JSON でない)。
 

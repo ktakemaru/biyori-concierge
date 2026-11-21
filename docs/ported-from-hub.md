@@ -7,9 +7,15 @@
 
 | このリポジトリ | hub での場所 | commit | 用途 |
 |---|---|---|---|
-| `collect/measure/sitecustomize.py` | `hub/measure/sitecustomize.py` | `9f324bf8d5e102c3420b461b35e2f5d851fbcef7` | 通信の計測フック。許可ホスト以外は送信前に止める・回数を数える・4xx/5xx(429 を含む)で即中止・記録先が書けなければ通信前に止める |
+| `collect/measure/sitecustomize.py` | `hub/measure/sitecustomize.py` | `9f324bf8d5e102c3420b461b35e2f5d851fbcef7` | 通信の計測フック。許可ホスト以外は送信前に止める・回数を数える・4xx/5xx(429 を含む)で即中止・記録先が書けなければ通信前に止める。**2026-11-22 に 1 点変えた(下の「写したあとに変えたもの」)** |
 | `schemas/biyori-proposal.schema.json` | `schemas/biyori-proposal.schema.json` | `7ad88b09fd8207a208315d3f91fb2efce5cca8e2` | 提案の契約(biyori-proposal/1) |
 | `schemas/biyori-vocabulary.yaml` | `schemas/biyori-vocabulary.yaml` | `6019ed233bfc391c10eae406e7c7918af11c3b8e` | 興味の語(段階 2 から使う) |
+
+## 写したあとに変えたもの
+
+| このリポジトリ | 変えた日 | 変えたところ | 理由 |
+|---|---|---|---|
+| `collect/measure/sitecustomize.py` | 2026-11-22 | 環境変数 `BIYORI_HTTP_429_MAX_TOTAL`(1〜10 の整数。上の限り `_429_CAP = 10` は仮置き)を足した。渡された子プロセスだけ、429 を実行全体でその回数まで中止せずに通し、記録に `rate_limit_tolerated` を付ける。回数を超えた 429 は即中止(理由「429 を通す回数の上限 N 回を超えた」)。未設定なら今までどおり 429 は 1 回で即中止。不正な値・0 以下・10 を超える値は無効にして stderr に 1 行出す。`BIYORI_HTTP_RETRY_STATUSES` の仕組み(502/503/504)には 429 を入れていない。ほかの 4xx/5xx・許可ホスト・件数の上限・壁時計の検査は変えていない | ヤマビヨリ 1.10.x は 1 分の上限の 429 で 65 秒待って取り直すが、フックが 1 回目の 429 で子プロセスを止めると、取り直す前に終わってしまうため(指示書 5.2・D11) |
 
 ## 書き直して写したもの(考え方・一部のコードを使い、形を変えた)
 
