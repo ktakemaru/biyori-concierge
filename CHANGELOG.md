@@ -1,5 +1,11 @@
 # 変更履歴
 
+## 未公開(段階 2 の前の見直し。2026-11-22)
+
+- 指示書を改訂(2026-11-22)。答えの形を「資料 → AI が書く → 照合」に(D8・D9)、山の ID は `MOUNTAINS` の `id` を読む(D10)、
+  429 の扱いをそろえる(D11)、目標「専門家の AI 化」の 5 条件(D12)。6 章(`brief`・`verify`、資料 `biyori-brief/1`)・7 章(済んだもの・これから)・
+  8 章(段階 2 の受け入れ条件)・10 章(U8〜U10)を直し、12 章(改訂の記録)を足した。作業指示は `docs/revise-20261122-instructions.md`。
+
 ## 未公開(段階 1)
 
 - リポジトリの骨組み(MIT、`config.yaml`、`config.local.example.yaml`、`schemas/`、`collect/`、`tests/`)。
