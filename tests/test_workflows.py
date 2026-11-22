@@ -43,6 +43,67 @@ def cron_times(expr):
     return [(h, m) for h in expand(hr, 24) for m in expand(mi, 60)]
 
 
+def eval_expr(expr, ctx, funcs=None):
+    """GitHub Actions の式の小さな評価(このファイルの式だけ。&&・||・==・!=・括弧・文字列・true/false・always())。
+    && と || は Python の and・or と同じく値を返す。== は大文字・小文字を区別しない(GitHub の決まり)。未設定の変数は空文字。"""
+    body = expr.strip()
+    if body.startswith("${{"):
+        body = body[3:-2].strip()
+    toks = re.findall(r"'[^']*'|&&|\|\||==|!=|\(|\)|[A-Za-z_][\w.]*\(\)|[A-Za-z_][\w.]*", body)
+    funcs = funcs or {}
+    pos = [0]
+
+    def peek():
+        return toks[pos[0]] if pos[0] < len(toks) else None
+
+    def take():
+        pos[0] += 1
+        return toks[pos[0] - 1]
+
+    def atom():
+        t = take()
+        if t == "(":
+            v = orx()
+            assert take() == ")"
+            return v
+        if t.startswith("'"):
+            return t[1:-1]
+        if t in ("true", "false"):
+            return t == "true"
+        if t.endswith("()"):
+            return funcs[t]
+        v = ctx.get(t)
+        return "" if v is None else v
+
+    def cmp():
+        a = atom()
+        while peek() in ("==", "!="):
+            op, b = take(), atom()
+            eq = (a.lower() == b.lower()) if isinstance(a, str) and isinstance(b, str) else (a == b)
+            a = eq if op == "==" else not eq
+        return a
+
+    def andx():
+        a = cmp()
+        while peek() == "&&":
+            take()
+            b = cmp()
+            a = a and b
+        return a
+
+    def orx():
+        a = andx()
+        while peek() == "||":
+            take()
+            b = andx()
+            a = a or b
+        return a
+
+    v = orx()
+    assert pos[0] == len(toks), toks[pos[0]:]
+    return v
+
+
 class Collect(unittest.TestCase):
     def setUp(self):
         self.wf = load("collect.yml")
@@ -135,6 +196,33 @@ class Collect(unittest.TestCase):
         cond = self.jobs["publish"]["if"]
         self.assertIn("inputs.publish == true && (inputs.yamabiyori_ref == 'main' || inputs.agents == 'hoshibiyori')", cond)
         self.assertIn("github.event_name == 'schedule' ||", cond)        # 定期実行は常に main
+
+    def test_scheduled_agents_come_from_the_variable(self):
+        # 段階 2 の終わり(指示書 5.1。2026-11-22): 定期実行で取るビヨリは変数 BIYORI_COLLECT_AGENTS。未設定・それ以外は yamabiyori
+        env = self.jobs["collect"]["env"]["AGENTS"]
+        self.assertEqual(env, "${{ github.event_name == 'schedule' && ((vars.BIYORI_COLLECT_AGENTS == 'both' && 'both') || "
+                              "(vars.BIYORI_COLLECT_AGENTS == 'hoshibiyori' && 'hoshibiyori') || 'yamabiyori') || inputs.agents }}")
+        cases = [("schedule", None, "both", "yamabiyori"), ("schedule", "", "both", "yamabiyori"),
+                 ("schedule", "yamabiyori", "both", "yamabiyori"), ("schedule", "hoshibiyori", "both", "hoshibiyori"),
+                 ("schedule", "both", "yamabiyori", "both"), ("schedule", "Both", "yamabiyori", "both"),
+                 ("schedule", "all", "both", "yamabiyori"), ("schedule", "yamabiyori,hoshibiyori", "both", "yamabiyori"),
+                 ("workflow_dispatch", "both", "yamabiyori", "yamabiyori"), ("workflow_dispatch", None, "hoshibiyori", "hoshibiyori")]
+        for event, var, inp, want in cases:
+            with self.subTest(event=event, var=var):
+                self.assertEqual(eval_expr(env, {"github.event_name": event, "vars.BIYORI_COLLECT_AGENTS": var, "inputs.agents": inp}), want)
+
+    def test_schedule_switch_and_publish_are_unchanged_by_the_agents_variable(self):
+        self.assertEqual(self.jobs["collect"]["if"],
+                         "${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && vars.BIYORI_COLLECT_SCHEDULE == 'on') }}")
+        cond = self.jobs["publish"]["if"]
+        self.assertNotIn("BIYORI_COLLECT_AGENTS", cond)
+        for agents_var in (None, "yamabiyori", "both"):
+            with self.subTest(agents_var):
+                ctx = {"github.event_name": "schedule", "needs.collect.result": "success", "vars.BIYORI_COLLECT_AGENTS": agents_var,
+                       "inputs.publish": None, "inputs.yamabiyori_ref": None, "inputs.agents": None}
+                self.assertTrue(eval_expr(cond, ctx, funcs={"always()": True}))
+        off = {"github.event_name": "schedule", "vars.BIYORI_COLLECT_SCHEDULE": "", "vars.BIYORI_COLLECT_AGENTS": "both"}
+        self.assertFalse(eval_expr(self.jobs["collect"]["if"], off))
 
     def test_runner_python_timeout_concurrency(self):
         for job in self.jobs.values():

@@ -60,7 +60,10 @@ jobs:
       contents: read
     env:
       PYTHONUTF8: "1"
-      AGENTS: ${{ github.event_name == 'schedule' && 'both' || inputs.agents }}
+      # 定期実行で取るビヨリは、リポジトリの変数 BIYORI_COLLECT_AGENTS(yamabiyori / hoshibiyori / both)で選ぶ(指示書 5.1。2026-11-22)。
+      # 未設定・それ以外の値は yamabiyori(星の取得は段階 3 から)。手動実行は入力の agents のまま。
+      # 値は変数をそのまま渡さず、決まった文字列だけを出す(式の == は大文字・小文字を区別しないため、Both と書いても both になる)。
+      AGENTS: ${{ github.event_name == 'schedule' && ((vars.BIYORI_COLLECT_AGENTS == 'both' && 'both') || (vars.BIYORI_COLLECT_AGENTS == 'hoshibiyori' && 'hoshibiyori') || 'yamabiyori') || inputs.agents }}
       # 定期実行は all(全 76 座)。手動実行は入力のまま渡し、検査は collect run が通信の前に行う(空・0 以下などはエラー)
       YAMA_LIMIT: ${{ github.event_name == 'schedule' && 'all' || inputs.yama_limit }}
       # 定期実行は常に main。手動実行は入力のまま渡し、検査は check-inputs が取り出しの前に行う(空・記号で始まるなどはエラー)
