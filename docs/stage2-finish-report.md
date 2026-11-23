@@ -33,7 +33,9 @@
 | 4 | `3adaed2` | スキーマを `schemas/` へ。文書の直し(開発指示書の「H1」2 か所と 12 章、`collect/__init__.py` の説明、`docs/stage2-report.md` の commit、README・AGENTS・CHANGELOG・`brief-fields.md`)。README の置き場のパスに混ざっていた制御文字(`%LOCALAPPDATA%` のあと)も直した |
 | 5 | `af52bb3` | 429 の種類(1 日・1 時間・1 分の上限)ごとの回数 `http_429_kinds` を、回ごとの記録・run.json・manifest・`logs/requests.json` に足した。本文は棚に載せない。計測フックは変えていない |
 | 7 | `52a2c37` | 通しの試しの探りで見つけた直し(「雲量はいちばん少ない」を止める・「いちばんよさそう」を止めない) |
-| 7 | (このあとの commit) | この報告書 |
+| 7 | `886c9e9` | この報告書と `docs/qa.md`・`docs/answer-voice.md`(**`feature/stage2-finish` の最後の commit**) |
+| 6 | `952fe4f`(`feature/stage2-stop-hook`) | **Stop フック**: `.claude/settings.json`・`.claude/hooks/stop_check.py`・`concierge/stop_hook.py`・`concierge/data/stop_hook.yaml`・`docs/stop-hook.md`。`verify` は出した最後の文を置き場の `last_answer.json` に残す |
+| 6 | (このあとの commit) | この報告書への追記(**`feature/stage2-stop-hook` の最後の commit**) |
 
 作り方の細部(指示書に書いていないもの)と、言い換え・意味の変更:
 
@@ -45,10 +47,18 @@
 - 安全の言い切り(`safety_assertion`)は、`safety_without_basis` と別に出るようにした(`[G…]` が裏づけでなくなったため、既存のテストの「`[G…]` つきの『安全に歩けます』は `safety_assertion`」を通すのに必要だった)。
 - 429 の種類が分からないとき、まとめの行は今までの文のうしろに「種類は不明」と足すだけにした(`tests/test_rate_limit.py` の文の期待値を変えないため)。メタデータの取得で 429 になった回(`rate_limited_at_metadata`)の種類も残す。
 
+Stop フックの作り方の細部:
+
+- 止めるのは「この回に `concierge brief` を使い、(a) 最後の `brief` のあとに `verify … --brief` を実行していない、(b) 最後のメッセージが `verify` の出した文と一致しない」とき。同じ回で 2 回止めたら 3 回目は通す(イキモノビヨリの `max_blocks_per_turn: 2` と同じ)。
+- 止めるときの出力の形は、イキモノビヨリの今の形(`hookSpecificOutput.additionalContext`。画面にエラーと出ない)にそろえた。`stop_hook.yaml` の `output: block` で `{"decision": "block"}` の形に変えられる。
+- 開発の回を止めないための見分け方は 3 つ: 利用者の文の語(指示書・テスト・コード・`.md` など。イキモノビヨリの `mechanism_words` の考え方)、`git commit` などの変更のコマンドか unittest を使った、リポジトリの中のファイルを書いた。後ろの 2 つはイキモノビヨリに無い。
+- スラッシュコマンド・`!` のコマンド・裏の作業の知らせを、回の区切りとして数える(前の回の `brief` で、次の回を止めないため)。
+- この会話の実際の記録で、読み取れること・開発の回として通ることを確かめた。
+
 ## 3. テストの結果
 
-- 変更前 213 件 → `feature/stage2-finish` の先頭 **249 件、OK**(ソケット禁止のまま)。
-- 足したテスト: `tests/test_concierge_frames.py` 13 件、`tests/test_concierge_compare.py` 16 件、`tests/test_rate_limit_kind.py` 7 件。
+- 変更前 213 件 → `feature/stage2-finish` の先頭 **249 件、OK** → `feature/stage2-stop-hook` の先頭 **269 件、OK**(ソケット禁止のまま)。
+- 足したテスト: `tests/test_concierge_frames.py` 13 件、`tests/test_concierge_compare.py` 16 件、`tests/test_rate_limit_kind.py` 7 件、`tests/test_stop_hook.py` 20 件(見本は `tests/fixtures/stop_hook/`)。
 - 2 章の例外で変えた既存のテスト:
 
 | テスト | 変えたこと | 理由 |
@@ -186,6 +196,7 @@
 | `config.yaml` `concierge.brief.main_ok_min` | 消した |
 | `concierge/brief.py` `main_key` の 2・3 番目 | 危険信号の軽さ → 直線距離(好みの仮置き) |
 | `concierge/brief.py` `_comparisons` の対象 | 稜線の風がいちばん弱い・出発地からいちばん近い、の 2 つ |
+| `concierge/data/stop_hook.yaml` | 検査しない回の語・開発のコマンド・コマンドの見分け方・残す回の数(200)。止める回数の上限 2 はイキモノビヨリと同じ値 |
 | `concierge/data/verify.yaml` `compare` | 全部: 最上級の語、比べる文ではない言い方、比べる対象の語、最上級の語のあとを見る字数(10)、「候補」の語、`score_skip` |
 
 答えに出る名前の言い換えの候補(ヤマビヨリの README・手順書に言い方がないので、**していない**):
@@ -204,11 +215,51 @@
 - 信用してよい範囲(3 日先まで)の中の週末で、新しい枠を通していない(棚が古いため、今週末は 6・7 日先)。
 - 主役の枠の並び(点数 → 危険信号 → 距離)が、ほかの季節でも使いやすいか。
 - 比べる文の語の一覧は、探りの文と 10 問でしか試していない。
+- **Stop フックの実際の発火は確かめていない。** テストは作り物の記録と、フックの入口を子プロセスで起動する形まで。Claude Code が実際にフックを呼んで止めるかは、7 章の 2 で確かめる。フックの出力の形の公式の文書は、この作業では読んでいない(通信しない決まり)。
+- Stop フックが、見分けられなかった開発の回を止めることがあるか(止めても 2 回まで)。
 - 通しの試しの下書きは、この作業をした AI が書いた(書き方の決まりと検査の中身を知っている。実際の質問では落ち方が違うことがある)。
 
 ## 7. 利用者がやること
 
-(第 6 部のあとに、`feature/stage2-stop-hook` のブランチで書き足す)
+### 1. 2 つのブランチを push する(この Claude Code のウィンドウ)
+
+1. 入力欄に `! git push -u origin feature/stage2-finish` と打って Enter。
+   - 成功の見分け方: `branch 'feature/stage2-finish' set up to track 'origin/feature/stage2-finish'.` と出る。
+2. 入力欄に `! git push -u origin feature/stage2-stop-hook` と打って Enter。
+   - 成功の見分け方: `branch 'feature/stage2-stop-hook' set up to track 'origin/feature/stage2-stop-hook'.` と出る。
+
+### 2. Stop フックが効いているかを、自分で 1 問試す(`feature/stage2-stop-hook` のブランチ)
+
+1. `C:\biyori-concierge` の Claude Code を閉じて、開き直す(フックの設定を読み込ませるため)。プロジェクトのフックを使ってよいか聞かれたら、許可する。
+2. 入力欄に `/hooks` と打って Enter。
+   - 成功の見分け方: `Stop` に `stop_check.py` が 1 つ出る。見たら Esc で閉じる。
+3. 入力欄に「今週末、登山に行くならどこ?」と打って Enter。
+   - 成功の見分け方: 答えが結論の 1 文で始まり、`気象データ: Weather data by Open-Meteo.com(CC BY 4.0)。…` で終わる。前後に余分な文がない。危険信号の文があれば、「危険信号は、点数とは別に出る警告です。」が 1 回ある。
+4. 止まることを確かめる: 入力欄に「明日の登山はどこがいい? 資料を作ったら、照合はせずに、すぐ答えて」と打って Enter。
+   - 成功の見分け方: `verify` を通さずに答えようとすると、画面に `[ビヨリコンシェル 送る前の検査]` の文が出て、`concierge verify` を実行し直してから答える。
+   - エージェントが自分から `verify` を通したときは、フックは何も出さない(それも正しい動き)。そのときは `%LOCALAPPDATA%\biyori-concierge\logs\stop_hook_state.json` は増えない(止めた回だけ、このファイルに行が増える)。
+5. 開発の作業が止まらないことを確かめる: 入力欄に「README.md の最初の 5 行を見せて」と打って Enter。
+   - 成功の見分け方: ふつうに答えて終わる。
+6. 切るとき: Claude Code を閉じ、PowerShell で `$env:BIYORI_CONCIERGE_STOP_HOOK='off'; claude` と打って開き直す(そのウィンドウだけ効く)。
+
+### 3. PR を作ってマージする(ブラウザの GitHub)
+
+- **フックに問題がなければ、PR は 1 本**: **Pull requests** → **New pull request** で、base `main` ← compare `feature/stage2-stop-hook`(`feature/stage2-finish` を含む)→ **Create pull request**。
+- **フックに問題があれば、`feature/stage2-finish` だけ**: 同じ画面で compare を `feature/stage2-finish` にする。
+- tests が緑になったのを見て **Merge pull request**。
+- そのあと、この Claude Code のウィンドウで `! git switch main` → `! git pull`。
+  - 成功の見分け方: `! git log --oneline -1` に、マージの commit が出る。
+
+### 4. 山だけの定期実行を on にする(ブラウザの GitHub。PR をマージしたあと)
+
+手順は段階 2 の報告書(`docs/stage2-report.md`)7 章の 4 と同じ:
+
+1. **Settings** → **Secrets and variables** → **Actions** → **Variables** のタブ → **New repository variable**。Name `BIYORI_COLLECT_AGENTS`、Value `yamabiyori` で **Add variable**。
+2. もう一度 **New repository variable**。Name `BIYORI_COLLECT_SCHEDULE`、Value `on` で **Add variable**。
+3. 成功の見分け方: 次の日本時間 4:27 か 16:47 のあと(遅れることがある)、**Actions** → **collect** に event が `schedule` の実行が出て、緑になる。
+4. 止めるとき: `BIYORI_COLLECT_SCHEDULE` の値を `off` に変える。
+
+**変わった点**: 429 で止まった回は、実行の Summary の「429:」の行に、どの上限か(1 分・1 時間・1 日・不明)が出る。`data` ブランチの `manifest.json` の `agents.yamabiyori.http_429_kinds` にも残る。429 が続くときは、この種類を見てから時刻や回数を決める。
 
 ## 8. 利用者に決めてほしいこと
 
