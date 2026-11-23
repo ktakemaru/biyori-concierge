@@ -2,12 +2,16 @@
 見本の棚は 3 座しかないので、作り物の山の日(値は本物の予報ではない)でも確かめる(test_concierge_frames.synthetic)。"""
 import unittest
 
-from concierge_helpers import base_with_shelf, build, fact
+from concierge_helpers import base_with_shelf, build, fact, line_for, make_hazard
+from helpers import ROOT
 from test_concierge_answer import codes, good_draft
 from test_concierge_counts import SUN, Base, sat_rows
 from test_concierge_frames import DAY, NEAR
 
+from concierge import brief as B
+from concierge import fallback as F
 from concierge import verify as V
+from concierge.common import brief_schema_errors
 
 REP = "横岳という名前の由来には、いくつかの説があるといわれます。"
 
@@ -113,6 +117,103 @@ class ListedUniversal(Base):
             with self.subTest(s):
                 self.ng(s + marks, "hazard_universal_unmarked")
         self.ng(f"土曜の{names}は、どれも強風危険です。{marks}[N1]", "hazard_universal_mismatch")
+
+
+class SkipLine(Base):
+    """3.7: 見送りの山の危険信号を、日ごとに 1 つのまとめの文で書く。"""
+
+    def rows(self):
+        return [(NEAR[0], 90.0, {"wind": "危険", "cold": "危険"}, 20.0), (NEAR[1], 89.0, {"cold": "注意", "wind": "危険"}, 20.0), (NEAR[2], 88.0, {"wind": "危険", "cold": "危険"}, 20.0),
+                (NEAR[3], 87.0, {"wind": "警戒"}, 12.0), (NEAR[4], 86.0, {"cold": "注意"}, 4.0)]
+
+    def draft(self, middle, picks="なし"):
+        L = self.doc["lines"]
+        head = "\n".join(f"{L[k]['text']}[{L[k]['id']}]" for k in ("data_time", "coverage"))
+        return f"今回は見送るのがよさそうです。\n{head}\n\n{middle}\n\n{L['attribution']['text']}[{L['attribution']['id']}]\n[おすすめ] {picks}\n"
+
+    def test_text_groups_by_the_same_hazards_in_the_order_of_the_frame(self):
+        doc = self.build(self.rows())
+        x, = doc["lines"]["skips"]
+        names = [f["name"] for f in doc["facts"] if f["selected_by"] == "skip"]
+        self.assertEqual([f["mountain_id"] for f in doc["facts"] if f["selected_by"] == "skip"], [NEAR[0], NEAR[2], NEAR[1]])
+        self.assertEqual(x["text"], f"10月17日(土)は、{names[0]}・{names[1]}に強風危険・低体温症危険、{names[2]}に強風危険・低体温症注意の危険信号が出ています。")
+        self.assertEqual(x["facts"], [f["id"] for f in doc["facts"] if f["selected_by"] == "skip"])
+        self.assertGreater(int(x["id"][1:]), max(int(h["id"][1:]) for h in doc["lines"]["hazards"]))      # 山ごとの文の番号は変えない
+        self.assertNotRegex(x["text"].replace("10月17日", ""), r"\d")                                    # 数字は入れない
+        self.assertIn(f"- [{x['id']}](見送りのまとめ・{'・'.join(x['facts'])}。", B.render_md(doc))
+
+    def test_one_line_a_day_and_none_without_a_skip_frame(self):
+        doc = self.build(self.rows(), when="今週末", sun=[(NEAR[0], 90.0, {"cold": "注意"}, 4.0)])
+        self.assertEqual([x["date"] for x in doc["lines"]["skips"]], [DAY])
+        doc = self.build(self.rows(), when="今週末", sun=[(NEAR[0], 90.0, {"wind": "警戒"}, 12.0)])
+        self.assertEqual([x["date"] for x in doc["lines"]["skips"]], [DAY, SUN])
+
+    def test_the_line_stands_for_the_lines_of_the_mountains(self):
+        doc = self.build(self.rows())
+        x, n = doc["lines"]["skips"][0], doc["hazard_counts"][0]
+        r = V.check(self.draft(f"{x['text']}[{x['id']}]危険信号が警戒以上の山は 4 座で、このうち危険は 3 座です。[{n['id']}]\n危険信号は、点数とは別に出る警告です。[{doc['lines']['hazard_note']['id']}]"), doc)
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertIn(x["text"] + "危険信号が警戒以上の山は 4 座で、このうち危険は 3 座です。", r["final"])
+        self.assertFalse(any(h["text"] in r["final"] for h in doc["lines"]["hazards"]))
+
+    def test_altered_line_is_stopped(self):
+        doc = self.build(self.rows())
+        x = doc["lines"]["skips"][0]
+        self.assertIn("line_altered", codes(V.check(self.draft(f"{x['text'].replace('低体温症注意', '低体温症危険')}[{x['id']}]"), doc)))
+
+    def test_a_recommended_mountain_still_needs_its_own_line(self):
+        doc = self.build(self.rows())
+        x, note = doc["lines"]["skips"][0], doc["lines"]["hazard_note"]
+        y = next(f for f in doc["facts"] if f["selected_by"] == "top")
+        self.assertEqual(y["hazard_level"], "注意")
+        mid = f"行くなら{y['name']}です。[{y['id']}]\n{x['text']}[{x['id']}]\n{note['text']}[{note['id']}]"
+        self.assertEqual(codes(V.check(self.draft(mid, y["id"]), doc)), ["hazard_line_missing"])
+        h = next(h for h in doc["lines"]["hazards"] if h["fact"] == y["id"])
+        r = V.check(self.draft(mid.replace("\n", f"\n{h['text']}[{h['id']}]\n", 1), y["id"]), doc)
+        self.assertTrue(r["ok"], r["errors"])
+
+    def test_the_fallback_uses_the_line(self):
+        doc = self.build(self.rows())
+        x = doc["lines"]["skips"][0]
+        for compact in (False, True):
+            r = V.check(F.draft(doc, compact=compact), doc)
+            self.assertTrue(r["ok"], r["errors"])
+            self.assertIn(x["text"], r["final"])
+            self.assertEqual([h["fact"] for h in doc["lines"]["hazards"] if h["text"] in r["final"]], [next(f["id"] for f in doc["facts"] if f["main_ok"])])
+        self.assertIn(x["text"] + "この日は、危険信号が警戒以上の山は 4 座で、このうち危険は 3 座です。\n", V.check(F.draft(doc), doc)["final"])
+
+    def test_the_fallback_with_named_mountains(self):
+        doc = self.build(self.rows(), mountains=[NEAR[0], NEAR[3]])                     # 枠の中の山と、枠の外の山(警戒)
+        for compact in (False, True):
+            r = V.check(F.draft(doc, compact=compact), doc)
+            self.assertTrue(r["ok"], r["errors"])
+        t = V.check(F.draft(doc), doc)["final"]
+        h = {f["mountain_id"]: line_for(doc, f["id"])["text"] for f in doc["facts"] if f["named"]}
+        self.assertNotIn(h[NEAR[0]], t)                                                  # まとめの文で言っている
+        self.assertIn(h[NEAR[3]], t)                                                     # まとめの文にいない名指しの山は、山ごとの文
+
+    def test_a_brief_without_the_line_still_works(self):
+        doc = self.build(self.rows())
+        del doc["lines"]["skips"]
+        self.assertTrue(B.is_current(doc))
+        self.assertEqual(brief_schema_errors(doc), [])
+        self.assertTrue(V.check(F.draft(doc), doc)["ok"])
+
+
+class VoiceExample(unittest.TestCase):
+    def test_the_example_for_skip_questions_passes(self):
+        """docs/answer-voice.md の、見送りを聞かれたときの手本(作り物の強風危険)。"""
+        def edit(d):
+            for mid in ("m002", "m003"):
+                make_hazard(mid, DAY, "危険")(d)
+        doc = build(base_with_shelf(self, edit=edit), question="今週末は見送ったほうがいい山はある?")
+        text = (ROOT / "docs" / "answer-voice.md").read_text(encoding="utf-8")
+        example = text.split("### 見送りを聞かれたときの手本", 1)[1].split("```", 2)[1].strip("\n") + "\n"
+        r = V.check(example, doc)
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertLess(r["final"].index("危険信号が出ています"), r["final"].index("行くなら"))
+        self.assertIn(doc["lines"]["skips"][0]["text"], r["final"])
+        self.assertFalse(any(h["text"] in r["final"] for h in doc["lines"]["hazards"]))
 
 
 if __name__ == "__main__":

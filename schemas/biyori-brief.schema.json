@@ -97,7 +97,13 @@
         "lead_time": {"$ref": "#/$defs/line_or_null"},
         "attribution": {"$ref": "#/$defs/line_or_null"},
         "hazard_note": {"$ref": "#/$defs/line_or_null", "description": "危険信号の注記(危険信号つきの山が 1 つでもあれば入る)。2026-11-23 に追加"},
-        "hazards": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["fact"]}]}}
+        "hazards": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["fact"]}]}},
+        "skips": {
+          "type": "array",
+          "description": "見送りのまとめの文(見送りの枠の山がある日ごとに 1 つ)。date = その日、facts = まとめた山の事実の id(枠の並び)。2026-11-24 に追加",
+          "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["date", "facts"],
+                    "properties": {"date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"}, "facts": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^Y[0-9]{3}$"}}}}]}
+        }
       }
     },
     "plans": {

@@ -88,8 +88,9 @@ class Frames(unittest.TestCase):
         r = V.check(F.draft(doc), doc)
         self.assertTrue(r["ok"], r["errors"])
         t = r["final"]
-        self.assertLess(t.index("10月18日(日)の谷川岳は80点で"), t.index("10月17日(土)の大山(伊勢原)は100点で"))
-        self.assertNotIn("高尾山は99点で", t)                                          # 2 つまで
+        self.assertLess(t.index("10月18日(日)は、谷川岳に強風危険の危険信号が出ています。"),
+                        t.index("10月17日(土)は、大山(伊勢原)・高尾山に強風警戒の危険信号が出ています。"))      # まとめの文(段階 3 の前の準備 3.7)
+        self.assertNotIn("10月17日(土)の大山(伊勢原)は、危険信号が出ています", t)                          # 山ごとの文は並べない
 
     def test_no_main_mountain_still_shows_the_skip_frame(self):
         doc = self.doc([(m, 90.0, {"cold": "警戒"}, 9.0) for m in NEAR[:5]])

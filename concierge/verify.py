@@ -58,7 +58,7 @@ class Ctx:
         for x in brief["hazard_counts"]:
             self.ids[x["id"]] = ("N", x)
         L = brief["lines"]
-        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"])
+        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
         for x in self.lines:
             self.ids[x["id"]] = ("L", x)
         self.target_days = [date.fromisoformat(d["date"]) for d in brief["when"]["days"]]
