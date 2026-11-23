@@ -385,6 +385,12 @@ def _count_re(X):
     return r"(\d+)\s*(?:" + "|".join(re.escape(u) for u in X.R["hazard_count"]["units"]) + ")"
 
 
+def _count_example(X):
+    """件数の文の例: 資料にあれば、その日の件数の事実から(印つき)。"""
+    n = next(iter(X.b["hazard_counts"]), None)
+    return f"例: {n['label']}は、{n['say'][0]}です。[{n['id']}]" if n else "例: 危険信号が警戒以上の山は 31 座"
+
+
 def _universals(X):
     return X.R["hazard_count"]["universal"]
 
@@ -419,6 +425,11 @@ def _check_hazard_counts(X, s, t, ids, errs):
 
     if ns and not ys and any(k in tn for k in kinds):
         err("hazard_count_mismatch", "件数の事実は、危険信号の種類(強風・低体温症・雷)ごとの数を持たない")
+    # 割合・ぼかした言い方(割合を件数と照らすことはしない。印があってもなくても止める)
+    vague = _has_any(tn, CN["vague"])
+    if hazard and vague:
+        errs.append(_err("hazard_vague", s, f"危険信号の文に、割合・ぼかした言い方「{'・'.join(vague[:3])}」がある",
+                         "件数の文を写す(" + _count_example(X) + ")"))
     # 「どれも」「全部」
     cut = _cut(tn, CN["universal_ok"])
     if hazard and _has_any(cut, _universals(X)):
