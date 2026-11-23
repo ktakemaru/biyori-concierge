@@ -167,16 +167,17 @@ class Lines(unittest.TestCase):
         self.assertIsNone(doc["lines"]["hazard_note"])
         self.assertTrue(V.check(F.draft(doc), doc)["ok"])
 
-    def test_verify_wants_the_note_once_and_allows_twice(self):
-        from test_concierge_answer import codes, good_draft
+    def test_verify_puts_the_note_once(self):
+        from test_concierge_answer import good_draft
         doc = build(base_with_shelf(self))
         n = doc["lines"]["hazard_note"]
         line = f"{n['text']}[{n['id']}]\n"
         g = good_draft(doc)
         self.assertTrue(V.check(g, doc)["ok"])
-        self.assertIn("hazard_note_missing", codes(V.check(g.replace(line, ""), doc)))
-        r = V.check(g.replace(line, line + line), doc)
-        self.assertTrue(r["ok"], r["errors"])
+        for text in (g, g.replace(line, ""), g.replace(line, line + line)):        # 注記がなければ足し、2 回あれば 1 回にする(段階 3 の前の準備 3.1)
+            r = V.check(text, doc)
+            self.assertTrue(r["ok"], r["errors"])
+            self.assertEqual(r["final"].count(n["text"]), 1)
 
     def test_answer_name_of_cloud(self):
         doc = build(base_with_shelf(self))

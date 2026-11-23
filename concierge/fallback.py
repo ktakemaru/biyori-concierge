@@ -106,7 +106,7 @@ def draft(brief, compact=False):
     for x, n in days:
         out.append(f"{x['text']}[{x['id']}]" + (_count_sentence(n) if n else ""))
     out.append("")
-    if L.get("hazard_note") and any(h["text"] in x for h in L["hazards"] + (L.get("skips") or []) for x in out):      # 危険信号の注記は 1 回だけ、足りないものの文の前
+    if L.get("hazard_note") and any(h["text"] in x for h in L["hazards"] + (L.get("skips") or []) for x in out):      # 危険信号の注記(位置は verify も置き直す)
         out.append(f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]")
     for g in gaps:
         out.append(f"{g['text']}[{g['id']}]")

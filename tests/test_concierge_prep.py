@@ -1,8 +1,9 @@
 """段階 3 の前の準備(docs/stage3-prep-instructions.md)3.1・3.3・3.4・3.5・3.7 の照合と控えの文。通信しない。
 見本の棚は 3 座しかないので、作り物の山の日(値は本物の予報ではない)でも確かめる(test_concierge_frames.synthetic)。"""
 import unittest
+from unittest import mock
 
-from concierge_helpers import base_with_shelf, build, fact, line_for, make_hazard
+from concierge_helpers import NOW, base_with_shelf, build, fact, line_for, make_hazard
 from helpers import ROOT
 from test_concierge_answer import codes, good_draft
 from test_concierge_counts import SUN, Base, sat_rows
@@ -11,7 +12,7 @@ from test_concierge_frames import DAY, NEAR
 from concierge import brief as B
 from concierge import fallback as F
 from concierge import verify as V
-from concierge.common import brief_schema_errors
+from concierge.common import brief_schema_errors, parse_now, read_json
 
 REP = "横岳という名前の由来には、いくつかの説があるといわれます。"
 
@@ -214,6 +215,119 @@ class VoiceExample(unittest.TestCase):
         self.assertLess(r["final"].index("危険信号が出ています"), r["final"].index("行くなら"))
         self.assertIn(doc["lines"]["skips"][0]["text"], r["final"])
         self.assertFalse(any(h["text"] in r["final"] for h in doc["lines"]["hazards"]))
+
+
+class NotePlaced(Base):
+    """3.1: 危険信号の注記は、verify が正しい位置に 1 回だけ置く。"""
+
+    def setUp(self):
+        self.build([(NEAR[0], 90.0, {"cold": "注意"}, 4.0), (NEAR[1], 89.0, {}, 4.0), (NEAR[2], 88.0, {"wind": "危険"}, 20.0)])
+        L = self.doc["lines"]
+        self.note, self.gap = L["hazard_note"], self.doc["gaps"][0]
+        self.n, self.skip = self.doc["hazard_counts"][0], L["skips"][0]
+        self.a, self.b = [f for f in self.doc["facts"] if f["selected_by"] == "top"]
+        self.h = line_for(self.doc, self.a["id"])
+
+    def w(self, x):
+        return f"{x['text']}[{x['id']}]"
+
+    def draft(self, *middle, picks=True):
+        L = self.doc["lines"]
+        return "\n".join(["土曜の2つの山をすすめます。" if picks else "今回は見送るのがよさそうです。", self.w(L["data_time"]), self.w(L["coverage"]), "", *middle, "", self.w(L["attribution"]),
+                          f"[おすすめ] {self.a['id']}, {self.b['id']}" if picks else "[おすすめ] なし"]) + "\n"
+
+    def final(self, *middle, picks=True):
+        r = V.check(self.draft(*middle, picks=picks), self.doc)
+        self.assertTrue(r["ok"], r["errors"])
+        return r["final"]
+
+    def pos(self, t):
+        """注記の前の行と後ろの行(空行をはさんで)。"""
+        lines = t.split("\n")
+        self.assertEqual(lines.count(self.note["text"]), 1)
+        i = lines.index(self.note["text"])
+        self.assertEqual((lines[i - 1], lines[i + 1]), ("", ""))
+        return lines[i - 2], lines[i + 2]
+
+    def items(self):
+        return [f"1. {self.a['name']}は90点です。[{self.a['id']}]", self.w(self.h), f"2. {self.b['name']}は89点で、危険信号は出ていません。[{self.b['id']}]"]
+
+    def test_the_old_place_and_the_missing_note_give_the_same_text(self):
+        """利用者の試しの形(危険信号の出ていない山の行のすぐ下・山ごとの説明の中)も、書き忘れも、2 回書いたのも、同じ文になる。"""
+        i, note, gap = self.items(), self.w(self.note), self.w(self.gap)
+        want = self.final(*i, "", note, "", gap)
+        self.assertEqual(self.pos(want), (f"2. {self.b['name']}は89点で、危険信号は出ていません。", self.gap["text"]))
+        for middle in ([*i, note, "", gap], [i[0], i[1], note, i[2], "", gap], [*i, "", gap], [note, *i, "", gap, note], [i[0], i[1] + note, i[2], "", gap],
+                       [*i, "", "- " + note, "", gap], [*i, "", self.note["text"], f"[{self.note['id']}]", "", gap]):
+            with self.subTest(middle):
+                self.assertEqual(self.final(*middle), want)
+
+    def test_only_the_note_moves(self):
+        i, gap = self.items(), self.w(self.gap)
+        t = self.final(i[0], self.w(self.note), i[1], i[2], self.w(self.skip), f"警戒以上の山は 1 座です。[{self.n['id']}]", "ほかは名前の由来が楽しい山だといわれます。", gap)
+        rest = [x for x in t.split("\n") if x and x != self.note["text"]]
+        self.assertEqual(rest[3:-1], [i[0].split("[")[0], self.h["text"], i[2].split("[")[0], self.skip["text"], "警戒以上の山は 1 座です。", "ほかは名前の由来が楽しい山だといわれます。", self.gap["text"]])
+
+    def test_after_the_last_hazard_or_count_sentence(self):
+        i, gap = self.items(), self.w(self.gap)
+        count = f"土曜は、危険信号が警戒以上の山は 1 座です。[{self.n['id']}]"
+        t = self.final(*i[:2], "", self.w(self.note), "", gap, "", self.w(self.skip), count, i[2])            # 足りないものの文のあとに、まとめの文と件数の文
+        self.assertEqual(self.pos(t), (f"{i[2].split('[')[0]}", self.doc["lines"]["attribution"]["text"]))     # あとに足りないものの文がないので、段落の終わり
+        t = self.final(*i, "", self.w(self.skip) + count, "", gap)
+        self.assertEqual(self.pos(t), (self.skip["text"] + count.split("[")[0], self.gap["text"]))
+        t = self.final(*i, "", self.w(self.skip) + count + gap)                                               # 1 行の中に足りないものの文が続くとき
+        self.assertEqual(self.pos(t), (self.skip["text"] + count.split("[")[0], self.gap["text"]))
+
+    def test_hazard_in_the_first_item_and_no_gap(self):
+        t = self.final(*self.items())
+        self.assertEqual(self.pos(t), (f"2. {self.b['name']}は89点で、危険信号は出ていません。", self.doc["lines"]["attribution"]["text"]))
+        t = self.final(*self.items(), "", "横浜から行くなら、この2つです。")
+        self.assertEqual(self.pos(t)[1], "横浜から行くなら、この2つです。")
+
+    def test_the_gap_before_the_hazards_is_not_the_place(self):
+        """問い 8 の形: 結論のすぐあとに、足りないものの文がある。"""
+        t = self.final("日帰りで行けるかどうかは、この予報からは判断できません。", *self.items(), "", self.w(self.gap))
+        self.assertEqual(self.pos(t)[1], self.gap["text"])
+
+    def test_a_gap_without_a_mark(self):
+        t = self.final(*self.items(), "凍結や積雪があるかどうかは、この予報からは判断できません。")
+        self.assertEqual(self.pos(t)[1], "凍結や積雪があるかどうかは、この予報からは判断できません。")
+
+    def test_no_note_without_a_hazard_line(self):
+        for middle in ([self.w(self.note), self.w(self.gap)], [self.w(self.gap)],
+                       [f"土曜は、危険信号が警戒以上の山は 1 座です。[{self.n['id']}]", self.w(self.note)]):      # 件数の文だけ
+            with self.subTest(middle):
+                self.assertNotIn(self.note["text"], self.final(*middle, picks=False))
+
+    def test_the_note_is_added_for_the_skip_line_alone(self):
+        t = self.final(self.w(self.skip), self.w(self.gap), picks=False)
+        self.assertEqual(self.pos(t), (self.skip["text"], self.gap["text"]))
+
+    def test_altered_note_is_still_stopped(self):
+        bad = self.note["text"].replace("別に", "分けて") + f"[{self.note['id']}]"
+        self.assertIn("line_altered", codes(V.check(self.draft(*self.items(), bad), self.doc)))
+
+    def test_length_is_counted_with_the_note(self):
+        d = self.draft(*self.items())
+        n = len(V.check(d, self.doc)["final"])
+        self.assertIn(self.note["text"], V.check(d, self.doc)["final"])
+        with mock.patch.dict(self.doc["limits"], {"max_chars": n - 1}):
+            self.assertIn("too_long", codes(V.check(d, self.doc)))
+
+    def test_last_answer_has_the_placed_text_and_the_hook_accepts_it(self):
+        base = base_with_shelf(self)
+        doc = build(base)
+        note = doc["lines"]["hazard_note"]
+        draft = good_draft(doc).replace(f"{note['text']}[{note['id']}]\n", "")
+        r = V.run(draft, doc["id"], base, parse_now(NOW))
+        self.assertEqual((r["status"], r["text"].count(note["text"])), ("PASS", 1))
+        last = read_json(base / "last_answer.json")
+        self.assertEqual((last["brief"], last["text"]), (doc["id"], r["text"]))
+        self.assertEqual((base / "briefs" / f"{doc['id']}.final.txt").read_text(encoding="utf-8"), r["text"])
+        from concierge import stop_hook as SH
+        call = {"name": "Bash", "input": {"command": f"python -X utf8 -m concierge verify d.txt --brief {doc['id']}"}, "result": ""}
+        self.assertTrue(SH.matches(r["text"], SH.accepted_texts({"calls": [call]}, base)))
+        self.assertFalse(SH.matches(r["text"].replace(note["text"], ""), SH.accepted_texts({"calls": [call]}, base)))
 
 
 if __name__ == "__main__":

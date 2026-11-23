@@ -167,8 +167,8 @@ class NotePosition(Base):
             note = self.doc["lines"]["hazard_note"]["text"]
             self.assertEqual(lines.count(note), 1)
             i = lines.index(note)
-            self.assertEqual(lines[i - 1], "")                                  # 段落の頭
-            self.assertIn(lines[i + 1], [g["text"] for g in self.doc["gaps"]])
+            self.assertEqual((lines[i - 1], lines[i + 1]), ("", ""))            # 前後が空行(段落 1 つ。段階 3 の前の準備 3.1)
+            self.assertIn(lines[i + 2], [g["text"] for g in self.doc["gaps"]])
             self.assertTrue(all(lines.index(h["text"]) < i for h in self.doc["lines"]["hazards"] if h["text"] in lines))
 
     def test_last_pick_has_no_hazard_and_no_skip(self):              # 利用者の試しの形(高尾山の下に注記が付いた)
