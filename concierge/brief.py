@@ -3,7 +3,7 @@
 - 質問の文は解釈しない(そのまま残すだけ)。いつ・どこ・興味・名指しの山は、エージェントが引数で渡す。
 - 候補の選び方は機械的(価値の判断はしない): 対象の日・直線 250km 以内・地域で絞り、日ごとに 2 つの枠で選ぶ。
   主役の枠 = 主役にできる山だけを、点数 → 危険信号の軽さ → 直線距離 → 山の ID の順に上位 brief.top_per_day 件。
-  見送りの枠 = 基準点以上で危険信号が「警戒」「危険」の山を、点数 → 直線距離 → 山の ID の順に上位 brief.skip_per_day 件。
+  見送りの枠 = 基準点以上で危険信号が「警戒」「危険」の山を、危険の段階の重さ → 点数 → 直線距離 → 山の ID の順に上位 brief.skip_per_day 件。
   名指しの山は枠と別に必ず入れる。
 - 答えに書いてよい事実を 1 件ずつ id つき(Y001〜・C1〜・L1〜・K001〜・G1〜)で持ち、書いてよい表記(say)を付ける。
   丸めた表記はここで作ったものだけ(AI に丸めさせない)。
@@ -35,16 +35,15 @@ VALUE_FIELDS = (
     ("ridge_wind_ms", "稜線風速", "m/s", 1, "mountain_weather_mvp.py 表の列「稜線風速m/s」・README 探索モードの表"),
     ("day_peak_wind_ms", "日中ピークの風速", "m/s", 1, "README「スコアの仕組み」危険信号「稜線の強風(日中ピーク)」"),
     ("cloud_pct", "雲量", "%", 1, "README 探索モード「雲量%(較正/生)」の左「採点に使う較正後の実効雲量」"),
-    ("cloud_pct_raw", "山頂雲量(予報そのまま)", "%", 1, "README 探索モード「雲量%(較正/生)」の右「予報そのままの山頂雲量」"),
     ("ridge_visibility", "視程(稜線)", "m", None, "mountain_weather_mvp.py 表の列「視程m(稜線)」"),
     ("precip_wet_pct", "雨天割合(活動時間)", "%", 1, "mountain_weather_mvp.py 表の列「雨天割合%(活動時間)」"),
     ("day_total_precip_mm", "降水量(全日)", "mm", 1, "mountain_weather_mvp.py 表の列「降水量mm(全日)」"),
     ("chill", "体感温度(稜線)", "℃", 1, "mountain_weather_mvp.py 表の列「体感温度℃(稜線)」"),
-    ("cape", "雷リスク(CAPE)", "J/kg", None, "mountain_weather_mvp.py 表の列「雷リスクCAPE」"),
 )
 LINE_KEYS = ("data_time", "coverage", "lead_time", "attribution", "hazard_note")      # 決まった文の並び(id の順)。危険信号の文はこのあと
 UNIT_OUT = {"degC": "℃"}
-NOT_SHOWN = ("precip_wet_hours", "precip_total_hours", "precip_msm_hours", "precip_moist_hours", "precip_prob_hours",
+# 資料に出さない値。cloud_pct_raw・cape は、答えに出さないと利用者が決めた(2026-11-23。docs/brief-fields.md)
+NOT_SHOWN = ("cloud_pct_raw", "cape", "precip_wet_hours", "precip_total_hours", "precip_msm_hours", "precip_moist_hours", "precip_prob_hours",
              "precip_total_mm", "day_peak_wind_hour")      # day_peak_wind_hour は日中ピークの風速の「時」として使う
 
 
@@ -190,9 +189,7 @@ def _hazard_line(f):
     for h in f["hazards"]:
         if h["kind"] is None:
             continue
-        if h["kind"] == "thunder" and "cape" in vals:
-            parts.append(f"雷{h['level']}(CAPE {num(vals['cape']['value'])} J/kg)")
-        elif h["kind"] == "wind" and "day_peak_wind_ms" in vals:
+        if h["kind"] == "wind" and "day_peak_wind_ms" in vals:
             hr = vals["day_peak_wind_ms"].get("hour")
             parts.append(f"強風{h['level']}({str(hr) + '時に' if hr is not None else ''}{num(vals['day_peak_wind_ms']['value'])} m/s)")
         elif h["kind"] == "cold" and "chill" in vals:
@@ -212,8 +209,11 @@ def main_key(f):
 
 
 def skip_key(f):
-    """見送りの枠の並び: 点数の高い順 → 直線距離の近い順 → 山の ID の順。"""
-    return (-f["score"], f["distance_km"], f["mountain_id"])
+    """見送りの枠の並び: 危険の段階の重い順(危険 → 警戒。山のいちばん重い段階で比べ、同じならその段階の危険信号の数の多い順)
+    → 点数の高い順 → 直線距離の近い順 → 山の ID の順。控えの文の見送りの並びも同じ。"""
+    worst = LEVEL_RANK.get(f["hazard_level"], 0)
+    n = sum(1 for h in f["hazards"] if LEVEL_RANK.get(h["level"], 0) == worst)
+    return (-worst, -n, -f["score"], f["distance_km"], f["mountain_id"])
 
 
 def _fact(p, mtn, origin, data_day, c, *, named, selected_by=None):
