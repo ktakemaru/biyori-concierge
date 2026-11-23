@@ -273,10 +273,18 @@ class Verify(unittest.TestCase):
         self.assertIn("picks_missing", codes(r))
         r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。", f"土曜の横岳もおすすめです。[{y2['id']}]"))
         self.assertIn("pick_undeclared", codes(r))
-        # 見送りの文は、おすすめの語(「いちばん」など)があっても止めない(通しの試しで止めすぎた形)
+        # 同点のある山を「点数がいちばん高い」と書いた見送りの文は、比べる文の検査で止まる(利用者の決定 2026-11-23)
         r = self.check(g.replace("横岳という名前の由来には、いくつかの説があるといわれます。",
                                  f"点数がいちばん高い横岳は、今回は見送るのがよさそうです。[{y2['id']}]"))
-        self.assertTrue(r["ok"], r["errors"])
+        self.assertEqual(codes(r), ["comparison_tied"])
+        # 見送りの文は、おすすめの語(「いちばん」「行くなら」など)があっても、宣言(pick_undeclared)では止めない(通しの試しで止めすぎた形)
+        y4 = fact(self.doc, "谷川岳", "2026-10-18")                          # 同点のない 1 位。[おすすめ] から外して確かめる
+        only_sat = g.replace(f", {y4['id']}\n", "\n")
+        self.assertEqual(self.check(only_sat)["picks"], [fact(self.doc, "八ヶ岳", "2026-10-17")["id"]])
+        for text in (f"点数がいちばん高い谷川岳は、今回は見送るのがよさそうです。[{y4['id']}]",
+                     f"行くならと考えた横岳も、今回は見送るのがよさそうです。[{y2['id']}]"):
+            r = self.check(only_sat.replace("横岳という名前の由来には、いくつかの説があるといわれます。", text))
+            self.assertTrue(r["ok"], (text, r["errors"]))
 
     def test_cannot_recommend_a_mountain_marked_not_main(self):
         base = base_with_shelf(self, edit=make_hazard("m002", "2026-10-17", "危険"))
