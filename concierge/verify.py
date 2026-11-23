@@ -232,6 +232,8 @@ def _superlative_topics(t, CP):
                 in_clause = any(w in c for w in CP["topics"]["score"])
                 blocked = any(w in c for w in CP["topics"]["not_score"])
                 topic = ("score_low" if low else "score") if (in_clause or score_any) and not (blocked and not in_clause) else "other"
+            if topic is None and any(w in near for w in CP["topics"]["other"]):
+                topic = "other"
             if topic is None:
                 for scope in (c, t):
                     if any(w in scope for w in CP["topics"]["wind"]):

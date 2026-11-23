@@ -74,7 +74,8 @@ class Superlatives(Base):
 
     def test_directions_and_topics_without_a_fact_fail(self):
         y = self.y("八ヶ岳", "2026-10-17")
-        for bad in ("稜線の風がいちばん強い", "横浜からいちばん遠い", "体感温度(稜線)がいちばん低い", "標高がいちばん高い"):
+        for bad in ("稜線の風がいちばん強い", "横浜からいちばん遠い", "体感温度(稜線)がいちばん低い", "標高がいちばん高い", "雲量がいちばん少ない",
+                    "体感温度(稜線)がいちばん暖かい"):
             with self.subTest(bad):
                 self.ng(f"八ヶ岳(赤岳)は、候補の中で{bad}山です。[{y}]", "comparison_unmarked")
 
@@ -100,6 +101,10 @@ class Superlatives(Base):
     def test_recommendation_wording_is_not_a_comparison(self):
         y = self.y("八ヶ岳", "2026-10-17")
         self.ok(f"稜線風速は5.4 m/sの見込みで、土曜の八ヶ岳(赤岳)がいちばんのおすすめです。[{y}]")
+
+    def test_looks_best_is_not_a_comparison(self):                 # 通しの試しの探りで止めすぎた形
+        y = self.y("八ヶ岳", "2026-10-17")
+        self.ok(f"今週末は、土曜がいちばんよさそうで、八ヶ岳(赤岳)の稜線風速は5.4 m/sの見込みです。[{y}]")
 
     def test_names_do_not_count_as_topics(self):
         self.ok("横岳は、地元でいちばん親しまれている山だといわれます。")
