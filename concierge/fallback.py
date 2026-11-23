@@ -85,9 +85,9 @@ def draft(brief, compact=False):
         out.append(f"{f['label']}の{f['name']}は{_n(f['score'])}点で、{why}。[{f['id']}]")
         if f["id"] in hz and "below_threshold" not in f["main_ng"]:
             out.append(f"{hz[f['id']]['text']}[{hz[f['id']]['id']}]")
-    if L.get("hazard_note") and any(h["text"] in x for h in L["hazards"] for x in out):      # 危険信号の注記は 1 回だけ
-        out.append(f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]")
     out.append("")
+    if L.get("hazard_note") and any(h["text"] in x for h in L["hazards"] for x in out):      # 危険信号の注記は 1 回だけ、足りないものの文の前
+        out.append(f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]")
     for g in gaps:
         out.append(f"{g['text']}[{g['id']}]")
     if L["attribution"]:
