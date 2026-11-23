@@ -71,6 +71,15 @@ class Decide(Base):
         self.assertIsNone(self.run_hook("notice"))
         self.assertEqual(self.why("notice", f"{notice}\n\n{ANSWER}"), "mismatch")
 
+    def test_no_words_before_reading_the_files(self):
+        """ファイルを読む前にも作業の説明を書かない決まりが、3 つの文書にある。最後のメッセージに入れば止まる。"""
+        for name in ("AGENTS.md", "CLAUDE.md", ".claude/skills/biyori-concierge/SKILL.md"):
+            with self.subTest(name):
+                text = (ROOT / name).read_text(encoding="utf-8")
+                self.assertIn("ファイルを読む前・", text)
+                self.assertIn("まず AGENTS.md を読みます", text)
+        self.assertEqual(self.why("verified", "まず AGENTS.md を読みます。" + chr(10) + ANSWER), "mismatch")
+
     def test_the_notice_is_the_same_sentence_everywhere(self):
         for name in ("AGENTS.md", "CLAUDE.md", ".claude/skills/biyori-concierge/SKILL.md", "docs/stop-hook.md"):
             with self.subTest(name):
