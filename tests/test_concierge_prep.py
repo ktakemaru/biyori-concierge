@@ -4,7 +4,8 @@ import unittest
 
 from concierge_helpers import base_with_shelf, build, fact
 from test_concierge_answer import codes, good_draft
-from test_concierge_counts import Base, sat_rows
+from test_concierge_counts import SUN, Base, sat_rows
+from test_concierge_frames import DAY, NEAR
 
 from concierge import verify as V
 
@@ -56,6 +57,62 @@ class Vague(Base):
                   "土曜の高尾山は強風危険なので、ほかの山にするのがよさそうです。[%s]" % fact(self.doc, "高尾山", "2026-10-17")["id"]):
             with self.subTest(s):
                 self.ok(s)
+
+
+class ListedUniversal(Base):
+    """3.3: 山の名前を並べた「どれも」は、並べた山の全部の事実と合えば、件数の印がなくても通す。"""
+
+    def setUp(self):
+        rows = [(NEAR[0], 90.0, {"wind": "危険"}, 20.0), (NEAR[1], 89.0, {"wind": "危険", "cold": "危険"}, 20.0), (NEAR[2], 88.0, {"wind": "危険", "cold": "危険"}, 20.0),
+                (NEAR[3], 87.0, {"wind": "警戒"}, 12.0), (NEAR[4], 86.0, {"cold": "注意"}, 4.0)]
+        sun = [(NEAR[0], 90.0, {"wind": "危険"}, 20.0), (NEAR[1], 89.0, {"wind": "警戒"}, 12.0)]
+        self.build(rows, when="今週末", sun=sun, mountains=NEAR[:5], question="見送る山は?")
+        self.y = {(f["mountain_id"], f["date"]): f["id"] for f in self.doc["facts"]}
+        self.n = {f["mountain_id"]: f["name"] for f in self.doc["facts"]}
+
+    def s(self, idx, tail, day=DAY, marks=None, head="土曜の"):
+        ids = marks or [self.y[(NEAR[i], day)] for i in idx]
+        return head + "・".join(self.n[NEAR[i]] for i in idx) + tail + "".join(f"[{x}]" for x in ids)
+
+    def test_true_lists_pass(self):
+        for s in (self.s([0, 1, 2], "は、どれも強風危険です。"), self.s([1, 2], "は、いずれも強風危険・低体温症危険です。"),
+                  self.s([1, 2], "は、どれも強風・低体温症危険の見込みです。"), self.s([0, 1, 2], "は、すべて危険信号が危険です。"),
+                  self.s([0, 1, 2, 3], "には、どれも警戒以上の危険信号が出ています。"), self.s([0, 1, 2, 3, 4], "は、どれも危険信号が出ています。"),
+                  self.s([0, 1, 2], "は、どれも強風危険なので、今回は行かないほうがよさそうです。"), self.s([0, 1, 2], "の3つは、どれも強風危険です。"),
+                  self.s([0, 1, 2], "は、どれも強風の危険信号が出ています。"), self.s([0, 1, 2], "は、どれも強風危険なので、注意して見ます。")):
+            with self.subTest(s):
+                self.ok(s)
+
+    def test_one_wrong_mountain_is_stopped(self):
+        for s in (self.s([0, 1, 2, 3], "は、どれも強風危険です。"), self.s([0, 1], "は、どれも低体温症危険です。"), self.s([0, 1, 2], "は、どれも強風・低体温症危険です。"),
+                  self.s([3, 4], "は、どれも強風の危険信号が出ています。"), self.s([0, 1, 2, 3], "は、すべて危険信号が危険です。"),
+                  self.s([0, 1, 2], "は、どれも強風危険の危険信号は出ていません。"), self.s([0, 1, 2], "は、強風が、どれも危険です。"),
+                  self.s([0, 1, 2], "は、強風が、どれも注意です。")):
+            with self.subTest(s):
+                self.ng(s, "hazard_universal_unmarked")
+
+    def test_every_listed_mountain_needs_its_mark(self):
+        marks = [self.y[(NEAR[i], DAY)] for i in (0, 1)]
+        self.ng(self.s([0, 1, 2], "は、どれも強風危険です。", marks=marks), "hazard_universal_unmarked")
+        self.doc["question"] = "土曜の" + "・".join(self.n.values())                        # 質問に書かれた山でも、印は要る
+        self.ng(self.s([0, 1, 2], "は、どれも強風危険です。", marks=marks), "hazard_universal_unmarked")
+
+    def test_days(self):
+        self.ok(self.s([0, 1], "は、どれも強風危険です。"))
+        self.ng(self.s([0, 1], "は、どれも強風危険です。", day=SUN, head="日曜の"), "hazard_universal_unmarked")      # 日曜の 2 座目は警戒
+        sat_marks = [self.y[(NEAR[i], DAY)] for i in (0, 1)]
+        self.ng(self.s([0, 1], "は、どれも強風危険です。", head="今週末の", marks=sat_marks), "hazard_universal_unmarked")   # 日曜を見ていない
+        mixed = [self.y[(NEAR[0], DAY)], self.y[(NEAR[1], SUN)]]
+        self.ng(self.s([0, 1], "は、どれも危険信号が出ています。", marks=mixed), "hazard_universal_unmarked")                  # 2 座目の土曜の印がない
+
+    def test_not_a_list_still_needs_the_count(self):
+        names = "・".join(self.n[NEAR[i]] for i in (0, 1, 2))
+        marks = "".join(f"[{self.y[(NEAR[i], DAY)]}]" for i in (0, 1, 2))
+        for s in (f"土曜の{names}など、どの山も強風危険です。", f"土曜は{names}が高い点ですが、どれも強風危険です。", f"土曜の基準の70点以上の山は、{names}と、どれも強風危険です。",
+                  f"土曜の{names}のほか、どの山も強風危険です。", f"土曜の{names}は、どれも強風危険で、どの山も危険信号が出ています。"):
+            with self.subTest(s):
+                self.ng(s + marks, "hazard_universal_unmarked")
+        self.ng(f"土曜の{names}は、どれも強風危険です。{marks}[N1]", "hazard_universal_mismatch")
 
 
 if __name__ == "__main__":

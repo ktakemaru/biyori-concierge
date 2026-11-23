@@ -432,7 +432,7 @@ def _check_hazard_counts(X, s, t, ids, errs):
                          "件数の文を写す(" + _count_example(X) + ")"))
     # 「どれも」「全部」
     cut = _cut(tn, CN["universal_ok"])
-    if hazard and _has_any(cut, _universals(X)):
+    if hazard and _has_any(cut, _universals(X)) and not _listed_universal_true(X, t, ids):
         have = {n["date"] for n in X.b["hazard_counts"]}
         need = have if named is None else named
         if not ns:
@@ -463,6 +463,53 @@ def _check_hazard_counts(X, s, t, ids, errs):
         if not ok:
             err("hazard_count_mismatch", f"山の数「{m.group(0)}」が、件数の事実の段階ごとの数と合わない(または、何の数か決められない)")
         prev = m.end()
+
+
+def _listed_universal_true(X, t, ids):
+    """山の名前を並べた「A・B・C は、どれも強風危険…」が、並べた山の全部(印の事実の全部)に合うか。
+    名前を並べていない文・件数の印 [N…] のある文・合うかどうかを決められない文は False(今までどおり件数の事実と照らす)。"""
+    W, CN = X.R["words"], X.R["hazard_count"]
+    ys = [X.ids[i][1] for i in ids if X.ids[i][0] == "Y"]
+    tid = _cut(_marked_names(X, t), CN["universal_ok"])
+    uni = "|".join(re.escape(w) for w in _universals(X))
+    item = r"\x02m\d{3}\x03"
+    lists = re.findall(rf"({item}(?:{CN['listed_sep']}{item})+){CN['listed_tail']}(?:{uni})", tid)
+    if not ys or any(X.ids[i][0] == "N" for i in ids) or not lists or len(lists) != len(re.findall(uni, tid)) or _has_any(tid, CN["listed_not"]):
+        return False
+    # 並べた山の全部に印があるか(日を書いていれば、書いた日ごとに)
+    mids = {m for x in lists for m in re.findall(r"m\d{3}", x)}
+    days = _named_days(X, t)
+    if _has_any(t, CN["listed_all_days"]):
+        days = {d["date"] for d in X.b["when"]["days"]}
+    have = {(f["mountain_id"], f["date"]) for f in ys}
+    if not mids <= {m for m, _ in have} or (days is not None and (not days or not all((m, d) in have for m in mids for d in days))):
+        return False
+    # どの印の事実も、文の危険信号(種類と段階)を持っているか
+    plain = re.sub(item, MT, tid)
+    kinds = "|".join(re.escape(k) for k in W["hazard_kinds"] if k != HZ)
+    lvs = "|".join(re.escape(x) for x in W["hazard_levels"])
+    said = []
+
+    def take(m):                                  # 「強風・低体温症危険」は、どちらも危険
+        said.extend((k, m.group("lv")) for k in re.findall(kinds, m.group("ks")))
+        return " "
+    rest = re.sub(rf"(?P<ks>(?:(?:{kinds})[・とや、])*(?:{kinds}))\s*[のが:は]?\s*(?P<lv>{lvs})", take, plain)
+    said += [(k, None) for k in re.findall(kinds, rest)]
+    claims = _level_claims(plain, W)              # 種類を書かない段階(節ごとの照らしは _check_level_only)
+    for form in W["hazard_level_forms"]["at_least"] + W["hazard_level_forms"]["until"] + W["hazard_level_forms"]["exact"]:
+        rest = re.sub(form.replace("{lv}", f"(?:{lvs})"), " ", rest)
+    if re.search(r"警戒|危険|注意(?![がしを])", rest.replace(HZ, " ")):     # 何の段階か決められない(「注意が要ります」「注意して」は段階ではない)
+        return False
+    for c in _clauses(plain):
+        if (HZ in c or re.search(kinds + "|" + lvs, c)) and _has_any(c, CN["listed_not_clause"]):
+            return False
+    for f in ys:
+        hz = {(h["label"], h["level"]) for h in f["hazards"]}
+        if not hz or not all((k, lv) in hz or (lv is None and any(k == x for x, _ in hz)) for k, lv in said):
+            return False
+        if not all(_level_ok(mode, lv, neg, f) for mode, lv, neg, _ in claims):
+            return False
+    return True
 
 
 def _universal_true(X, t, kinds, lv_re, ns):
