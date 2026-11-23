@@ -106,6 +106,11 @@ class Superlatives(Base):
         y = self.y("八ヶ岳", "2026-10-17")
         self.ok(f"今週末は、土曜がいちばんよさそうで、八ヶ岳(赤岳)の稜線風速は5.4 m/sの見込みです。[{y}]")
 
+    def test_idioms_with_the_superlative_characters_pass(self):   # 「最高の一日」「最低でも」は比べる文ではない
+        self.ok("横岳は、最高の一日を過ごせる山だといわれます。")
+        y = self.y("谷川岳", "2026-10-17")
+        self.ng(f"土曜は、点数が最高の谷川岳です。[{y}]", "comparison_mismatch")      # 比べる文の「最高の」は見る
+
     def test_names_do_not_count_as_topics(self):
         self.ok("横岳は、地元でいちばん親しまれている山だといわれます。")
 

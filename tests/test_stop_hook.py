@@ -29,6 +29,7 @@ class Base(unittest.TestCase):
 
     def transcript(self, name):
         text = (HOOK_FIX / f"{name}.jsonl").read_text(encoding="utf-8").replace("@ROOT@", ROOT.as_posix())
+        text = text.replace("@TMP@", self.base.as_posix())                     # 下書きの場所(リポジトリの外の絶対パス。どの OS でも)
         p = tmpdir(self) / f"{name}.jsonl"
         p.write_text(text, encoding="utf-8", newline="\n")
         return p

@@ -35,7 +35,8 @@
 | 7 | `52a2c37` | 通しの試しの探りで見つけた直し(「雲量はいちばん少ない」を止める・「いちばんよさそう」を止めない) |
 | 7 | `886c9e9` | この報告書と `docs/qa.md`・`docs/answer-voice.md`(**`feature/stage2-finish` の最後の commit**) |
 | 6 | `952fe4f`(`feature/stage2-stop-hook`) | **Stop フック**: `.claude/settings.json`・`.claude/hooks/stop_check.py`・`concierge/stop_hook.py`・`concierge/data/stop_hook.yaml`・`docs/stop-hook.md`。`verify` は出した最後の文を置き場の `last_answer.json` に残す |
-| 6 | (このあとの commit) | この報告書への追記(**`feature/stage2-stop-hook` の最後の commit**) |
+| 6 | `43cc1cf`(同) | この報告書への追記 |
+| 見直し | (このあとの commit。**`feature/stage2-stop-hook` の最後の commit**) | 見直しで見つけた直し: `tests/test_stop_hook.py` の見本の下書きのパスが Windows の形で、GitHub の Linux のテストで落ちるところだった(どの OS でも絶対パスになるようにした)。「最高の一日」「最低でも」などの慣用句を比べる文とみなさない。この報告書の誤り |
 
 作り方の細部(指示書に書いていないもの)と、言い換え・意味の変更:
 
@@ -57,8 +58,8 @@ Stop フックの作り方の細部:
 
 ## 3. テストの結果
 
-- 変更前 213 件 → `feature/stage2-finish` の先頭 **249 件、OK** → `feature/stage2-stop-hook` の先頭 **269 件、OK**(ソケット禁止のまま)。
-- 足したテスト: `tests/test_concierge_frames.py` 13 件、`tests/test_concierge_compare.py` 16 件、`tests/test_rate_limit_kind.py` 7 件、`tests/test_stop_hook.py` 20 件(見本は `tests/fixtures/stop_hook/`)。
+- 変更前 213 件 → `feature/stage2-finish` の先頭 **249 件、OK** → `feature/stage2-stop-hook` の先頭 **270 件、OK**(ソケット禁止のまま)。
+- 足したテスト: `tests/test_concierge_frames.py` 13 件、`tests/test_concierge_compare.py` 16 件(`feature/stage2-stop-hook` で 1 件足して 17 件)、`tests/test_rate_limit_kind.py` 7 件、`tests/test_stop_hook.py` 20 件(見本は `tests/fixtures/stop_hook/`)。
 - 2 章の例外で変えた既存のテスト:
 
 | テスト | 変えたこと | 理由 |
@@ -168,7 +169,7 @@ Stop フックの作り方の細部:
 | 11/23(前回の問い 8) | 11 座のうち主役にできる山は、枠の外から足した 3 座だけ | 主役の枠 8 座(高尾山・鍋割山・陣馬山・御岳山・棒ノ折山・鉄砲木ノ頭・石割山・杓子山)、見送りの枠 3 座(蛭ヶ岳・三ツ峠山・雲取山)。みな 1 位(同点 65 座) |
 
 - 危険信号の注記: 問い 1 は 5 回 → 1 回、問い 10 は 4 回 → 1 回(問い 1〜10 で 1 回以下。危険信号の文を写さなかった問い 3 は 0 回)。「較正」の語は 0 回。
-- 「いちばん」の文に `[C…]` の印が要るようになった。問い 1・3・9 で使い、どれも 1 回目に通った。
+- 「いちばん」の文に `[C…]` の印が要るようになった。問い 1・3・9 で使い、比べる文の検査で落ちたものはなかった(問い 9 は別の検査 `date_mismatch` で 2 回目に合格)。
 - 明日(11/24)は、基準点以上の 6 座が全部「警戒・危険」で、主役にできる山は 0 座。見送りの枠があるので、理由つきで見送りと答えられた。
 
 **通しすぎ・止めすぎ**
@@ -185,7 +186,8 @@ Stop フックの作り方の細部:
 3. 通しすぎ: 「難しさは分かりませんが、凍結しています。[G1]」(「分かりません」を含む文は、ほかの部分も通る。6.1 の決まりのとおり)。
 4. 通しすぎ: 「日曜のほうが土曜より点数の高い山が多いです。」(最上級でない比べ方)。「天城山は一日中晴れる見込みです。」(6.3 のとおり直さない)。
 5. 止めすぎ: 「危険信号が警戒まで出ています」(問い 2)。種類を書かずに段階だけを言う言い方は、簡易行の危険信号(種類なし)とまぎらわしい。
-6. 止めすぎ: 印のない一般の話「高尾山は都心から最も近い人気の山です。」も止まる(6.2 のとおり。数えられる比べ方なので止めてよいと考えた)。
+6. 通しすぎ: 比べた結果 `[C…]` は主役の枠の中だけを比べるので、名指しで枠の外にある主役にできる山のほうが近くても「主役の候補の中でいちばん近い」と書ける(6.2 のとおり)。
+7. 止めすぎ: 印のない一般の話「高尾山は都心から最も近い人気の山です。」も止まる(6.2 のとおり。数えられる比べ方なので止めてよいと考えた)。
 
 ## 5. 仮置きの値と語(今回足したもの・変えたもの)
 
@@ -246,11 +248,14 @@ Stop フックの作り方の細部:
 
 - **フックに問題がなければ、PR は 1 本**: **Pull requests** → **New pull request** で、base `main` ← compare `feature/stage2-stop-hook`(`feature/stage2-finish` を含む)→ **Create pull request**。
 - **フックに問題があれば、`feature/stage2-finish` だけ**: 同じ画面で compare を `feature/stage2-finish` にする。
+  - このときの main の報告書には、この 7 章の中身と第 6 部の記録が入らない(`feature/stage2-stop-hook` のほうの `docs/stage2-finish-report.md` を見る)。見直しの commit の「最高の一日」の直しも入らない。
 - tests が緑になったのを見て **Merge pull request**。
 - そのあと、この Claude Code のウィンドウで `! git switch main` → `! git pull`。
   - 成功の見分け方: `! git log --oneline -1` に、マージの commit が出る。
 
 ### 4. 山だけの定期実行を on にする(ブラウザの GitHub。PR をマージしたあと)
+
+**先に 3 の `! git pull` を済ませる。** マージのあとの棚の目次(manifest)には新しい項目(`attempts[].http_429_kinds`)が入り、古いスキーマは知らない項目を認めないので、pull していない手元では `sync` が新しい棚を検査で落とし、前回の写しを使い続ける。
 
 手順は段階 2 の報告書(`docs/stage2-report.md`)7 章の 4 と同じ:
 
