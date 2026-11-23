@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from collect.common import ROOT, config as base_config
+from collect.common import ROOT, SCHEMAS, config as base_config
 
 JST = timezone(timedelta(hours=9))
 WEEKDAY_JA = "月火水木金土日"
@@ -58,7 +58,7 @@ def config():
     return _merge(base_config(), _local_config())
 
 
-SCHEMA_DIR = PKG / "schemas"     # 答える側のスキーマ(資料 biyori-brief/1)。リポジトリ直下の schemas/ は棚・提案の契約
+SCHEMA_DIR = SCHEMAS     # 資料 biyori-brief/1 のスキーマも、棚・提案の契約と同じリポジトリ直下の schemas/ に置く(利用者の決定。2026-11-23)
 
 
 @lru_cache(maxsize=None)
