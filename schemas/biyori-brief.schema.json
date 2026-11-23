@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "biyori-brief/1",
   "title": "biyori-brief/1(答える側の資料)",
-  "description": "concierge brief が質問ごとに作る資料。答えに書いてよい事実(id つき)・決まった文・組み合わせ・知識カード・足りないもの・書くときの決まり。互換性規則: 項目の追加のみ。削除・意味の変更は版を上げる。段階 2 は山だけ(段階 3・4 で星・生き物を足す)。",
+  "description": "concierge brief が質問ごとに作る資料。答えに書いてよい事実(id つき)・決まった文・組み合わせ・知識カード・足りないもの・書くときの決まり。互換性規則: 項目の追加のみ。削除・意味の変更は版を上げる(例外: 2026-11-24 の rank・rank_ties は、利用者の決定で版を /1 のままにした。前の形の資料は verify が「作り直す」と言って止まる)。段階 2 は山だけ(段階 3・4 で星・生き物を足す)。",
   "type": "object",
   "required": ["schema", "id", "question", "now", "when", "origin", "filters", "shelf", "facts", "candidates", "lines", "plans", "cards", "gaps", "rules", "limits"],
   "properties": {
@@ -50,6 +50,23 @@
           "fact": {"type": "string", "pattern": "^Y\\d{3}$"},
           "mountain_id": {"type": "string", "pattern": "^m\\d{3}$"},
           "among": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+          "say": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+        }
+      }
+    },
+    "hazard_counts": {
+      "type": "array",
+      "description": "日ごとの、基準点以上で危険信号が警戒・危険の山の件数(山のいちばん重い段階で数える)。above = 基準点以上の山の数、all = 見送りの枠の中と外を合わせた数、outside = 見送りの枠の外の数。2026-11-24 に追加",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "date", "label", "weekday", "above", "all", "outside", "say"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^N\\d+$"},
+          "kind": {"const": "hazard_count"},
+          "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "above": {"type": "integer", "minimum": 1},
+          "all": {"$ref": "#/$defs/level_counts"},
+          "outside": {"$ref": "#/$defs/level_counts"},
           "say": {"type": "array", "minItems": 1, "items": {"type": "string"}}
         }
       }
@@ -130,6 +147,11 @@
       "required": ["id", "text"],
       "properties": {"id": {"type": "string", "pattern": "^L\\d+$"}, "text": {"type": "string", "minLength": 1}, "fact": {"type": "string"}}
     },
+    "level_counts": {
+      "type": "object",
+      "required": ["total", "warning", "danger"],
+      "properties": {"total": {"type": "integer", "minimum": 0}, "warning": {"type": "integer", "minimum": 0}, "danger": {"type": "integer", "minimum": 0}}
+    },
     "line_or_null": {"anyOf": [{"$ref": "#/$defs/line"}, {"type": "null"}]},
     "mountain_day": {
       "type": "object",
@@ -141,9 +163,8 @@
         "kind": {"const": "mountain_day"},
         "mountain_id": {"type": "string", "pattern": "^m\\d{3}$"},
         "score": {"type": "number"},
-        "rank": {"type": ["integer", "null"], "minimum": 1, "description": "基準点以上の山の並び順の番号(1, 2, 3…。同点は危険信号の軽さ → 距離 → 山の ID の順)。答えに書く順位は day_rank"},
-        "day_rank": {"type": ["integer", "null"], "minimum": 1, "description": "その日の順位(同点は同じ順位。100 点が 5 座なら 5 座とも 1 位、次は 6 位)。2026-11-23 に追加"},
-        "day_rank_ties": {"type": ["integer", "null"], "minimum": 1, "description": "その順位の山の数(1 なら同点なし)。2026-11-23 に追加"},
+        "rank": {"type": ["integer", "null"], "minimum": 1, "description": "その日の順位(同点は同じ順位。100 点が 5 座なら 5 座とも 1 位、次は 6 位)。2026-11-24 に意味を変えた(それまでは並び順の番号で、その日の順位は day_rank だった。day_rank はやめた)。並び順は facts の順"},
+        "rank_ties": {"type": ["integer", "null"], "minimum": 1, "description": "その順位の山の数(1 なら同点なし)。2026-11-24 に day_rank_ties から改名"},
         "detail_level": {"enum": ["full", "score_only"]},
         "hazards": {
           "type": "array",

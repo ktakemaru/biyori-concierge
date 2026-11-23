@@ -1,5 +1,18 @@
 # 変更履歴
 
+## 未公開(段階 2 の小さな直し。2026-11-24。ブランチ `feature/stage2-polish`)
+
+- **資料 `biyori-brief/1` の項目の名前と意味が変わった(版は `/1` のまま)**: `rank` を「その日の順位(同点は同じ順位)」にし、`day_rank` をやめ、`day_rank_ties` を `rank_ties` にした。
+  並び順は `facts` の順で表す。前の形の資料を `verify` に渡すと「資料を作り直してください」と出て止まる(終了コード 2。書き直しの回数は数えない)。
+- 見送りの枠の並びを、危険の段階の重い順 → 点数 → 近い順 → 山の ID にした。控えの文の見送りも同じ並び(日をまたぐ)。
+- 日ごとの危険信号の件数の事実 `hazard_counts`(印 `[N1]`〜)を足した。照合 `hazard_universal_unmarked`・`hazard_universal_mismatch`(「どれも・全部」)・
+  `hazard_count_unmarked`・`hazard_count_mismatch`(山の数)。
+- 見送りの文の「点数がいちばん高い」にも比べる文の検査を当てた(`compare.score_skip` を空にした)。
+- 種類を書かずに段階だけを言う文(「危険信号が警戒まで出ています」)を、印の事実のいちばん重い段階と照らす(合っていれば通す)。
+- 「山頂雲量(予報そのまま)」と CAPE の数字を答えに出さない(資料の値・書いてよい表記・危険信号の文から外した)。
+- 危険信号の注記の位置(最後の危険信号の文のすぐあとか、足りないものの文の前に 1 回)と、コマンドを呼ぶ合間にも作業の説明を書かないことを、手順と手本に足した。
+  報告は `docs/stage2-polish-report.md`。
+
 ## 未公開(段階 2 の仕上げ: Stop フック。2026-11-23。ブランチ `feature/stage2-stop-hook`)
 
 - Claude Code の Stop フックを作った(`.claude/settings.json`・`.claude/hooks/stop_check.py`・`concierge/stop_hook.py`・`concierge/data/stop_hook.yaml`・`docs/stop-hook.md`)。

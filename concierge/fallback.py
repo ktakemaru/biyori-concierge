@@ -2,6 +2,7 @@
 印つきの下書きとして組み立て、verify と同じ検査に通してから出す(テストで必ず通ることを確かめる)。
 並びは指示書 6.5 の答えの形: 結論 → いつ時点(data_time・coverage)→ おすすめ 3 つまで(日ごとの上位。主役にできる山だけ)と事実
 → 注意(危険信号・先の予報)→ 見送り・足りないもの → 出典(attribution)。"""
+from .brief import skip_key
 from .common import NL
 
 MAX_PICKS = 3
@@ -73,7 +74,8 @@ def draft(brief, compact=False):
     if L["lead_time"] and any(not f["reliable"] for f in chosen):
         out.append(f"{L['lead_time']['text']}[{L['lead_time']['id']}]")
     skip = [f for f in brief["facts"] if not f["main_ok"] and f["named"]][:MAX_NAMED_SKIP]
-    skip += [f for f in brief["facts"] if not f["main_ok"] and not f["named"] and "hazard_hard" in f["main_ng"]][:MAX_SKIP]
+    hard = [f for f in brief["facts"] if not f["main_ok"] and not f["named"] and "hazard_hard" in f["main_ng"]]
+    skip += sorted(hard, key=skip_key)[:MAX_SKIP]        # 日をまたいで、見送りの枠と同じ並び(危険の段階の重い順)。同じなら日の早い順
     if compact:
         skip, gaps = skip[:1], [g for g in gaps if g["kind"] in ("no_safety_info", "shelf_unavailable", "day_not_in_forecast")]
     if skip:
@@ -83,9 +85,9 @@ def draft(brief, compact=False):
         out.append(f"{f['label']}の{f['name']}は{_n(f['score'])}点で、{why}。[{f['id']}]")
         if f["id"] in hz and "below_threshold" not in f["main_ng"]:
             out.append(f"{hz[f['id']]['text']}[{hz[f['id']]['id']}]")
-    if L.get("hazard_note") and any(h["text"] in x for h in L["hazards"] for x in out):      # 危険信号の注記は 1 回だけ
-        out.append(f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]")
     out.append("")
+    if L.get("hazard_note") and any(h["text"] in x for h in L["hazards"] for x in out):      # 危険信号の注記は 1 回だけ、足りないものの文の前
+        out.append(f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]")
     for g in gaps:
         out.append(f"{g['text']}[{g['id']}]")
     if L["attribution"]:

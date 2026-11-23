@@ -115,6 +115,52 @@ class Superlatives(Base):
         self.ok("横岳は、地元でいちばん親しまれている山だといわれます。")
 
 
+class LevelOnly(unittest.TestCase):
+    """種類を書かずに段階だけを言う文(3.5。利用者の決定 2026-11-23): 印の事実のいちばん重い段階と合っていれば通す。"""
+
+    def setUp(self):
+        rows = [("m029", 90.0, {"wind": "注意", "cold": "警戒"}, 9.0), ("m023", 89.0, {"wind": "危険"}, 20.0), ("m022", 88.0, {}, 4.0),
+                ("m027", 87.0, {"cold": "注意"}, 4.0)]
+        self.doc = build(base_with_shelf(self, edit=synthetic(rows)), when="2026-10-17", mountains=["m029", "m023", "m022", "m027"])
+        self.y = {f["mountain_id"]: f["id"] for f in self.doc["facts"]}
+
+    def codes(self, sentence, *mids):
+        L = self.doc["lines"]
+        head = "\n".join(f"{L[k]['text']}[{L[k]['id']}]" for k in ("data_time", "coverage", "attribution"))
+        return codes(V.check(sentence + "".join(f"[{self.y[m]}]" for m in mids) + f"\n{head}\n[おすすめ] なし", self.doc))
+
+    def test_matching_level_passes(self):
+        for s, m in (("高尾山は、危険信号が警戒まで出ています。", "m029"), ("高尾山は危険信号が警戒以上です。", "m029"), ("高尾山には警戒の危険信号が出ています。", "m029"),
+                     ("丹沢山は危険信号が警戒以上です。", "m023"), ("丹沢山には危険の危険信号が出ています。", "m023"), ("丹沢山は危険信号が「危険」まで出ています。", "m023"),
+                     ("大山は危険信号が注意まで出ています。", "m027"), ("高尾山は低体温症警戒の危険信号が出ています。", "m029"),
+                     ("塔ノ岳には警戒以上の危険信号は出ていません。", "m022"), ("大山には警戒以上の危険信号は出ていません。", "m027")):
+            with self.subTest(s):
+                self.assertEqual(self.codes(s, m), [])
+
+    def test_wrong_level_fails(self):
+        for s, m in (("高尾山は、危険信号が危険まで出ています。", "m029"), ("高尾山は、危険信号が注意まで出ています。", "m029"), ("丹沢山は危険信号が警戒まで出ています。", "m023"),
+                     ("丹沢山には警戒の危険信号が出ています。", "m023"), ("塔ノ岳は危険信号が警戒以上です。", "m022"), ("大山は危険信号が警戒以上です。", "m027"),
+                     ("高尾山には警戒以上の危険信号は出ていません。", "m029"), ("丹沢山には危険の危険信号は出ていません。", "m023"),
+                     ("高尾山は強風警戒の危険信号が出ています。", "m029")):
+            with self.subTest(s):
+                self.assertEqual(self.codes(s, m), ["hazard_mismatch"])
+
+    def test_each_clause_is_checked_against_its_own_mountain(self):
+        self.assertEqual(self.codes("高尾山は危険信号が警戒まで、丹沢山は危険信号が危険まで出ています。", "m029", "m023"), [])
+        self.assertEqual(self.codes("高尾山は危険信号が危険まで、丹沢山は危険信号が警戒まで出ています。", "m029", "m023"), ["hazard_mismatch"])
+        self.assertEqual(self.codes("高尾山と丹沢山は、危険信号が警戒まで出ています。", "m029", "m023"), ["hazard_mismatch"])      # どちらかが違えば止める
+
+    def test_simple_rows_have_an_open_level(self):
+        """70 点未満の山(簡易行)の「警戒以上」は、上の段階が分からないので「まで」とは言えない。"""
+        doc = build(base_with_shelf(self), when="2026-10-19", mountains=["谷川岳"])
+        y = fact(doc, "谷川岳", "2026-10-19")
+        self.assertEqual(y["hazards"][0]["level"], "警戒以上")
+        L = doc["lines"]
+        head = "\n".join(f"{L[k]['text']}[{L[k]['id']}]" for k in ("data_time", "coverage", "attribution"))
+        for s, want in (("谷川岳は危険信号が警戒以上です。", []), ("谷川岳は危険信号が警戒まで出ています。", ["hazard_mismatch"])):
+            self.assertEqual(codes(V.check(f"{s}[{y['id']}]\n{head}\n[おすすめ] なし", doc)), want, s)
+
+
 class Scores(Base):
     def test_first_without_tie_passes(self):
         y = self.y("谷川岳", "2026-10-18")

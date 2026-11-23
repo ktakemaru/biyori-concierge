@@ -64,6 +64,33 @@ class Frames(unittest.TestCase):
         r = V.check(F.draft(doc), doc)
         self.assertTrue(r["ok"], r["errors"])
 
+    def test_skip_frame_is_ordered_by_the_level_first(self):
+        """危険 → 警戒。いちばん重い段階が同じなら、その段階の危険信号の数 → 点数 → 近い順 → ID。"""
+        doc = self.doc([("m027", 100.0, {"wind": "警戒"}, 12.0),                     # いちばん近いが、警戒
+                        ("m001", 100.0, {"wind": "危険"}, 20.0),                     # 遠いが、危険
+                        ("m029", 80.0, {"wind": "危険", "cold": "警戒"}, 20.0),       # 危険 1 つ(警戒の数は比べない)
+                        ("m023", 75.0, {"wind": "危険", "cold": "危険"}, 20.0),       # 危険 2 つ
+                        ("m022", 80.0, {"cold": "危険"}, 4.0)])
+        self.assertEqual([f["mountain_id"] for f in sat(doc, "skip")], ["m023", "m001", "m029"])      # 80 点の同点は近い m029
+        cfg = B.config()
+        cfg["concierge"]["brief"].update(skip_per_day=5)
+        with mock.patch("concierge.brief.config", return_value=cfg):
+            doc = self.doc([("m027", 100.0, {"wind": "警戒"}, 12.0), ("m029", 100.0, {"wind": "警戒", "cold": "注意"}, 12.0),
+                            ("m001", 100.0, {"wind": "危険"}, 20.0), ("m022", 100.0, {"wind": "警戒", "cold": "警戒"}, 12.0)])
+        self.assertEqual([f["mountain_id"] for f in sat(doc, "skip")], ["m001", "m022", "m027", "m029"])
+
+    def test_fallback_skip_is_in_the_same_order_across_days(self):
+        """1 日目の「警戒」より、2 日目の「危険」を先に書く。"""
+        def both(d):
+            synthetic([("m027", 100.0, {"wind": "警戒"}, 12.0), ("m029", 99.0, {"wind": "警戒"}, 12.0)])(d)
+            synthetic([("m001", 80.0, {"wind": "危険"}, 20.0)], day="2026-10-18")(d)
+        doc = build(base_with_shelf(self, edit=both))
+        r = V.check(F.draft(doc), doc)
+        self.assertTrue(r["ok"], r["errors"])
+        t = r["final"]
+        self.assertLess(t.index("10月18日(日)の谷川岳は80点で"), t.index("10月17日(土)の大山(伊勢原)は100点で"))
+        self.assertNotIn("高尾山は99点で", t)                                          # 2 つまで
+
     def test_no_main_mountain_still_shows_the_skip_frame(self):
         doc = self.doc([(m, 90.0, {"cold": "警戒"}, 9.0) for m in NEAR[:5]])
         self.assertEqual([f["selected_by"] for f in sat(doc)], ["skip"] * 3)
@@ -87,7 +114,7 @@ class Frames(unittest.TestCase):
     def test_tied_ranks_are_the_same_rank_and_say_so(self):
         doc = self.doc([(m, 100.0, {}, 5.0) for m in NEAR[:4]] + [("m017", 100.0, {"wind": "危険"}, 20.0), ("m016", 95.0, {}, 5.0)])
         by = {f["mountain_id"]: f for f in sat(doc)}
-        self.assertEqual([by[m]["day_rank"] for m in NEAR[:4] + ["m017", "m016"]], [1, 1, 1, 1, 1, 6])
+        self.assertEqual([by[m]["rank"] for m in NEAR[:4] + ["m017", "m016"]], [1, 1, 1, 1, 1, 6])
         self.assertIn("1位(同点 5 座)", by["m027"]["say"])
         self.assertNotIn("1位", by["m027"]["say"])
         self.assertIn("6位", by["m016"]["say"])
@@ -100,7 +127,7 @@ class Frames(unittest.TestCase):
                 ("m022", 97.0, {"wind": "危険"}, 20.0), ("m026", 60.0, {}, 5.0)]
         with mock.patch("concierge.brief.config", return_value=cfg):
             doc = self.doc(rows, mountains=["高尾山", "塔ノ岳", "鍋割山"])
-        self.assertEqual([(f["mountain_id"], f["selected_by"], f["day_rank"]) for f in sat(doc)],
+        self.assertEqual([(f["mountain_id"], f["selected_by"], f["rank"]) for f in sat(doc)],
                          [("m027", "top", 1), ("m023", "skip", 3), ("m029", "named", 2), ("m022", "named", 4), ("m026", "named", None)])
 
     def test_main_ok_min_is_gone(self):
@@ -158,6 +185,28 @@ class Lines(unittest.TestCase):
         self.assertNotIn("- 雲量(較正後)", md)
         self.assertIn("答えには「雲量」とだけ書く", md)
         self.assertNotIn("較正", F.draft(doc))
+
+    def test_raw_cloud_and_cape_are_not_in_the_answer(self):
+        """山頂雲量(予報そのまま)と CAPE の数字は、書いてよい表記にも Markdown にも出さない。雷は段階だけ(利用者の決定 2026-11-23)。"""
+        from concierge_helpers import line_for, make_hazard
+        from test_concierge_answer import codes, good_draft
+        doc = build(base_with_shelf(self, edit=make_hazard("m003", DAY, "警戒", "thunder")))
+        y = fact(doc, "横岳", DAY)
+        self.assertIn("雷警戒・", line_for(doc, y["id"])["text"] + "・")
+        for text in (B.render_md(doc), line_for(doc, y["id"])["text"], " ".join(s for f in doc["facts"] for s in f["say"])):
+            for w in ("CAPE", "J/kg", "予報そのまま"):
+                self.assertNotIn(w, text)
+        self.assertEqual([v["key"] for f in doc["facts"] for v in f["values"] if v["key"] in ("cape", "cloud_pct_raw")], [])
+        src = {p["id"]: {e["metric"]: e["value"] for e in p["evidence"]} for p in self.proposals()}[f"yamabiyori:explore:{DAY}:m003"]
+        for bad in (f"横岳の雷リスクは{B.num(src['cape'])} J/kgです。[{y['id']}]", f"横岳の雷リスク(CAPE)は{B.num(src['cape'])}です。[{y['id']}]"):
+            r = V.check(good_draft(doc).replace("横岳という名前の由来には、いくつかの説があるといわれます。", bad), doc)
+            self.assertIn("number_mismatch", codes(r), bad)
+
+    @staticmethod
+    def proposals():
+        import json
+        from concierge_helpers import SHELF_FIX
+        return json.loads((SHELF_FIX / "proposals" / "yamabiyori.json").read_text(encoding="utf-8"))["proposals"]
 
     def test_part_of_the_days_out_of_the_forecast_is_said_in_the_fallback_too(self):
         doc = build(base_with_shelf(self), when="2026-10-18..2026-10-20")              # 見本の棚は 10/19 まで
