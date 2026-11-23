@@ -1,0 +1,3 @@
+{"type": "user", "uuid": "u26", "message": {"role": "user", "content": "今週末、登山に行くならどこ?"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t27", "name": "PowerShell", "input": {"command": "$env:X=\"1\"; python -X utf8 -m concierge brief --question \"今週末、登山に行くならどこ?\""}}]}}
+{"type": "user", "uuid": "u27r", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t27", "content": [{"type": "text", "text": "b20261015-080000-0000aaaa"}]}]}}

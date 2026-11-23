@@ -1,0 +1,4 @@
+{"type": "user", "uuid": "u28", "message": {"role": "user", "content": "今週末、登山に行くならどこ?"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "python -X utf8 -m concierge brief --question \"今週末、登山に行くならどこ?\""}}]}}
+{"type": "user", "uuid": "u1r", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t1", "content": [{"type": "text", "text": "b20261015-080000-0000aaaa\nC:/x/briefs/b20261015-080000-0000aaaa.json\nC:/x/briefs/b20261015-080000-0000aaaa.md"}]}]}}
+{"type": "user", "uuid": "u29", "message": {"role": "user", "content": "<task-notification>\n<task-id>x</task-id>\n</task-notification>"}}

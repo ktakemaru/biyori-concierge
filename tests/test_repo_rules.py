@@ -14,7 +14,8 @@ from collect.common import allow_hosts, config
 class Schemas(unittest.TestCase):
     def test_all_schemas_are_valid(self):
         files = sorted((ROOT / "schemas").glob("*.schema.json"))
-        self.assertEqual([f.name for f in files], ["biyori-collect-run.schema.json", "biyori-mountains.schema.json",
+        self.assertEqual([f.name for f in files], ["biyori-brief.schema.json",
+                                                   "biyori-collect-run.schema.json", "biyori-mountains.schema.json",
                                                    "biyori-proposal.schema.json", "biyori-request-log.schema.json",
                                                    "biyori-shelf.schema.json"])
         for f in files:

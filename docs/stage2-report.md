@@ -33,7 +33,7 @@
 | 5 | `6bccb57` | `docs/qa.md`。通しの試しで見つけた止めすぎ・通しすぎの直し(下の 4 章) |
 | 6 | `703cd13` | `collect.yml`: 定期実行で取るビヨリを変数 `BIYORI_COLLECT_AGENTS` で選ぶ(未設定・それ以外は `yamabiyori`)。別の commit |
 | 7 | `ca73d45` | `docs/stage2-report.md` と CHANGELOG |
-| 見直し | (このあとの最後の commit) | スキーマを `concierge/schemas/` へ移し、`tests/test_repo_rules.py` を main に戻した。種類 C の検査を締めた。`kept_previous` の決まった文の句点。控えの文(名指しの山・予報の範囲の外・長すぎるとき) |
+| 見直し | `505933d` | スキーマを `concierge/schemas/` へ移し、`tests/test_repo_rules.py` を main に戻した。種類 C の検査を締めた。`kept_previous` の決まった文の句点。控えの文(名指しの山・予報の範囲の外・長すぎるとき) |
 
 設計で決めたこと(作業指示書に書いていない細部):
 

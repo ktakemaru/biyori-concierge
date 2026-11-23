@@ -108,7 +108,7 @@ docs/                     段階ごとの報告 stageN-report.md、対応表、�
 manifest.json                 棚の目次(下)
 yamabiyori/explore.json       ヤマビヨリの --json-out そのまま(全76座)
 yamabiyori/mountains.json     山の一覧(id・名前・緯度経度・標高・地域・アクセス)。MOUNTAINS を読み出した写し。id は MOUNTAINS の id をそのまま使う(2026-11-22 改訂)
-hoshibiyori/milkyway.json     ホシビヨリの --json-out(天の川モード。7章 H1)
+hoshibiyori/milkyway.json     ホシビヨリの --json-out(hoshibiyori-explore/1。天の川モード)
 hoshibiyori/stars.json        同(星空・星座モード)
 proposals/yamabiyori.json     共通の形(biyori-proposal/1)に直したもの
 proposals/hoshibiyori.json
@@ -182,7 +182,7 @@ ATTRIBUTION.md                出典と利用条件(Open-Meteo CC BY 4.0、気�
 - 実行するコマンド:
   - 山: `mountain_weather_mvp.py --json-out <file>`(確認のときは `--limit 3`)。終了コード 0 で、出力の `schema` が `yamabiyori-report-data/1` であること。
     `fetched` が `pool_size` より少なければ、同じコマンドをもう一度実行する(1 回目を含めて最大 3 回。取れた山はヤマビヨリのキャッシュで通信なし)。通信の上限と時間の上限は全部の回の合計で数え、時間を超えたら次の回を始めない。2 回目以降の 429 も上と同じ判定。(2026-11-22 改訂)
-  - 星: 7 章 H1 の `--json-out` を、`--target milkyway` と `--target stars` の2回。2回目は同じ格子セルのキャッシュが効くはずなので、通信が増えないことを実測で確かめる(増えるなら報告)。HTML レポート・天気図・ひまわり画像は取得しない。
+  - 星: ホシビヨリの `--json-out`(`hoshibiyori-explore/1`)を、`--target milkyway` と `--target stars` の2回。2回目は同じ格子セルのキャッシュが効くはずなので、通信が増えないことを実測で確かめる(増えるなら報告)。HTML レポート・天気図・ひまわり画像は取得しない。
 - 取得のあと、`proposals/*.json` に変換し、スキーマで検査する。
 - 1回の実行の最後に、ホスト別の通信回数・所要時間・推定 call 数を manifest と `logs/requests.json` に書く。call の換算式は未確認なので「推定」と明記する。
 
@@ -441,3 +441,9 @@ Claude Code は commit まで行う。**push は利用者が行う**(権限で�
 | 9 章 | `C:\mountain-weather-main` を `C:\yamabiyori` に直した | 2026-11-16 にフォルダ名を変えた |
 | 10 章 | U1・U2 に段階 1 の結果を足し、U6 を直し、U8〜U10 を足した | 段階 1 の実測。イキモノビヨリの入口の変更。この見直しで残った未確認 |
 | 12 章 | この章を足した | 改訂の記録 |
+
+### 2026-11-23(段階 2 の仕上げ。作業指示は `docs/stage2-finish-instructions.md`、結果は `docs/stage2-finish-report.md`)
+
+| 節 | 直したこと | 理由 |
+|---|---|---|
+| 4 章・5.2 | 残っていた「7 章 H1」の 2 か所を「ホシビヨリの `--json-out`(`hoshibiyori-explore/1`)」に直した | H1 は済んで 7 章から消えている |

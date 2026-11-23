@@ -22,7 +22,7 @@ from pathlib import Path
 from . import meta as meta_mod
 from . import yamabiyori as yama
 from .common import allow_hosts, config, iso, now_jst, read_json, schema_errors, write_json
-from .runner import read_request_log, run_hooked, summarize
+from .runner import rate_limit_kinds, read_request_log, run_hooked, summarize
 
 AGENTS = ("yamabiyori", "hoshibiyori")
 RUN_SCHEMA = "biyori-collect-run/1"
@@ -113,7 +113,7 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs
                                 tolerate_429=max_429 > 0)
         att = {"n": n, "status": "ok" if fail is None else fail[0], "reason": None if fail is None else fail[1],
                "requests": len(res.records), "runtime_s": res.runtime_s, "pool_size": None, "fetched": None,
-               "http_429": res.http_429}
+               "http_429": res.http_429, "http_429_kinds": res.http_429_kinds}
         if fail is not None and fail[2]:
             att["detail"] = str(fail[2])[:500]
         if fail is None:
@@ -143,7 +143,8 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs
     fetch["http_429"] = sum(r.http_429 for r in results)
     fetch["http_429_tolerated"] = sum(r.http_429_tolerated for r in results)
     entry = dict(base, requests=len(all_recs), runtime_s=runtime, data_time=None, fetch=fetch, attempts=attempts,
-                 retry_stop=stop, http_429=fetch["http_429"], http_429_tolerated=fetch["http_429_tolerated"])
+                 retry_stop=stop, http_429=fetch["http_429"], http_429_tolerated=fetch["http_429_tolerated"],
+                 http_429_kinds=fetch["http_429_kinds"])
     if any(a["status"] == "rate_limited" for a in attempts):
         return dict(entry, status="rate_limited", reason="rate_limited")
     if fetch["blocked_host"]:
@@ -208,7 +209,8 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_
         if a not in agents:
             continue
         if rate_limited_early:
-            results[a] = {"status": "rate_limited", "reason": "rate_limited_at_metadata", "requests": 0, "runtime_s": 0.0, "data_time": None}
+            results[a] = {"status": "rate_limited", "reason": "rate_limited_at_metadata", "requests": 0, "runtime_s": 0.0, "data_time": None,
+                          "http_429_kinds": rate_limit_kinds([x for m in meta_results for x in m.records])}      # メタデータの取得の 429 の種類
         elif a == "yamabiyori":
             results[a] = run_yamabiyori(checkout=checkouts["yamabiyori"], python=pythons["yamabiyori"], out_dir=out_dir,
                                         limit=yama_limit, ref=yamabiyori_ref, model_runs_fn=runs_now)
@@ -225,7 +227,7 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_
             "estimated_calls_note": "estimated_calls は推定(Open-Meteo の公式の換算式は未確認。config.yaml の estimated_calls)",
             "total": totals,
             "agents": {a: {k: r.get("fetch", {}).get(k) for k in ("requests", "by_host", "by_status", "by_error", "estimated_calls", "aborted", "blocked_host",
-                                                                   "http_429", "http_429_tolerated")}
+                                                                   "http_429", "http_429_tolerated", "http_429_kinds")}
                        for a, r in results.items()},
             "metadata": summarize([x for m in meta_results for x in m.records])}
     write_json(out_dir / "logs" / "requests.json", logs)
@@ -301,7 +303,8 @@ def main_run(args):
         print(f"{a}: {r['status']}" + (f" ({r.get('reason')})" if r.get("reason") else "")
               + (f" 山={yama.coverage_text(r['coverage'])}" if "coverage" in r else "")
               + f" requests={r.get('requests')} runtime_s={r.get('runtime_s')}"
-              + (f" 429={r['http_429']}回(フックが通した {r.get('http_429_tolerated') or 0} 回)" if r.get("http_429") else ""))
+              + (f" 429={r['http_429']}回(フックが通した {r.get('http_429_tolerated') or 0} 回)" if r.get("http_429") else "")
+              + (f" 429の種類={r['http_429_kinds']}" if r.get("http_429_kinds") else ""))
         for t in r.get("attempts") or []:
             print(f"  {a} {t['n']}回目: {t['status']}" + (f" ({t['reason']})" if t.get("reason") else "")
                   + f" requests={t['requests']} fetched={t['fetched']}/{t['pool_size']} runtime_s={t['runtime_s']}"

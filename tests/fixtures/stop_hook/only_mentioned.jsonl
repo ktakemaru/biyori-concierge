@@ -1,0 +1,3 @@
+{"type": "user", "uuid": "u22", "message": {"role": "user", "content": "手順のコマンドを探して"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t23", "name": "Bash", "input": {"command": "grep -rn \"python -X utf8 -m concierge brief\" docs"}}]}}
+{"type": "user", "uuid": "u23r", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t23", "content": [{"type": "text", "text": "docs/x: python -X utf8 -m concierge brief"}]}]}}

@@ -9,11 +9,13 @@
   結果を `data` ブランチ(棚)に置きます。Open-Meteo への通信はここだけで、計測フック(`collect/measure/`)で
   許可ホスト以外への送信を止め、回数を数え、4xx/5xx で即中止します。429 だけは、ヤマビヨリが 1 分の上限で待って取り直せるよう、
   1 回の実行で 5 回(ヤマビヨリの `MINUTELY_RETRY_MAX`)まで通します。429 があった回は、全部の山がそろったときだけ成功とし、
-  そろわなければ取り直さずに棚を前回のままにします。定期実行はリポジトリの変数 `BIYORI_COLLECT_SCHEDULE` が `on` のときだけ動きます。
+  そろわなければ取り直さずに棚を前回のままにします。どの上限(1 日・1 時間・1 分)の 429 だったかも、種類ごとの回数だけを記録します(`http_429_kinds`)。定期実行はリポジトリの変数 `BIYORI_COLLECT_SCHEDULE` が `on` のときだけ動きます。
   山の ID(`m001`〜)は、ヤマビヨリの `MOUNTAINS` の `id` をそのまま使います(並び順では作りません。`id` の無い古いヤマビヨリは読めないとして止まります)。
 - **答える側**(`concierge/`): 棚を読むだけで、Open-Meteo には通信しません(通信は `sync` の `git fetch origin data` だけ)。
   「資料 → AI が書く → 照合」の形で答えます: コード(`brief`)が質問のための資料(確かめた事実・決まった文・足りないもの)を作り、
   エージェントが資料だけを見てガイドとして下書きを書き、コード(`verify`)が資料と照らしてから送ります。段階 2 は山だけです。
+  資料の候補は日ごとに、主役にできる山の枠(8 座)と、点数は基準以上だが危険信号が「警戒」「危険」の見送りの枠(3 座)で選びます
+  (並びは 点数 → 危険信号の軽さ → 出発地からの直線距離。好みの仮置き。`config.yaml`)。
 
 ## 使い方(答える側)
 
@@ -27,8 +29,9 @@ python -X utf8 -m concierge brief --question "今週末、登山に行くなら�
 python -X utf8 -m concierge verify <下書きのファイル> --brief <資料の id>   # 合格なら送る文。不合格なら理由(2 回まで直せる。3 回目は控えの文)
 ```
 
-- 置き場は `BIYORI_CONCIERGE_DATA_DIR`(未設定なら Windows は `%LOCALAPPDATA%iyori-concierge`)。棚の写し・資料・照合の記録が入ります。リポジトリの中には書きません。
-- 資料の形は `concierge/schemas/biyori-brief.schema.json`、予報の値の名前と出典は `docs/brief-fields.md`、検査の一覧は `docs/answer-checks.md`、書き方の手本は `docs/answer-voice.md`、日付の規則は `docs/dates.md`、試験問題は `docs/qa.md`。
+- 置き場は `BIYORI_CONCIERGE_DATA_DIR`(未設定なら Windows は `%LOCALAPPDATA%\biyori-concierge`)。棚の写し・資料・照合の記録が入ります。リポジトリの中には書きません。
+- Claude Code では、`verify` を通さない答え・`verify` の文に足し引きした答えを Stop フックで止めます(`docs/stop-hook.md`。切るときは環境変数 `BIYORI_CONCIERGE_STOP_HOOK=off`)。
+- 資料の形は `schemas/biyori-brief.schema.json`、予報の値の名前と出典は `docs/brief-fields.md`、検査の一覧は `docs/answer-checks.md`、書き方の手本は `docs/answer-voice.md`、日付の規則は `docs/dates.md`、試験問題は `docs/qa.md`。
 
 棚の形式は `schemas/biyori-shelf.schema.json`(manifest)ほか。対応表は `docs/yamabiyori-mapping.md`。
 

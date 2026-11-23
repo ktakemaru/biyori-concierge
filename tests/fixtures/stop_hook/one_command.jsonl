@@ -1,0 +1,3 @@
+{"type": "user", "uuid": "u11", "message": {"role": "user", "content": "今週末、登山に行くならどこ?"}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t12", "name": "Bash", "input": {"command": "BID=$(python -X utf8 -m concierge brief --question \"今週末、登山に行くならどこ?\" | head -1)\npython -X utf8 -m concierge verify d.txt --brief \"$BID\""}}]}}
+{"type": "user", "uuid": "u12r", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t12", "content": [{"type": "text", "text": "答えの文"}]}]}}

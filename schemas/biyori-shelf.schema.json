@@ -66,7 +66,8 @@
           "pool_size": {"type": ["integer", "null"], "minimum": 0},
           "fetched": {"type": ["integer", "null"], "minimum": 0},
           "cache_suspect": {"type": "boolean", "description": "通信が「前の回に欠けた山 × 3 × 3」を超えた(キャッシュが効いていない疑い)"},
-          "http_429": {"type": "integer", "minimum": 0, "description": "この回(attempts の 1 回)の HTTP 429 の回数。2026-11-22 に追加"}
+          "http_429": {"type": "integer", "minimum": 0, "description": "この回(attempts の 1 回)の HTTP 429 の回数。2026-11-22 に追加"},
+          "http_429_kinds": {"type": "object", "propertyNames": {"enum": ["daily", "hourly", "minutely", "unknown"]}, "additionalProperties": {"type": "integer", "minimum": 0}, "description": "429 の種類ごとの回数(daily・hourly・minutely・unknown。計測フックの記録の本文の先頭から決める。本文は入れない)。2026-11-23 に追加"}
         }
       }
     },
@@ -94,7 +95,8 @@
         "limit": {"type": ["integer", "null"], "description": "確認用の --limit(山の数)。null は全座"},
         "files": {"type": "array", "items": {"type": "string"}},
         "http_429": {"type": "integer", "minimum": 0, "description": "この回の実行の HTTP 429 の回数(計測フックの記録。フックが通したものも、中止のきっかけになったものも数える)。成功した回でも残す。2026-11-22 に追加"},
-        "http_429_tolerated": {"type": "integer", "minimum": 0, "description": "フックが通した(子プロセスを止めなかった)429 の回数(BIYORI_HTTP_429_MAX_TOTAL の範囲内)。2026-11-22 に追加"}
+        "http_429_tolerated": {"type": "integer", "minimum": 0, "description": "フックが通した(子プロセスを止めなかった)429 の回数(BIYORI_HTTP_429_MAX_TOTAL の範囲内)。2026-11-22 に追加"},
+        "http_429_kinds": {"type": "object", "propertyNames": {"enum": ["daily", "hourly", "minutely", "unknown"]}, "additionalProperties": {"type": "integer", "minimum": 0}, "description": "429 の種類ごとの回数(daily・hourly・minutely・unknown。計測フックの記録の本文の先頭から決める。本文は入れない)。2026-11-23 に追加"}
       },
       "allOf": [
         {"if": {"properties": {"status": {"const": "ok"}}}, "then": {"properties": {"kept_from": {"type": "null"}, "data_time": {"$ref": "#/$defs/dt"}}}},

@@ -1,5 +1,25 @@
 # 変更履歴
 
+## 未公開(段階 2 の仕上げ: Stop フック。2026-11-23。ブランチ `feature/stage2-stop-hook`)
+
+- Claude Code の Stop フックを作った(`.claude/settings.json`・`.claude/hooks/stop_check.py`・`concierge/stop_hook.py`・`concierge/data/stop_hook.yaml`・`docs/stop-hook.md`)。
+  この回に `concierge brief` を使ったのに、`verify` を通していない・最後のメッセージが `verify` の文と違うときに止める(同じ回で 2 回まで)。
+  開発の作業の回は止めない。`BIYORI_CONCIERGE_STOP_HOOK=off` で切る。`verify` は出した最後の文を置き場の `last_answer.json` に残す。
+
+## 未公開(段階 2 の仕上げ。2026-11-23)
+
+- 資料の候補の選び方を、日ごとの「主役の枠」(主役にできる山だけ 8 座)と「見送りの枠」(危険信号が警戒・危険の山 3 座。仮置き)にした。
+  `main_ok_min`(枠の外から足す処理)はやめた。並びは 点数 → 危険信号の軽さ → 出発地からの直線距離 → 山の ID。案(`plans`)・控えの文も同じ並び。
+- その日の順位を、同点は同じ順位にした(`day_rank`・`day_rank_ties`。表記は「1位(同点 5 座)」)。今までの `rank` は並び順の番号として残した。
+- 危険信号の注記を、山ごとの文から外して決まった文 1 つ(`lines.hazard_note`)にした。照合 `hazard_note_missing`。
+- 答えに出る名前「雲量(較正後)」を「雲量」にした。
+- 照合: 足りないものの印 `[G…]` だけでは種類 C の語を通さない。比べる文(いちばん・最も)を、比べた結果の事実 `[C…]` と順位に照らす
+  (`comparison_unmarked`・`comparison_mismatch`・`comparison_tied`・`comparison_scope`・`rank_tie_hidden`)。
+- 資料のスキーマを `concierge/schemas/` から `schemas/` に移した(版は `/1` のまま。項目を足した)。
+- 取得の側: 429 がどの上限(1 日・1 時間・1 分)だったかを、計測フックの記録の本文の先頭から決めて、種類ごとの回数 `http_429_kinds` を
+  回ごとの記録・run.json・manifest・`logs/requests.json` に足した(スキーマは項目の追加だけ。本文は棚に載せない)。まとめの「429」の行にも出す。
+- 文書の直し(開発指示書の「H1」2 か所、`collect/__init__.py` の説明、README の置き場の文字化け)。報告は `docs/stage2-finish-report.md`。
+
 ## 未公開(段階 2: 山だけで、質問から答えまで通す。2026-11-22)
 
 - 答える側 `concierge/` を作った: `sync`(`git fetch origin data` → 検査してから置き場に写す。失敗しても止めない)・`status`・

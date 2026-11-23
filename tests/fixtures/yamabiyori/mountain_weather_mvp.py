@@ -6,7 +6,8 @@
 取り直しのテスト: FAKE_YAMA_PLAN="partial:9,ok:3" と FAKE_YAMA_STATE=<ファイル> で、呼ばれた回ごとに形を変え、
   その回の通信の記録(status 200)を指定の件数だけ BIYORI_REQ_LOG に書く(実際には通信しない)。
 429 を通す設定のテスト(2026-11-22): rl<k>ok / rl<k>partial(429 を k 回受けてから ok / partial の出力。
-  BIYORI_HTTP_429_MAX_TOTAL を超えた 429 では、フックと同じく中止の記録を書いて 75 で終わる)。"""
+  BIYORI_HTTP_429_MAX_TOTAL を超えた 429 では、フックと同じく中止の記録を書いて 75 で終わる)。
+  FAKE_YAMA_429_BODY="本文|本文|…" があれば、i 回目の 429 の記録に計測フックと同じ body_head を付ける(2026-11-23)。"""
 import argparse
 import json
 import os
@@ -47,6 +48,10 @@ if rl:
     with open(os.environ["BIYORI_REQ_LOG"], "a", encoding="utf-8") as f:
         for i in range(int(rl.group(1))):
             rec = {"n": 1000 + i, "host": "api.open-meteo.com", "path": "/v1/forecast", "status": 429, "hourly_vars": 49}
+            bodies = os.environ.get("FAKE_YAMA_429_BODY")
+            if bodies:
+                bodies = bodies.split("|")
+                rec["body_head"] = bodies[min(i, len(bodies) - 1)]
             if i < limit:
                 f.write(json.dumps(dict(rec, rate_limit_tolerated=True)) + "\n")
                 continue

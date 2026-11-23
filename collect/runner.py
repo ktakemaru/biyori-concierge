@@ -44,6 +44,11 @@ class ChildResult:
         return sum(r.get("status") == 429 for r in self.records)
 
     @property
+    def http_429_kinds(self):
+        """この回の 429 の種類ごとの回数(例 {"hourly": 1})。429 が無ければ {}。"""
+        return rate_limit_kinds(self.records)
+
+    @property
     def http_429_tolerated(self):
         """フックが通した(子プロセスを止めなかった)429 の回数。"""
         return sum(bool(r.get("rate_limit_tolerated")) for r in self.records)
@@ -131,6 +136,27 @@ def run_hooked(argv, *, cwd, req_log, max_requests, allow, timeout_s, extra_env=
 
 
 # ------------------------------------------------------------------ 集計(座標・本文は入れない)
+RATE_LIMIT_KINDS = ("daily", "hourly", "minutely")      # 重い順に探す。どれも無ければ unknown
+
+
+def rate_limit_kind(body_head):
+    """429 の応答の本文の先頭(計測フックの記録の body_head)から、どの上限かを決める。本文が無い・語が無ければ unknown。
+    規則はヤマビヨリ mountain_weather_core.py の classify_rate_limit()(commit fdadece・1.10.1 で確認)と同じ:
+    大文字小文字を区別せず、daily → hourly → minutely の順に語を探す(ヤマビヨリのコードは import しない・写さない)。"""
+    text = body_head.lower() if isinstance(body_head, str) else ""
+    return next((k for k in RATE_LIMIT_KINDS if k in text), "unknown")
+
+
+def rate_limit_kinds(records):
+    """通信の記録 → 429 の種類ごとの回数。本文は入れない。"""
+    out = {}
+    for r in records:
+        if r.get("status") == 429:
+            k = rate_limit_kind(r.get("body_head"))
+            out[k] = out.get(k, 0) + 1
+    return dict(sorted(out.items()))
+
+
 def estimated_calls(rec, cfg=None):
     """1 リクエストの call の推定(公式の式は未確認。config.yaml の estimated_calls)。メタデータは 0。"""
     c = (cfg or config())["estimated_calls"]
@@ -163,6 +189,7 @@ def summarize(records, abort=None):
     return {"requests": len(records), "by_host": dict(sorted(by_host.items())),
             "by_status": dict(sorted(by_status.items())),
             "by_error": dict(sorted(by_error.items())),
+            "http_429_kinds": rate_limit_kinds(records),
             "estimated_calls": math.ceil(calls) if records else 0,
             "aborted": abort}
 

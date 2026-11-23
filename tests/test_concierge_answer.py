@@ -23,8 +23,9 @@ def good_draft(doc):
         f"{L['data_time']['text']}[{L['data_time']['id']}]",
         f"{L['coverage']['text']}[{L['coverage']['id']}]",
         "",
-        f"土曜の八ヶ岳(赤岳)は90.4点で、稜線風速は5.4 m/s、雲量(較正後)は約32 %の見込みです。[{y1['id']}]",
+        f"土曜の八ヶ岳(赤岳)は90.4点で、稜線風速は5.4 m/s、雲量は約32 %の見込みです。[{y1['id']}]",
         f"{line_for(doc, y1['id'])['text']}[{line_for(doc, y1['id'])['id']}]",
+        f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]",
         f"日曜なら谷川岳が84.9点で、危険信号は出ていません。[{y4['id']}]",
         "横岳という名前の由来には、いくつかの説があるといわれます。",
         f"{doc['gaps'][0]['text']}[{doc['gaps'][0]['id']}]",
@@ -100,7 +101,7 @@ class Brief(unittest.TestCase):
 
     def test_named_mountain_outside_the_top_is_kept(self):
         cfg = B.config()
-        cfg["concierge"]["brief"].update(top_per_day=1, main_ok_min=0)
+        cfg["concierge"]["brief"].update(top_per_day=1)
         with mock.patch("concierge.brief.config", return_value=cfg):
             doc = build(self.base, mountains=["横岳"])
         names = [(f["name"], f["date"], f["selected_by"]) for f in doc["facts"]]
@@ -108,17 +109,18 @@ class Brief(unittest.TestCase):
         self.assertEqual(doc["candidates"][0]["counts"]["outside_top"], 2)
         self.assertEqual(doc["candidates"][0]["outside_top_names"], ["谷川岳"])      # 名指しの横岳は外した一覧に入れない
 
-    def test_main_ok_mountains_are_filled_from_outside_the_top(self):
+    def test_hard_hazard_goes_to_the_skip_frame_and_does_not_use_the_main_frame(self):
         base = base_with_shelf(self, edit=make_hazard("m002", "2026-10-17", "危険"))
         cfg = B.config()
-        cfg["concierge"]["brief"].update(top_per_day=1, main_ok_min=2)
+        cfg["concierge"]["brief"].update(top_per_day=1)
         with mock.patch("concierge.brief.config", return_value=cfg):
             doc = build(base)
         sat = [(f["name"], f["selected_by"], f["main_ok"]) for f in doc["facts"] if f["date"] == "2026-10-17"]
-        self.assertEqual(sat, [("八ヶ岳(赤岳)", "top", False), ("横岳", "main_fill", True), ("谷川岳", "main_fill", True)])
-        self.assertEqual(doc["candidates"][0]["counts"]["outside_top"], 0)
+        self.assertEqual(sat, [("横岳", "top", True), ("八ヶ岳(赤岳)", "skip", False)])
+        self.assertEqual(doc["candidates"][0]["counts"]["outside_top"], 1)
+        self.assertEqual(doc["candidates"][0]["outside_top_names"], ["谷川岳"])
         sun = [f["selected_by"] for f in doc["facts"] if f["date"] == "2026-10-18"]
-        self.assertEqual(sun, ["top", "main_fill"])            # 1 座目が主役にできるので、足すのは 1 座
+        self.assertEqual(sun, ["top"])                         # 枠の外から足さない
 
     def test_region_interest_origin(self):
         doc = build(self.base, region=["北陸信越", "九州"], interest=["stars", "hiking"], origin="どこか")
