@@ -45,6 +45,8 @@ class Ctx:
             self.ids[k["id"]] = ("K", k)
         for g in brief["gaps"]:
             self.ids[g["id"]] = ("G", g)
+        for x in brief.get("comparisons") or []:
+            self.ids[x["id"]] = ("C", x)
         L = brief["lines"]
         self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"])
         for x in self.lines:
@@ -113,6 +115,9 @@ class Ctx:
                 texts += x["say"]
                 a["mountains"].add(x["mountain_id"])
                 a["hazards"].update((h["label"], h["level"]) for h in x["hazards"])
+            elif kind == "C":
+                texts += x["say"] + [x["label"]]
+                a["mountains"].add(x["mountain_id"])
             elif kind == "K":
                 texts += x["say"] + [x["text"]]
                 a["mountains"].update(x["mountains"])
@@ -120,7 +125,7 @@ class Ctx:
                 texts += x["say"] + [x["text"]]
             else:
                 texts.append(x["text"])
-        if not any(self.ids[m][0] == "Y" for m in marks):
+        if not any(self.ids[m][0] in ("Y", "C") for m in marks):
             for d in self.target_days:
                 a["dates"].add((d.month, d.day))
             a["wds"] |= self.target_wd
@@ -171,7 +176,7 @@ def sentences(body_text, mre):
             continue
         segs = re.findall(r"[^。！？!?]+[。！？!?]?", line)
         for s in segs:
-            m = re.match(r"^\s*((?:\[[YLKG]\d{1,3}\]\s*)+)(.*)$", s)
+            m = re.match(r"^\s*((?:\[[YLKGC]\d{1,3}\]\s*)+)(.*)$", s)
             if m and out:
                 out[-1]["text"] += m.group(1).strip()
                 out[-1]["ids"] = mre.findall(out[-1]["text"])
@@ -192,6 +197,107 @@ def _err(code, s, detail, fix):
 
 def _has_any(t, words):
     return [w for w in words if w in t]
+
+
+def _cut(s, words):
+    for w in words:
+        s = s.replace(w, " ")
+    return s
+
+
+def _clauses(t):
+    return [c for c in re.split(r"[、,;；]", t) if c.strip()]
+
+
+def _superlative_topics(t, CP):
+    """最上級の語のある文 → [(何を比べているか, その語のある節)]。比べる対象の語が文にないものは入れない。
+    比べる対象は、最上級の語のあとの語(いちばん「弱い」)→ 同じ節の語 → 文の中の語、の順に決める。"""
+    out = []
+    t = _cut(t, CP["ok"])
+    words = sorted(CP["superlatives"], key=len, reverse=True)
+    rx = re.compile("|".join(re.escape(w) for w in words))
+    score_any = any(w in t for w in CP["topics"]["score"])
+    for c in _clauses(t):
+        for m in rx.finditer(c):
+            near = m.group(0) + c[m.end():m.end() + CP["window"]]
+            topic = None
+            for key in ("near", "far", "wind_weak", "wind_strong"):
+                if any(w in near for w in CP["topics"][key]):
+                    topic = key
+                    break
+            if topic in ("wind_weak", "wind_strong") and not any(w in t for w in CP["topics"]["wind"]):
+                topic = "other"
+            if topic is None and any(w in near for w in CP["topics"]["high_low"]):
+                low = any(w in near for w in CP["topics"]["low"])
+                in_clause = any(w in c for w in CP["topics"]["score"])
+                blocked = any(w in c for w in CP["topics"]["not_score"])
+                topic = ("score_low" if low else "score") if (in_clause or score_any) and not (blocked and not in_clause) else "other"
+            if topic is None:
+                for scope in (c, t):
+                    if any(w in scope for w in CP["topics"]["wind"]):
+                        topic = "wind"
+                    elif any(w in scope for w in CP["topics"]["score"]):
+                        topic = "score"
+                    elif any(w in scope for w in CP["topics"]["near"]):
+                        topic = "near"
+                    elif any(w in scope for w in CP["topics"]["far"] + CP["topics"]["high_low"]):
+                        topic = "other"
+                    if topic:
+                        break
+            if topic:
+                out.append((topic, c))
+    return out
+
+
+def _check_comparisons(X, s, t, ids, errs):
+    """比べる文(いちばん・最も など)を、比べた結果の事実 [C…] と順位の事実に照らす。"""
+    CP = X.R["compare"]
+    tn = t
+    for w, mid in X.names:                   # 山の名前を ID の印に置き換える(名前の中の「高」「風」などを見ない。節ごとの山が分かる)
+        tn = tn.replace(w, f"\x02{mid}\x03")
+    topics = _superlative_topics(tn, CP)
+
+    def mids(text):
+        return list(dict.fromkeys(re.findall(r"\x02(m\d{3})\x03", text)))
+
+    ys = [X.ids[i][1] for i in ids if X.ids[i][0] == "Y"]
+    cs = [X.ids[i][1] for i in ids if X.ids[i][0] == "C"]
+    for topic, clause in topics:
+        who = mids(clause) or mids(tn) or list(dict.fromkeys(f["mountain_id"] for f in ys))
+        if topic == "score":
+            if any(w in t for w in CP["score_skip"]):
+                continue
+            top = [f for f in ys if f.get("day_rank") == 1]
+            ok = bool(who) and all(any(f["mountain_id"] == m for f in top) for m in who)
+            if not ok:
+                errs.append(_err("comparison_mismatch", s, "「点数がいちばん高い」に、その日の順位が 1 位の事実の印がない(または 1 位でない山を言っている)",
+                                 "1 位の山の事実の印を付けるか、順位の表記で書く"))
+            elif len(who) == 1 and not any(f["mountain_id"] == who[0] and (f.get("day_rank_ties") or 1) == 1 for f in top):
+                errs.append(_err("comparison_tied", s, "同点の山があるのに、1 つの山だけを「いちばん高い」と言っている",
+                                 "順位の表記(「1位(同点 5 座)」)で書く"))
+            continue
+        kind = {"wind_weak": "ridge_wind_min", "wind": "ridge_wind_min", "near": "nearest"}.get(topic)
+        hit = [x for x in cs if x["kind"] == kind]
+        if not hit:
+            errs.append(_err("comparison_unmarked", s, "最上級の比べ方に、比べた結果の事実の印 [C…] がない",
+                             "資料の「比べた結果」にあるものだけを [C…] の印つきで書く(ほかは数字だけを書く)"))
+            continue
+        if len(who) != 1 or who[0] not in {x["mountain_id"] for x in hit}:
+            errs.append(_err("comparison_mismatch", s, "比べた結果の事実の山と、文の山が合わない(または、どの山のことか分からない)",
+                             "1 つの文に 1 つの山だけを書き、その山の事実の印 [Y…] と [C…] を付ける"))
+            continue
+        days = {f["date"] for f in ys if f["mountain_id"] == who[0]}
+        if days and not days & {x["date"] for x in hit if x["mountain_id"] == who[0]}:
+            errs.append(_err("comparison_mismatch", s, "比べた結果の事実の日と、文の山の日が合わない", "同じ日の事実の印を付ける"))
+        if not any(w in t for w in CP["scope"]):
+            errs.append(_err("comparison_scope", s, "何の中でいちばんかが書いていない(比べたのは主役の候補の中だけ)",
+                             "「主役の候補の中で」と書く"))
+    # 同点のある順位を、同点と分からない形で書いていないか
+    for n in re.findall(r"(\d+)\s*(?:位|番目)", tn):
+        hit = [f for f in ys if f.get("day_rank") == int(n)]
+        if hit and all((f.get("day_rank_ties") or 1) > 1 for f in hit) and "同点" not in t:
+            errs.append(_err("rank_tie_hidden", s, f"同点のある順位({n}位)を、同点と分からない形で書いている",
+                             f"「{n}位(同点 {hit[0].get('day_rank_ties')} 座)」の形で書く"))
 
 
 def check(draft, brief):
@@ -287,15 +393,16 @@ def check(draft, brief):
             for mid in sorted(mentioned - X.in_brief):
                 if not any(n in X.question for n, m_ in X.names if m_ == mid):
                     errs.append(_err("mountain_not_in_brief", s, f"資料にない山({mid})を書いている", "資料にある山だけを書く"))
-        # 種類 C(山の安全): 危険信号の事実・知識カード・足りないものの印、または「判断できません」の形
+        _check_comparisons(X, s, t, ids, errs)
+        # 種類 C(山の安全): 危険信号の事実・知識カードの印、または「判断できません」の形(足りないものの印だけでは通さない)
         sc = _has_any(exempt_re.sub(" ", t), W["safety"])
         if sc and not exempt:
             hazard_fact = any(X.ids[i][0] == "Y" and X.ids[i][1]["hazards"] for i in ids)
-            basis = "G" in kinds or "K" in kinds or (hazard_fact and all(w in W["safety_hazard_ok"] for w in sc))
+            basis = "K" in kinds or (hazard_fact and all(w in W["safety_hazard_ok"] for w in sc))
             if not basis:
                 errs.append(_err("safety_without_basis", s, f"山の安全に関わる語「{'・'.join(sc[:3])}」に裏づけがない",
-                                 "資料に無いなら「この予報からは判断できません」の形で書き、足りないものの印 [G…] を付ける"))
-            elif _has_any(exempt_re.sub(" ", t), W["safety_positive"]) and "K" not in kinds:
+                                 "資料に無いなら「この予報からは判断できません」の形で書き、足りないものの印 [G…] を付ける([G…] の印だけでは通らない)"))
+            if ids and _has_any(exempt_re.sub(" ", t), W["safety_positive"]) and "K" not in kinds:
                 errs.append(_err("safety_assertion", s, f"安全の言い切り「{'・'.join(_has_any(t, W['safety_positive'])[:3])}」に知識カードの裏づけがない",
                                  "行ける・安全だと言い切らない(予報の数字と危険信号の文だけを書く)"))
         # おすすめの語と、宣言したおすすめ
