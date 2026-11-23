@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "biyori-brief/1",
   "title": "biyori-brief/1(答える側の資料)",
-  "description": "concierge brief が質問ごとに作る資料。答えに書いてよい事実(id つき)・決まった文・組み合わせ・知識カード・足りないもの・書くときの決まり。互換性規則: 項目の追加のみ。削除・意味の変更は版を上げる。段階 2 は山だけ(段階 3・4 で星・生き物を足す)。",
+  "description": "concierge brief が質問ごとに作る資料。答えに書いてよい事実(id つき)・決まった文・組み合わせ・知識カード・足りないもの・書くときの決まり。互換性規則: 項目の追加のみ。削除・意味の変更は版を上げる(例外: 2026-11-24 の rank・rank_ties は、利用者の決定で版を /1 のままにした。前の形の資料は verify が「作り直す」と言って止まる)。段階 2 は山だけ(段階 3・4 で星・生き物を足す)。",
   "type": "object",
   "required": ["schema", "id", "question", "now", "when", "origin", "filters", "shelf", "facts", "candidates", "lines", "plans", "cards", "gaps", "rules", "limits"],
   "properties": {
