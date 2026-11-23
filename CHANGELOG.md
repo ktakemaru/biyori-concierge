@@ -10,6 +10,8 @@
 - 照合: 足りないものの印 `[G…]` だけでは種類 C の語を通さない。比べる文(いちばん・最も)を、比べた結果の事実 `[C…]` と順位に照らす
   (`comparison_unmarked`・`comparison_mismatch`・`comparison_tied`・`comparison_scope`・`rank_tie_hidden`)。
 - 資料のスキーマを `concierge/schemas/` から `schemas/` に移した(版は `/1` のまま。項目を足した)。
+- 取得の側: 429 がどの上限(1 日・1 時間・1 分)だったかを、計測フックの記録の本文の先頭から決めて、種類ごとの回数 `http_429_kinds` を
+  回ごとの記録・run.json・manifest・`logs/requests.json` に足した(スキーマは項目の追加だけ。本文は棚に載せない)。まとめの「429」の行にも出す。
 - 文書の直し(開発指示書の「H1」2 か所、`collect/__init__.py` の説明、README の置き場の文字化け)。報告は `docs/stage2-finish-report.md`。
 
 ## 未公開(段階 2: 山だけで、質問から答えまで通す。2026-11-22)

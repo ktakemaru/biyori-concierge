@@ -81,6 +81,8 @@ def build_manifest(run, previous, outcome):
         this_run = {"requests": (r or {}).get("requests", 0), "runtime_s": (r or {}).get("runtime_s", 0.0)}
         if r and r.get("http_429") is not None:         # 429 の回数(この回の実行の値。成功した回でも残す。指示書 5.2)
             this_run.update(http_429=r["http_429"], http_429_tolerated=r.get("http_429_tolerated") or 0)
+        if r and r.get("http_429_kinds"):               # 429 の種類ごとの回数(この回の実行の値。本文は載せない)
+            this_run["http_429_kinds"] = r["http_429_kinds"]
         if how == "new":
             e = {"status": r["status"], **{k: r.get(k) for k in ENTRY_KEYS}, **this_run, "kept_from": None,
                  "files": sorted(AGENT_FILES[agent])}
@@ -108,16 +110,33 @@ def build_manifest(run, previous, outcome):
                       "status: incomplete は、この回のファイルに入れ替えたが全座はそろっていない(coverage の fetched / pool_size)"]}
 
 
+RATE_LIMIT_JA = {"daily": "1 日の上限", "hourly": "1 時間の上限", "minutely": "1 分の上限", "unknown": "種類は不明"}
+
+
+def rate_limit_kind_text(kinds):
+    """429 の種類ごとの回数 → (括弧の中の先頭に入れる文, 括弧の後ろに足す文)。種類が 1 つだけなら回数は書かない。
+    全部の種類が分からないときは、後ろに「種類は不明」とだけ足す。"""
+    kinds = {k: v for k, v in (kinds or {}).items() if v}
+    if not kinds:
+        return "", ""
+    if set(kinds) == {"unknown"}:
+        return "", " 種類は不明"
+    if len(kinds) == 1:
+        return RATE_LIMIT_JA[next(iter(kinds))] + "。", ""
+    return "・".join(f"{RATE_LIMIT_JA[k]} {kinds[k]} 回" for k in RATE_LIMIT_JA if k in kinds) + "。", ""
+
+
 def rate_limit_text(run):
-    """まとめの「429」の行: 回数と結果が分かる文。どのビヨリにも 429 が無ければ「なし」。"""
+    """まとめの「429」の行: 回数・どの上限か・結果が分かる文。どのビヨリにも 429 が無ければ「なし」。"""
     parts = []
     for a, r in (run.get("agents") or {}).items():
         n, st = r.get("http_429") or 0, r.get("status")
+        kind, after = rate_limit_kind_text(r.get("http_429_kinds"))
         if st == "rate_limited":
-            parts.append(f"{a} {n} 回({r.get('reason')}。取り直しの回は始めず、棚は前回のまま)" if n
-                         else f"{a}({r.get('reason')}。棚は前回のまま)")
+            parts.append((f"{a} {n} 回({kind}{r.get('reason')}。取り直しの回は始めず、棚は前回のまま)" if n
+                          else f"{a}({kind}{r.get('reason')}。棚は前回のまま)") + after)
         elif n:
-            parts.append(f"{a} {n} 回(待って取り直し、全座そろった)" if st == "ok" else f"{a} {n} 回({st})")
+            parts.append((f"{a} {n} 回({kind}待って取り直し、全座そろった)" if st == "ok" else f"{a} {n} 回({kind}{st})") + after)
     return "、".join(parts) if parts else "なし"
 
 
