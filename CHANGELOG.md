@@ -1,5 +1,11 @@
 # 変更履歴
 
+## 未公開(段階 2 の仕上げ: Stop フック。2026-11-23。ブランチ `feature/stage2-stop-hook`)
+
+- Claude Code の Stop フックを作った(`.claude/settings.json`・`.claude/hooks/stop_check.py`・`concierge/stop_hook.py`・`concierge/data/stop_hook.yaml`・`docs/stop-hook.md`)。
+  この回に `concierge brief` を使ったのに、`verify` を通していない・最後のメッセージが `verify` の文と違うときに止める(同じ回で 2 回まで)。
+  開発の作業の回は止めない。`BIYORI_CONCIERGE_STOP_HOOK=off` で切る。`verify` は出した最後の文を置き場の `last_answer.json` に残す。
+
 ## 未公開(段階 2 の仕上げ。2026-11-23)
 
 - 資料の候補の選び方を、日ごとの「主役の枠」(主役にできる山だけ 8 座)と「見送りの枠」(危険信号が警戒・危険の山 3 座。仮置き)にした。

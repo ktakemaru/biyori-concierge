@@ -12,6 +12,7 @@ from decimal import Decimal, InvalidOperation
 
 from .common import NL, config, verify_rules
 
+LAST_ANSWER = "last_answer.json"      # 置き場の中。verify が出した最後の文(Stop フックが最後のメッセージと比べる)
 PH = ""           # 決まった文を写した部分の置き換え
 MT = ""           # 山の名前の置き換え
 DATE_RES = (re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})"), re.compile(r"(\d{1,2})月(\d{1,2})日"),
@@ -533,6 +534,7 @@ def run(draft_text, bid, base, now):
     write_text(st_path, dump_json(st))
     if text:
         write_text(B.brief_dir(base) / f"{bid}.final.txt", text)
+        write_text(Path(base) / LAST_ANSWER, dump_json({"brief": bid, "at": iso(now), "text": text}))      # Stop フックが読む
     row = {"brief": bid, "at": iso(now), "result": {"PASS": "合格", "FAIL": "不合格", "FALLBACK": "控え"}[status],
            "rewrites": rewrites, "failed": sorted({e["code"] for e in r["errors"]})}
     p = Path(base) / "logs" / "answers.jsonl"

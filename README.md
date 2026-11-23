@@ -30,6 +30,7 @@ python -X utf8 -m concierge verify <下書きのファイル> --brief <資料の
 ```
 
 - 置き場は `BIYORI_CONCIERGE_DATA_DIR`(未設定なら Windows は `%LOCALAPPDATA%\biyori-concierge`)。棚の写し・資料・照合の記録が入ります。リポジトリの中には書きません。
+- Claude Code では、`verify` を通さない答え・`verify` の文に足し引きした答えを Stop フックで止めます(`docs/stop-hook.md`。切るときは環境変数 `BIYORI_CONCIERGE_STOP_HOOK=off`)。
 - 資料の形は `schemas/biyori-brief.schema.json`、予報の値の名前と出典は `docs/brief-fields.md`、検査の一覧は `docs/answer-checks.md`、書き方の手本は `docs/answer-voice.md`、日付の規則は `docs/dates.md`、試験問題は `docs/qa.md`。
 
 棚の形式は `schemas/biyori-shelf.schema.json`(manifest)ほか。対応表は `docs/yamabiyori-mapping.md`。

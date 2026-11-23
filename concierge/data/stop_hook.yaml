@@ -1,0 +1,33 @@
+# Claude Code の Stop フック(concierge/stop_hook.py)の語と値。決まりは docs/stop-hook.md。
+# 考え方はイキモノビヨリ ikimonobiyori/data/ask/final_check.yaml の stop_hook にそろえた(写していない)。語の一覧は仮置き
+schema: biyori-concierge-stop-hook/1
+# 切る環境変数(値が off のときは何もしない)
+env_switch: BIYORI_CONCIERGE_STOP_HOOK
+# 同じ回(利用者の 1 つの文)で止める回数の上限。出典: イキモノビヨリ stop_hook.max_blocks_per_turn(2)・作業指示書 9 章
+max_blocks_per_turn: 2
+# 置き場の中のファイル: 止めた回数(残す回の数は仮置き)・verify が出した最後の文
+state_file: logs/stop_hook_state.json
+state_keep: 200
+# 止めるときの出力の形。feedback = {"hookSpecificOutput": {"hookEventName": "Stop", "additionalContext"}}(画面にエラーと出ない)、
+# block = {"decision": "block", "reason"}。出典: イキモノビヨリ stop_hook.output(feedback。2026-11-10 の判断)
+output: feedback
+# 理由の文の先頭の印(この印を含む文は、利用者が打った文として扱わない)
+reason_marker: '[ビヨリコンシェル 送る前の検査]'
+# 利用者の文として扱わない記録の行(回の区切りにしない)
+not_prompt_prefixes: ['<local-command', '<system-reminder', 'Stop hook feedback', 'Stop hook blocking', '[Request interrupted']
+# 検査しない回: 利用者の文にこの語がある(開発・仕組みの話、コンシェルを使わない回)。山の質問に出ない語だけにする
+skip_words: ['コンシェルを使わずに', 'コンシェルを使わないで', '指示書', 'フック', 'テスト', 'コミット', 'commit', 'ブランチ', 'プルリク',
+             'push', 'コード', '実装', 'デバッグ', '開発', 'リポジトリ', 'スキーマ', 'verify', 'brief', '.md', '.py', '.yaml', '.yml', '.json',
+             '仕組み', '報告書']
+# 検査しない回: この回にこのコマンドを使った(開発の作業とみなす)
+dev_commands: ['\bgit\s+(add|commit|push|switch|checkout|merge|rebase|stash|cherry-pick)\b', '\bunittest\b', '\bpytest\b']
+# 検査しない回: この回にリポジトリの中のファイルを、この道具で書いた(開発の作業とみなす)
+edit_tools: ['Edit', 'Write', 'MultiEdit', 'NotebookEdit']
+# コマンドを実行する道具
+shell_tools: ['Bash', 'PowerShell']
+# concierge の実行を見分ける正規表現(コマンドの頭の位置にあるものだけ。文書の中や grep の引数に書かれたものは見ない)
+command_head: '(?:^|[\n;&|(`{])\s*(?:[A-Za-z_]\w*=\S*\s+)*["'']?(?:[^\s"''`;&|]*[/\])?(?:python[\w.]*|py)(?:\.exe)?["'']?\s+(?:-\w+(?:\s+utf8)?\s+)*?-m\s+concierge\s+'
+brief_failed: ['資料を作れませんでした']
+reasons:
+  no_verify: '資料(concierge brief)を使った答えです。下書きを python -X utf8 -m concierge verify <下書き> --brief <資料の id> に通し、その標準出力だけを一字一句そのまま送ってください(AGENTS.md 2 章の 5・6)。'
+  mismatch: '最後のメッセージが、concierge verify の出した文と一致しません。verify の標準出力だけを、前にも後ろにも何も足さずに、一字一句そのまま送ってください(不合格のときは直して verify をもう一度)。'
