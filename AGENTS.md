@@ -98,4 +98,4 @@
 | 棚の状態を見る | `python -X utf8 -m concierge status` | 8 秒ほど(8.3 秒。見本の棚は 1.2 秒) | 同上 |
 | 資料を作る | `python -X utf8 -m concierge brief …` | 8 秒ほど(8.2 秒。見本の棚は 1.2 秒) | 同上 |
 | 下書きを照らす(1 回) | `python -X utf8 -m concierge verify …` | 1 秒ほど(1.4 秒。見本の棚も 1.4 秒) | 同上 |
-| テストを全部実行する(開発のとき) | `python -X utf8 -m unittest discover -s tests` | 3〜4 分ほど(159〜220 秒。296〜326 件) | 同上(6 回) |
+| テストを全部実行する(開発のとき) | `python -X utf8 -m unittest discover -s tests` | 3〜4 分ほど(158〜220 秒。296〜328 件) | 同上(8 回) |
