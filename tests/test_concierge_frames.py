@@ -87,7 +87,7 @@ class Frames(unittest.TestCase):
     def test_tied_ranks_are_the_same_rank_and_say_so(self):
         doc = self.doc([(m, 100.0, {}, 5.0) for m in NEAR[:4]] + [("m017", 100.0, {"wind": "危険"}, 20.0), ("m016", 95.0, {}, 5.0)])
         by = {f["mountain_id"]: f for f in sat(doc)}
-        self.assertEqual([by[m]["day_rank"] for m in NEAR[:4] + ["m017", "m016"]], [1, 1, 1, 1, 1, 6])
+        self.assertEqual([by[m]["rank"] for m in NEAR[:4] + ["m017", "m016"]], [1, 1, 1, 1, 1, 6])
         self.assertIn("1位(同点 5 座)", by["m027"]["say"])
         self.assertNotIn("1位", by["m027"]["say"])
         self.assertIn("6位", by["m016"]["say"])
@@ -100,7 +100,7 @@ class Frames(unittest.TestCase):
                 ("m022", 97.0, {"wind": "危険"}, 20.0), ("m026", 60.0, {}, 5.0)]
         with mock.patch("concierge.brief.config", return_value=cfg):
             doc = self.doc(rows, mountains=["高尾山", "塔ノ岳", "鍋割山"])
-        self.assertEqual([(f["mountain_id"], f["selected_by"], f["day_rank"]) for f in sat(doc)],
+        self.assertEqual([(f["mountain_id"], f["selected_by"], f["rank"]) for f in sat(doc)],
                          [("m027", "top", 1), ("m023", "skip", 3), ("m029", "named", 2), ("m022", "named", 4), ("m026", "named", None)])
 
     def test_main_ok_min_is_gone(self):

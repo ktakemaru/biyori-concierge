@@ -270,12 +270,12 @@ def _check_comparisons(X, s, t, ids, errs):
         if topic == "score":
             if any(w in t for w in CP["score_skip"]):
                 continue
-            top = [f for f in ys if f.get("day_rank") == 1]
+            top = [f for f in ys if f.get("rank") == 1]
             ok = bool(who) and all(any(f["mountain_id"] == m for f in top) for m in who)
             if not ok:
                 errs.append(_err("comparison_mismatch", s, "「点数がいちばん高い」に、その日の順位が 1 位の事実の印がない(または 1 位でない山を言っている)",
                                  "1 位の山の事実の印を付けるか、順位の表記で書く"))
-            elif len(who) == 1 and not any(f["mountain_id"] == who[0] and (f.get("day_rank_ties") or 1) == 1 for f in top):
+            elif len(who) == 1 and not any(f["mountain_id"] == who[0] and (f.get("rank_ties") or 1) == 1 for f in top):
                 errs.append(_err("comparison_tied", s, "同点の山があるのに、1 つの山だけを「いちばん高い」と言っている",
                                  "順位の表記(「1位(同点 5 座)」)で書く"))
             continue
@@ -297,10 +297,10 @@ def _check_comparisons(X, s, t, ids, errs):
                              "「主役の候補の中で」と書く"))
     # 同点のある順位を、同点と分からない形で書いていないか
     for n in re.findall(r"(\d+)\s*(?:位|番目)", tn):
-        hit = [f for f in ys if f.get("day_rank") == int(n)]
-        if hit and all((f.get("day_rank_ties") or 1) > 1 for f in hit) and "同点" not in t:
+        hit = [f for f in ys if f.get("rank") == int(n)]
+        if hit and all((f.get("rank_ties") or 1) > 1 for f in hit) and "同点" not in t:
             errs.append(_err("rank_tie_hidden", s, f"同点のある順位({n}位)を、同点と分からない形で書いている",
-                             f"「{n}位(同点 {hit[0].get('day_rank_ties')} 座)」の形で書く"))
+                             f"「{n}位(同点 {hit[0].get('rank_ties')} 座)」の形で書く"))
 
 
 def check(draft, brief):
@@ -505,7 +505,7 @@ def max_rewrites():
 
 
 def run(draft_text, bid, base, now):
-    """→ {status: PASS / FAIL / FALLBACK, text, errors, attempt, left}。回数は置き場の briefs/<id>.verify.json で数える。"""
+    """→ {status: PASS / FAIL / FALLBACK / NO_BRIEF / OLD_BRIEF, text, errors, attempt, left}。回数は置き場の briefs/<id>.verify.json で数える。"""
     import json
     from pathlib import Path
 
@@ -515,6 +515,8 @@ def run(draft_text, bid, base, now):
     b = B.load(bid, base)
     if b is None:
         return {"status": "NO_BRIEF", "text": None, "errors": [], "attempt": 0, "left": 0, "checked": 0, "marked": 0}
+    if not B.is_current(b):                      # 前の形の資料(回数は数えない)
+        return {"status": "OLD_BRIEF", "text": None, "errors": [], "attempt": 0, "left": 0, "checked": 0, "marked": 0}
     st_path = B.brief_dir(base) / f"{bid}.verify.json"
     st = read_json(st_path) or {"attempts": 0, "history": []}
     st["attempts"] += 1

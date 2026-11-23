@@ -49,8 +49,8 @@ class Brief(unittest.TestCase):
         self.assertEqual(brief_schema_errors(doc), [])
         self.assertEqual([d["date"] for d in doc["when"]["days"]], ["2026-10-17", "2026-10-18"])
         self.assertEqual([(f["id"], f["name"], f["rank"]) for f in doc["facts"]],
-                         [("Y001", "八ヶ岳(赤岳)", 1), ("Y002", "横岳", 2), ("Y003", "谷川岳", 3),
-                          ("Y004", "谷川岳", 1), ("Y005", "八ヶ岳(赤岳)", 2), ("Y006", "横岳", 3)])
+                         [("Y001", "八ヶ岳(赤岳)", 1), ("Y002", "横岳", 1), ("Y003", "谷川岳", 3),       # 90.4・90.4・89.6 点
+                          ("Y004", "谷川岳", 1), ("Y005", "八ヶ岳(赤岳)", 2), ("Y006", "横岳", 2)])      # 84.9・84.2・84.2 点
         y = fact(doc, "八ヶ岳", "2026-10-17")
         self.assertIn("5.4 m/s", y["say"])
         self.assertIn("約5 m/s", y["say"])
@@ -333,6 +333,30 @@ class Verify(unittest.TestCase):
 
 
 class Rewrites(unittest.TestCase):
+    def test_old_brief_is_not_misread_and_says_to_make_it_again(self):
+        """順位の意味を変える前の資料(rank = 並び順の番号・day_rank = 順位)は、読み違えずに「作り直す」と言う。回数も数えない。"""
+        import contextlib
+        import io
+        from concierge.__main__ import main
+        base = base_with_shelf(self)
+        doc = build(base)
+
+        def old(d):
+            for i, f in enumerate(d["facts"], 1):
+                f["day_rank"], f["day_rank_ties"] = f["rank"], f.pop("rank_ties")
+                f["rank"] = i
+        edit_json(B.brief_dir(base) / f"{doc['id']}.json", old)
+        self.assertEqual(V.run(good_draft(doc), doc["id"], base, parse_now(NOW))["status"], "OLD_BRIEF")
+        draft = tmpdir(self, "biyori-draft-") / "d.txt"
+        draft.write_text(good_draft(doc), encoding="utf-8")
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = main(["verify", str(draft), "--brief", doc["id"]])
+        self.assertEqual((rc, out.getvalue()), (2, ""))
+        self.assertIn("資料を作り直してください", err.getvalue())
+        self.assertFalse((B.brief_dir(base) / f"{doc['id']}.verify.json").exists())
+        self.assertFalse((base / "logs" / "answers.jsonl").exists())
+
     def test_third_failure_gives_the_fallback_which_passes(self):
         base = base_with_shelf(self)
         doc = build(base)

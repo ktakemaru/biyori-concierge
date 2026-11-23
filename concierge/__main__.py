@@ -64,6 +64,9 @@ def main(argv=None):
         if res["status"] == "NO_BRIEF":
             print(f"資料 {a.brief} がありません(brief を先に実行する)", file=sys.stderr)
             return 2
+        if res["status"] == "OLD_BRIEF":
+            print(f"資料 {a.brief} は前の形のもので、照らせません。資料を作り直してください(brief をもう一度実行する)", file=sys.stderr)
+            return 2
         if res["status"] == "FAIL":
             sys.stderr.write(verify.report(res))
             return 1

@@ -234,7 +234,7 @@ def _fact(p, mtn, origin, data_day, c, *, named, selected_by=None):
     f = {"id": None, "kind": "mountain_day", "mountain_id": mtn["id"], "name": mtn["name"], "elevation_m": mtn["elevation_m"],
          "region": mtn.get("region"), "access": mtn.get("access"), "date": d.isoformat(), "weekday": WEEKDAY_JA[d.weekday()],
          "label": md_label(d), "score": sc["value"], "threshold": GO_THRESHOLD,
-         "rank": None, "day_rank": None, "day_rank_ties": None,
+         "rank": None, "rank_ties": None,
          "detail_level": "score_only" if score_only else "full", "hazards": hz,
          "hazard_level": {0: None, 1: "注意", 2: "警戒", 3: "危険"}[worst], "main_ok": not ng, "main_ng": ng,
          "distance_km": round(km, 1), "distance_say": distance_say(km, c), "lead_days": lead,
@@ -260,20 +260,19 @@ def _fact(p, mtn, origin, data_day, c, *, named, selected_by=None):
 
 def rank_say(f):
     """その日の順位の書いてよい表記。同点があるときは、同点があると分かる形だけ。"""
-    if not f["day_rank"]:
+    if not f["rank"]:
         return []
-    if f["day_rank_ties"] > 1:
-        return [f"{f['day_rank']}位(同点 {f['day_rank_ties']} 座)"]
-    return [f"{f['day_rank']}位", f"{f['day_rank']}番目"]
+    if f["rank_ties"] > 1:
+        return [f"{f['rank']}位(同点 {f['rank_ties']} 座)"]
+    return [f"{f['rank']}位", f"{f['rank']}番目"]
 
 
 def _set_ranks(above):
-    """基準点以上の山(その日の全部)に順位を付ける。rank は並び順の番号(1, 2, 3…)、day_rank は同点を同じにした順位。"""
+    """基準点以上の山(その日の全部)に、その日の順位 rank(同点は同じ順位)と、その順位の山の数 rank_ties を付け、main_key の順に並べる。"""
     above.sort(key=main_key)
-    for i, f in enumerate(above, 1):
-        f["rank"] = i
-        f["day_rank"] = 1 + sum(1 for g in above if g["score"] > f["score"])
-        f["day_rank_ties"] = sum(1 for g in above if g["score"] == f["score"])
+    for f in above:
+        f["rank"] = 1 + sum(1 for g in above if g["score"] > f["score"])
+        f["rank_ties"] = sum(1 for g in above if g["score"] == f["score"])
         f["say"] = list(dict.fromkeys(f["say"] + rank_say(f)))
 
 
@@ -542,6 +541,11 @@ def save(doc, base):
     return jp, mp
 
 
+def is_current(doc):
+    """今のコードで照らせる資料か。順位の意味を変える前(2026-11-23 まで。day_rank がある)の資料は、rank を読み違えるので使わない。"""
+    return isinstance(doc, dict) and doc.get("schema") == SCHEMA and all("rank_ties" in f and "day_rank" not in f for f in doc.get("facts") or [])
+
+
 def load(bid, base):
     if not bid or "/" in bid or "\\" in bid or ".." in bid:
         return None
@@ -575,7 +579,7 @@ def render_md(b):
                 {"below_threshold": "基準点未満", "hazard_hard": "危険信号が警戒以上", "score_only": "点数だけ"}[x] for x in f["main_ng"]) + ")"
             hz = "・".join(f"{h['label']}{h['level']}" for h in f["hazards"]) or "なし"
             out.append(f"- **[{f['id']}] {f['name']}**({f['region']}・標高 {num(f['elevation_m'])}m・{f['access']}・{f['distance_say']})"
-                       f" {num(f['score'])} 点(基準 {num(f['threshold'])} 点){'・' + rank_say(f)[0] if f['day_rank'] else ''}"
+                       f" {num(f['score'])} 点(基準 {num(f['threshold'])} 点){'・' + rank_say(f)[0] if f['rank'] else ''}"
                        f"・{f['lead_days']} 日先{'(信用してよい範囲の外)' if not f['reliable'] else ''}・{tag}"
                        + ("・名指し" if f["named"] else "") + ("・見送りの枠" if f["selected_by"] == "skip" else ""))
             out.append(f"  - 危険信号: {hz}")

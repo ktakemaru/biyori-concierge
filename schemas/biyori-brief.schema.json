@@ -141,9 +141,8 @@
         "kind": {"const": "mountain_day"},
         "mountain_id": {"type": "string", "pattern": "^m\\d{3}$"},
         "score": {"type": "number"},
-        "rank": {"type": ["integer", "null"], "minimum": 1, "description": "基準点以上の山の並び順の番号(1, 2, 3…。同点は危険信号の軽さ → 距離 → 山の ID の順)。答えに書く順位は day_rank"},
-        "day_rank": {"type": ["integer", "null"], "minimum": 1, "description": "その日の順位(同点は同じ順位。100 点が 5 座なら 5 座とも 1 位、次は 6 位)。2026-11-23 に追加"},
-        "day_rank_ties": {"type": ["integer", "null"], "minimum": 1, "description": "その順位の山の数(1 なら同点なし)。2026-11-23 に追加"},
+        "rank": {"type": ["integer", "null"], "minimum": 1, "description": "その日の順位(同点は同じ順位。100 点が 5 座なら 5 座とも 1 位、次は 6 位)。2026-11-24 に意味を変えた(それまでは並び順の番号で、その日の順位は day_rank だった。day_rank はやめた)。並び順は facts の順"},
+        "rank_ties": {"type": ["integer", "null"], "minimum": 1, "description": "その順位の山の数(1 なら同点なし)。2026-11-24 に day_rank_ties から改名"},
         "detail_level": {"enum": ["full", "score_only"]},
         "hazards": {
           "type": "array",
