@@ -17,6 +17,7 @@ HZ = "危険信号"
 RANK = {"注意": 1, "警戒": 2, "警戒以上": 2, "危険": 3}
 PH = ""           # 決まった文を写した部分の置き換え
 MT = ""           # 山の名前の置き換え
+HOLE = "\ue002"         # 注記を取り除いた跡(place_note)
 DATE_RES = (re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})"), re.compile(r"(\d{1,2})月(\d{1,2})日"),
             re.compile(r"(?<![\d.])(\d{1,2})/(\d{1,2})(?![\d/])"))
 WD_RES = (re.compile(r"([月火水木金土日])曜日?"), re.compile(r"\(([月火水木金土日])\)"))
@@ -58,7 +59,7 @@ class Ctx:
         for x in brief["hazard_counts"]:
             self.ids[x["id"]] = ("N", x)
         L = brief["lines"]
-        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"])
+        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
         for x in self.lines:
             self.ids[x["id"]] = ("L", x)
         self.target_days = [date.fromisoformat(d["date"]) for d in brief["when"]["days"]]
@@ -385,6 +386,12 @@ def _count_re(X):
     return r"(\d+)\s*(?:" + "|".join(re.escape(u) for u in X.R["hazard_count"]["units"]) + ")"
 
 
+def _count_example(X):
+    """件数の文の例: 資料にあれば、その日の件数の事実から(印つき)。"""
+    n = next(iter(X.b["hazard_counts"]), None)
+    return f"例: {n['label']}は、{n['say'][0]}です。[{n['id']}]" if n else "例: 危険信号が警戒以上の山は 31 座"
+
+
 def _universals(X):
     return X.R["hazard_count"]["universal"]
 
@@ -419,9 +426,14 @@ def _check_hazard_counts(X, s, t, ids, errs):
 
     if ns and not ys and any(k in tn for k in kinds):
         err("hazard_count_mismatch", "件数の事実は、危険信号の種類(強風・低体温症・雷)ごとの数を持たない")
+    # 割合・ぼかした言い方(割合を件数と照らすことはしない。印があってもなくても止める)
+    vague = _has_any(tn, CN["vague"])
+    if hazard and vague:
+        errs.append(_err("hazard_vague", s, f"危険信号の文に、割合・ぼかした言い方「{'・'.join(vague[:3])}」がある",
+                         "件数の文を写す(" + _count_example(X) + ")"))
     # 「どれも」「全部」
     cut = _cut(tn, CN["universal_ok"])
-    if hazard and _has_any(cut, _universals(X)):
+    if hazard and _has_any(cut, _universals(X)) and not _listed_universal_true(X, t, ids):
         have = {n["date"] for n in X.b["hazard_counts"]}
         need = have if named is None else named
         if not ns:
@@ -452,6 +464,53 @@ def _check_hazard_counts(X, s, t, ids, errs):
         if not ok:
             err("hazard_count_mismatch", f"山の数「{m.group(0)}」が、件数の事実の段階ごとの数と合わない(または、何の数か決められない)")
         prev = m.end()
+
+
+def _listed_universal_true(X, t, ids):
+    """山の名前を並べた「A・B・C は、どれも強風危険…」が、並べた山の全部(印の事実の全部)に合うか。
+    名前を並べていない文・件数の印 [N…] のある文・合うかどうかを決められない文は False(今までどおり件数の事実と照らす)。"""
+    W, CN = X.R["words"], X.R["hazard_count"]
+    ys = [X.ids[i][1] for i in ids if X.ids[i][0] == "Y"]
+    tid = _cut(_marked_names(X, t), CN["universal_ok"])
+    uni = "|".join(re.escape(w) for w in _universals(X))
+    item = r"\x02m\d{3}\x03"
+    lists = re.findall(rf"({item}(?:{CN['listed_sep']}{item})+){CN['listed_tail']}(?:{uni})", tid)
+    if not ys or any(X.ids[i][0] == "N" for i in ids) or not lists or len(lists) != len(re.findall(uni, tid)) or _has_any(tid, CN["listed_not"]):
+        return False
+    # 並べた山の全部に印があるか(日を書いていれば、書いた日ごとに)
+    mids = {m for x in lists for m in re.findall(r"m\d{3}", x)}
+    days = _named_days(X, t)
+    if _has_any(t, CN["listed_all_days"]):
+        days = {d["date"] for d in X.b["when"]["days"]}
+    have = {(f["mountain_id"], f["date"]) for f in ys}
+    if not mids <= {m for m, _ in have} or (days is not None and (not days or not all((m, d) in have for m in mids for d in days))):
+        return False
+    # どの印の事実も、文の危険信号(種類と段階)を持っているか
+    plain = re.sub(item, MT, tid)
+    kinds = "|".join(re.escape(k) for k in W["hazard_kinds"] if k != HZ)
+    lvs = "|".join(re.escape(x) for x in W["hazard_levels"])
+    said = []
+
+    def take(m):                                  # 「強風・低体温症危険」は、どちらも危険
+        said.extend((k, m.group("lv")) for k in re.findall(kinds, m.group("ks")))
+        return " "
+    rest = re.sub(rf"(?P<ks>(?:(?:{kinds})[・とや、])*(?:{kinds}))\s*[のが:は]?\s*(?P<lv>{lvs})", take, plain)
+    said += [(k, None) for k in re.findall(kinds, rest)]
+    claims = _level_claims(plain, W)              # 種類を書かない段階(節ごとの照らしは _check_level_only)
+    for form in W["hazard_level_forms"]["at_least"] + W["hazard_level_forms"]["until"] + W["hazard_level_forms"]["exact"]:
+        rest = re.sub(form.replace("{lv}", f"(?:{lvs})"), " ", rest)
+    if re.search(r"警戒|危険|注意(?![がしを])", rest.replace(HZ, " ")):     # 何の段階か決められない(「注意が要ります」「注意して」は段階ではない)
+        return False
+    for c in _clauses(plain):
+        if (HZ in c or re.search(kinds + "|" + lvs, c)) and _has_any(c, CN["listed_not_clause"]):
+            return False
+    for f in ys:
+        hz = {(h["label"], h["level"]) for h in f["hazards"]}
+        if not hz or not all((k, lv) in hz or (lv is None and any(k == x for x, _ in hz)) for k, lv in said):
+            return False
+        if not all(_level_ok(mode, lv, neg, f) for mode, lv, neg, _ in claims):
+            return False
+    return True
 
 
 def _universal_true(X, t, kinds, lv_re, ns):
@@ -600,10 +659,6 @@ def check(draft, brief):
     for key in ("data_time", "coverage", "attribution"):
         if L[key] and L[key]["id"] not in present:
             errs.append(_err("line_missing", None, f"決まった文 {key}([{L[key]['id']}])がない", f"[{L[key]['id']}] の文をそのまま写す"))
-    note = L.get("hazard_note")
-    if note and note["id"] not in present and any(h["id"] in present for h in L["hazards"]):
-        errs.append(_err("hazard_note_missing", None, f"危険信号の文があるのに、注記の決まった文([{note['id']}])がない",
-                         f"[{note['id']}] の文をそのまま写す(1 回でよい)"))
     plan_main = {p["main"]["fact"] for p in brief["plans"]}
     if picks is None:
         errs.append(_err("picks_missing", None, "最後の行の [おすすめ] がない", "最後の行に「[おすすめ] Y…」(なければ「[おすすめ] なし」)を書く"))
@@ -628,7 +683,7 @@ def check(draft, brief):
         if not f["reliable"] and not (L["lead_time"] and L["lead_time"]["id"] in present):
             errs.append(_err("lead_time_missing", None, f"{f['label']}は信用してよい範囲の外なのに、先の予報である旨の文がない",
                              f"[{(L['lead_time'] or {}).get('id', 'L…')}] の文をそのまま写す"))
-    final = strip_marks(body, mre)
+    final = strip_marks(place_note(body, X, mre, exempt_re), mre)
     plain = final
     for x in X.lines:
         plain = plain.replace(x["text"], " ")
@@ -655,6 +710,43 @@ def check(draft, brief):
         errs.append(_err("too_long", None, f"{len(final)} 字({mx} 字まで)", "短くする"))
     return {"ok": not errs, "errors": errs, "final": final, "picks": picks_, "checked": len(sents),
             "marked": sum(1 for s in sents if s["ids"])}
+
+
+LIST_HEAD = re.compile(r"^(?:[-*・#>\s]+|\d{1,2}[.)．]\s*|[①-⑨]\s*)+")
+
+
+def place_note(body, X, mre, exempt_re):
+    """危険信号の注記(lines.hazard_note)を正しい位置に 1 回だけ置き直した本文(印つき)を返す。ほかの文の順番・中身は変えない。
+    位置: 最後の危険信号の決まった文(山ごと・見送りのまとめ)・件数の文([N…])のあと。そのあとに足りないものの文があれば、その前
+    (なければ、その段落の終わり。出典の文があればその前)。前後を空行で分けて 1 つの段落にする。危険信号の決まった文がなければ、注記を出さない。"""
+    L, note = X.b["lines"], X.b["lines"].get("hazard_note")
+    if not note:
+        return body
+    mk = rf"(?:\s*{mre.pattern})*"
+    lines = []
+    for line in re.sub(re.escape(note["text"]) + mk + r"[ \t　]*", HOLE, body).split(NL):
+        if HOLE in line:
+            line = line.replace(HOLE, "")
+            if not LIST_HEAD.sub("", line):                      # 注記だけの行(箇条書きの印だけが残る行)はなくす
+                continue
+        lines.append(line)
+    out = NL.join(lines)
+    ends = [m.end() for x in list(L["hazards"]) + list(L.get("skips") or []) for m in re.finditer(re.escape(x["text"]) + mk, out)]
+    if not ends:
+        return out
+    segs = [(m.start(), m.end(), {X.ids[i][0] for i in mre.findall(m.group(0)) if i in X.ids}, m.group(0))
+            for m in re.finditer(rf"[^。！？!?\n]+[。！？!?]?(?:[ \t]*{mre.pattern})*", out)]
+    anchor = max(ends + [e for _, e, kinds, _ in segs if "N" in kinds])
+    gap = next((s for s, _, kinds, t in segs if s >= anchor and ("G" in kinds or (not kinds and exempt_re.search(_norm(t))))), None)
+    if gap is not None:
+        head = out.rfind(NL, 0, gap) + 1
+        pos = max(anchor, gap if LIST_HEAD.sub("", out[head:gap]) else head)      # 行の途中の文なら、そこで段落を分ける
+    else:
+        pos = re.compile(r"\n[ \t　]*\n|\Z").search(out, anchor).start()
+        src = out.find(L["attribution"]["text"], anchor) if L["attribution"] else -1
+        pos = src if 0 <= src < pos else pos
+    before, after = out[:pos].rstrip(), out[pos:].lstrip(" \t　" + NL)
+    return before + NL + NL + f"{note['text']}[{note['id']}]" + (NL + NL + after if after else "")
 
 
 def strip_marks(body, mre):

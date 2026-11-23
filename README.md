@@ -15,7 +15,7 @@
   「資料 → AI が書く → 照合」の形で答えます: コード(`brief`)が質問のための資料(確かめた事実・決まった文・足りないもの)を作り、
   エージェントが資料だけを見てガイドとして下書きを書き、コード(`verify`)が資料と照らしてから送ります。段階 2 は山だけです。
   資料の候補は日ごとに、主役にできる山の枠(8 座)と、点数は基準以上だが危険信号が「警戒」「危険」の見送りの枠(3 座)で選びます
-  (並びは 点数 → 危険信号の軽さ → 出発地からの直線距離。好みの仮置き。`config.yaml`)。
+  (並びは 点数 → 危険信号の軽さ → 出発地からの直線距離。好みの仮置き。`config.yaml`)。見送りの山の危険信号は、日ごとのまとめの文 1 つで書きます。危険信号の注記は `verify` が正しい位置に置きます。
 
 ## 使い方(答える側)
 
@@ -31,6 +31,7 @@ python -X utf8 -m concierge verify <下書きのファイル> --brief <資料の
 
 - 置き場は `BIYORI_CONCIERGE_DATA_DIR`(未設定なら Windows は `%LOCALAPPDATA%\biyori-concierge`)。棚の写し・資料・照合の記録が入ります。リポジトリの中には書きません。
 - Claude Code では、`verify` を通さない答え・`verify` の文に足し引きした答えを Stop フックで止めます(`docs/stop-hook.md`。切るときは環境変数 `BIYORI_CONCIERGE_STOP_HOOK=off`)。
+- 長い作業の前の予告の決まり(4 つのビヨリ共通の正本)は `docs/wait-notice.md`、コンシェルの実測の表は `AGENTS.md` §6。
 - 資料の形は `schemas/biyori-brief.schema.json`、予報の値の名前と出典は `docs/brief-fields.md`、検査の一覧は `docs/answer-checks.md`、書き方の手本は `docs/answer-voice.md`、日付の規則は `docs/dates.md`、試験問題は `docs/qa.md`。
 
 棚の形式は `schemas/biyori-shelf.schema.json`(manifest)ほか。対応表は `docs/yamabiyori-mapping.md`。

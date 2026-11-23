@@ -88,8 +88,9 @@ class Frames(unittest.TestCase):
         r = V.check(F.draft(doc), doc)
         self.assertTrue(r["ok"], r["errors"])
         t = r["final"]
-        self.assertLess(t.index("10月18日(日)の谷川岳は80点で"), t.index("10月17日(土)の大山(伊勢原)は100点で"))
-        self.assertNotIn("高尾山は99点で", t)                                          # 2 つまで
+        self.assertLess(t.index("10月18日(日)は、谷川岳に強風危険の危険信号が出ています。"),
+                        t.index("10月17日(土)は、大山(伊勢原)・高尾山に強風警戒の危険信号が出ています。"))      # まとめの文(段階 3 の前の準備 3.7)
+        self.assertNotIn("10月17日(土)の大山(伊勢原)は、危険信号が出ています", t)                          # 山ごとの文は並べない
 
     def test_no_main_mountain_still_shows_the_skip_frame(self):
         doc = self.doc([(m, 90.0, {"cold": "警戒"}, 9.0) for m in NEAR[:5]])
@@ -166,16 +167,17 @@ class Lines(unittest.TestCase):
         self.assertIsNone(doc["lines"]["hazard_note"])
         self.assertTrue(V.check(F.draft(doc), doc)["ok"])
 
-    def test_verify_wants_the_note_once_and_allows_twice(self):
-        from test_concierge_answer import codes, good_draft
+    def test_verify_puts_the_note_once(self):
+        from test_concierge_answer import good_draft
         doc = build(base_with_shelf(self))
         n = doc["lines"]["hazard_note"]
         line = f"{n['text']}[{n['id']}]\n"
         g = good_draft(doc)
         self.assertTrue(V.check(g, doc)["ok"])
-        self.assertIn("hazard_note_missing", codes(V.check(g.replace(line, ""), doc)))
-        r = V.check(g.replace(line, line + line), doc)
-        self.assertTrue(r["ok"], r["errors"])
+        for text in (g, g.replace(line, ""), g.replace(line, line + line)):        # 注記がなければ足し、2 回あれば 1 回にする(段階 3 の前の準備 3.1)
+            r = V.check(text, doc)
+            self.assertTrue(r["ok"], r["errors"])
+            self.assertEqual(r["final"].count(n["text"]), 1)
 
     def test_answer_name_of_cloud(self):
         doc = build(base_with_shelf(self))

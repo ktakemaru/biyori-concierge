@@ -180,7 +180,7 @@ def _values(p):
     return out
 
 
-HAZARD_NOTE = "危険信号は、点数とは別に出る警告です。"      # 山ごとの危険信号の文には付けず、答えに 1 回入れる(照合が確かめる)
+HAZARD_NOTE = "危険信号は、点数とは別に出る警告です。"      # 山ごとの危険信号の文には付けず、答えに 1 回入れる(verify が置く)
 
 
 def _hazard_line(f):
@@ -201,6 +201,15 @@ def _hazard_line(f):
         return f"{head}、危険信号が出ています: {'・'.join(parts)}。"
     lv = f["hazards"][0]["level"]
     return f"{head}、危険信号({lv}。種類は今回の予報に含まれていません)が出ています。"
+
+
+def _skip_line(frame):
+    """見送りの枠の山(1 日ぶん。枠の並びのまま)→ まとめの文。危険信号の中身(種類と段階の組)が同じ山どうしをまとめる。数字は入れない。"""
+    groups = {}
+    for f in frame:
+        key = "・".join(h["level"] if h["kind"] is None else f"{h['label']}{h['level']}" for h in f["hazards"])
+        groups.setdefault(key, []).append(f["name"])
+    return f"{frame[0]['label']}は、" + "、".join(f"{'・'.join(names)}に{hz}" for hz, names in groups.items()) + "の危険信号が出ています。"
 
 
 def main_key(f):
@@ -338,16 +347,18 @@ def _load_cards(fact_mids):
 
 
 RULES = [
-    "答えの形: 結論(1〜2文)→ いつ時点の予報か([L…] をそのまま)→ おすすめ 3 つまで(理由は数字で。注意)→ 見送り・分からないこと → 出典([L…] をそのまま)。",
+    "答えの形: 結論(1〜2文)→ いつ時点の予報か([L…] をそのまま)→ おすすめ(行くなら)3 つまで(理由は数字で。注意)→ 見送る山(まとめの文と件数)→ 危険信号の注記 → 分からないこと → 出典([L…] をそのまま)。見送りを聞かれたら、見送る山を先に、「行くなら」をあとに書く。",
     "数字・日付・曜日・山の名前・危険信号を書いた文の終わりに、根拠の事実の印 [Y…] を付ける。書いてよい表記は事実の「書いてよい表記」だけ(自分で丸めない)。",
     "決まった文 [L…] は一字一句そのまま写し、終わりに印を付ける。",
     "天気の語(晴れ・雲・風・雨・雪・霧・見通し など)を書く文には、必ず事実の印を付ける。",
     "山の難しさ・装備・積雪や凍結・ルート・所要時間は書かない。聞かれたら「足りないもの」[G…] を使って、「この予報からは判断できません」の形で書く([G…] の印だけでは通らない)。",
     "「いちばん」「最も」などで風・距離・点数を比べる文は、比べた結果 [C…] か、順位が 1 位の事実だけで書く。[C…] は「候補の中で」と書き、その山の事実の印 [Y…] も付ける。ほかの比べ方はしない(数字だけを書く)。",
-    "「どれも」「全部」「すべて」「どの山も」と危険信号を 1 文に書かない。日ごとの件数は、危険信号の件数 [N…] の「書いてよい言い方」で書く(資料に載っている山は枠の中だけなので、全部のことは件数でしか言えない)。",
-    "危険信号の注記の決まった文は、最後の危険信号の文のすぐあと(または、足りないものの文の前)に 1 回だけ置く。山ごとの説明の中に入れない。",
+    "「どれも」「全部」「すべて」「どの山も」と危険信号を 1 文に書かない(山の名前を並べて「A・B・C は、どれも強風危険」と書くのは、並べた山の全部に印を付け、全部に本当に当てはまるときだけよい)。日ごとの件数は、危険信号の件数 [N…] の「書いてよい言い方」で書く(資料に載っている山は枠の中だけなので、全部のことは件数でしか言えない)。",
+    "「ほとんど」「大半」「半分以上」「多くの山」「ほかの山も」「高い山ほど」などの割合・ぼかした言い方と危険信号を 1 文に書かない。件数の文を写す。",
+    "見送る山の危険信号は、日ごとの「見送りのまとめ」の決まった文を写して書く(続けて、件数の文)。山ごとの危険信号の文は、風速・体感の数字を書きたい山だけ。おすすめにした山の危険信号の文は、まとめの文があっても必ず要る。",
+    "危険信号の注記の決まった文は、verify が正しい位置(最後の危険信号の文・件数の文のあと。足りないものの文の前)に 1 回だけ置く。下書きに書かなくてよい(書いても 1 回に直る)。",
     "同点のある順位は「1位(同点 5 座)」のように、同点があると分かる形で書く。",
-    "おすすめは事実の「主役にできる」山だけ。危険信号のある山をすすめるときは、その危険信号の決まった文を必ず入れる。危険信号の文を 1 つでも写したら、「危険信号は、点数とは別に出る警告です。」の決まった文を 1 回入れる。",
+    "おすすめは事実の「主役にできる」山だけ。危険信号のある山をすすめるときは、その危険信号の決まった文を必ず入れる。",
     "最後の行に [おすすめ] と、すすめた事実の id(なければ「なし」)を書く。",
     "質問・提案(「〜しますか」「〜しましょうか」「?」)、内部の言葉、作業の説明、英語のメモを書かない。宿や山小屋の名前を書かない。",
 ]
@@ -524,13 +535,19 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
     for f in facts:
         if f["hazards"]:
             L.append({"key": "hazards", "fact": f["id"], "text": _hazard_line(f)})
+    for ds in sorted({f["date"] for f in facts}):                  # 見送りのまとめの文(日ごとに 1 つ。番号は山ごとの文のあと)
+        frame = [f for f in facts if f["date"] == ds and f["selected_by"] == "skip"]
+        if frame:
+            L.append({"key": "skips", "fact": None, "text": _skip_line(frame), "date": ds, "facts": [f["id"] for f in frame]})
     for i, l_ in enumerate(L, 1):
         l_["id"] = f"L{i}"
-    lines_out = {key: None for key in LINE_KEYS} | {"hazards": []}
+    lines_out = {key: None for key in LINE_KEYS} | {"hazards": [], "skips": []}
     for l_ in L:
         item = {"id": l_["id"], "text": l_["text"]} | ({"fact": l_["fact"]} if l_["fact"] else {})
         if l_["key"] == "hazards":
             lines_out["hazards"].append(item)
+        elif l_["key"] == "skips":
+            lines_out["skips"].append(item | {"date": l_["date"], "facts": l_["facts"]})
         else:
             lines_out[l_["key"]] = item
     mains = sorted([f for f in facts if f["main_ok"]], key=lambda f: (f["date"], main_key(f)))
@@ -585,9 +602,11 @@ def render_md(b):
     L = b["lines"]
     for key in LINE_KEYS:
         if L[key]:
-            out.append(f"- [{L[key]['id']}]" + ("(危険信号の文を 1 つでも写したら、最後の危険信号の文のすぐあとか、足りないものの文の前に 1 回だけ入れる。山ごとの説明の中に入れない)" if key == "hazard_note" else "") + f" {L[key]['text']}")
+            out.append(f"- [{L[key]['id']}]" + ("(危険信号の注記。危険信号の文を 1 つでも写すと、verify が正しい位置に 1 回だけ置く。下書きに書かなくてよい)" if key == "hazard_note" else "") + f" {L[key]['text']}")
     for h in L["hazards"]:
         out.append(f"- [{h['id']}](危険信号・{h['fact']}) {h['text']}")
+    for x in L.get("skips") or []:
+        out.append(f"- [{x['id']}](見送りのまとめ・{'・'.join(x['facts'])}。見送る山はこの文を写し、山ごとの危険信号の文は並べない) {x['text']}")
     out += ["", "## 候補(日ごと)", "",
             "(書き手への注: 「雲量」は、ヤマビヨリが採点に使う実効雲量(較正後)の値。答えには「雲量」とだけ書く)", ""]
     for day in b["when"]["days"]:

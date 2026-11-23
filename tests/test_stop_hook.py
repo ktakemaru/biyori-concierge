@@ -63,6 +63,28 @@ class Decide(Base):
             with self.subTest(msg[:20]):
                 self.assertEqual(self.why("verified", msg), "mismatch")
 
+    def test_the_notice_between_the_commands_is_not_stopped(self):
+        """長い作業の前の予告の 1 行(AGENTS.md 6 章)が合間にあっても止まらない。答えの前に付けて 1 つのメッセージにすると止まる。"""
+        notice = "予報を確かめます。1 分ほどかかります。"
+        self.assertIn(notice, (HOOK_FIX / "notice.jsonl").read_text(encoding="utf-8"))
+        self.assertEqual(self.why("notice"), "ok")
+        self.assertIsNone(self.run_hook("notice"))
+        self.assertEqual(self.why("notice", f"{notice}\n\n{ANSWER}"), "mismatch")
+
+    def test_no_words_before_reading_the_files(self):
+        """ファイルを読む前にも作業の説明を書かない決まりが、3 つの文書にある。最後のメッセージに入れば止まる。"""
+        for name in ("AGENTS.md", "CLAUDE.md", ".claude/skills/biyori-concierge/SKILL.md"):
+            with self.subTest(name):
+                text = (ROOT / name).read_text(encoding="utf-8")
+                self.assertIn("ファイルを読む前・", text)
+                self.assertIn("まず AGENTS.md を読みます", text)
+        self.assertEqual(self.why("verified", "まず AGENTS.md を読みます。" + chr(10) + ANSWER), "mismatch")
+
+    def test_the_notice_is_the_same_sentence_everywhere(self):
+        for name in ("AGENTS.md", "CLAUDE.md", ".claude/skills/biyori-concierge/SKILL.md", "docs/stop-hook.md"):
+            with self.subTest(name):
+                self.assertIn("予報を確かめます。1 分ほどかかります。", (ROOT / name).read_text(encoding="utf-8"))
+
     def test_verify_before_the_last_brief_does_not_count(self):
         self.assertEqual(self.why("verify_before_brief"), "no_verify")
 
