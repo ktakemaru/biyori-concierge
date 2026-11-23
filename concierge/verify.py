@@ -46,7 +46,7 @@ class Ctx:
         for g in brief["gaps"]:
             self.ids[g["id"]] = ("G", g)
         L = brief["lines"]
-        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"]) if x] + list(L["hazards"])
+        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"])
         for x in self.lines:
             self.ids[x["id"]] = ("L", x)
         self.target_days = [date.fromisoformat(d["date"]) for d in brief["when"]["days"]]
@@ -67,6 +67,7 @@ class Ctx:
         names_in_brief = set()
         for c in brief["candidates"]:
             names_in_brief.update(c["outside_top_names"])
+            names_in_brief.update(c.get("outside_skip_names") or [])
         for g in brief["gaps"]:
             names_in_brief.update(g["say"])
         self.in_brief |= {mid for n, mid in self.names if n in {_norm(x) for x in names_in_brief}}
@@ -313,6 +314,10 @@ def check(draft, brief):
     for key in ("data_time", "coverage", "attribution"):
         if L[key] and L[key]["id"] not in present:
             errs.append(_err("line_missing", None, f"決まった文 {key}([{L[key]['id']}])がない", f"[{L[key]['id']}] の文をそのまま写す"))
+    note = L.get("hazard_note")
+    if note and note["id"] not in present and any(h["id"] in present for h in L["hazards"]):
+        errs.append(_err("hazard_note_missing", None, f"危険信号の文があるのに、注記の決まった文([{note['id']}])がない",
+                         f"[{note['id']}] の文をそのまま写す(1 回でよい)"))
     plan_main = {p["main"]["fact"] for p in brief["plans"]}
     if picks is None:
         errs.append(_err("picks_missing", None, "最後の行の [おすすめ] がない", "最後の行に「[おすすめ] Y…」(なければ「[おすすめ] なし」)を書く"))

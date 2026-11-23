@@ -10,13 +10,13 @@ MAX_NAMED_SKIP = 4      # 名指しの山の見送りの文の数の上限(長�
 
 
 def picks(brief):
-    """日ごとの上位(順位の高い順)から、主役にできる山を日をまたいで順に 3 つまで。"""
+    """日ごとの上位(組み合わせ plans の並び = 主役の枠の並び)から、主役にできる山を日をまたいで順に 3 つまで。"""
+    facts = {f["id"]: f for f in brief["facts"]}
     by_day = {}
-    for f in brief["facts"]:
-        if f["main_ok"]:
-            by_day.setdefault(f["date"], []).append(f)
-    for v in by_day.values():                       # 名指しで枠の外(順位なし)の山は、その日の順位つきの山のあと
-        v.sort(key=lambda f: (f["rank"] is None, f["rank"] or 0, -f["score"], f["mountain_id"]))
+    for p in brief["plans"]:
+        by_day.setdefault(p["date"], []).append(facts[p["main"]["fact"]])
+    for v in by_day.values():                       # 名指しで地域の外(順位なし)の山は、その日の順位つきの山のあと
+        v.sort(key=lambda f: f["rank"] is None)
     out, i = [], 0
     days = sorted(by_day)
     while len(out) < MAX_PICKS and any(i < len(by_day[d]) for d in days):
@@ -83,6 +83,8 @@ def draft(brief, compact=False):
         out.append(f"{f['label']}の{f['name']}は{_n(f['score'])}点で、{why}。[{f['id']}]")
         if f["id"] in hz and "below_threshold" not in f["main_ng"]:
             out.append(f"{hz[f['id']]['text']}[{hz[f['id']]['id']}]")
+    if L.get("hazard_note") and any(h["text"] in x for h in L["hazards"] for x in out):      # 危険信号の注記は 1 回だけ
+        out.append(f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]")
     out.append("")
     for g in gaps:
         out.append(f"{g['text']}[{g['id']}]")

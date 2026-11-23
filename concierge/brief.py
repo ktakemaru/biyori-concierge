@@ -1,9 +1,11 @@
 """brief: 質問のための資料(biyori-brief/1)を作る。決定論(同じ棚・同じ引数・同じ --now なら 1 バイトも変わらない)。
 
 - 質問の文は解釈しない(そのまま残すだけ)。いつ・どこ・興味・名指しの山は、エージェントが引数で渡す。
-- 候補の選び方は機械的(価値の判断はしない): 対象の日・直線 250km 以内・地域で絞り、日ごとに基準点以上を点数の高い順に
-  上位 brief.top_per_day 件(同点は山の ID の順)。名指しの山は枠と別に必ず入れる。
-- 答えに書いてよい事実を 1 件ずつ id つき(Y001〜・L1〜・K001〜・G1〜)で持ち、書いてよい表記(say)を付ける。
+- 候補の選び方は機械的(価値の判断はしない): 対象の日・直線 250km 以内・地域で絞り、日ごとに 2 つの枠で選ぶ。
+  主役の枠 = 主役にできる山だけを、点数 → 危険信号の軽さ → 直線距離 → 山の ID の順に上位 brief.top_per_day 件。
+  見送りの枠 = 基準点以上で危険信号が「警戒」「危険」の山を、点数 → 直線距離 → 山の ID の順に上位 brief.skip_per_day 件。
+  名指しの山は枠と別に必ず入れる。
+- 答えに書いてよい事実を 1 件ずつ id つき(Y001〜・C1〜・L1〜・K001〜・G1〜)で持ち、書いてよい表記(say)を付ける。
   丸めた表記はここで作ったものだけ(AI に丸めさせない)。
 - 予報の値の名前と単位は docs/brief-fields.md の表のとおり(ヤマビヨリの README と画面の列名が出典)。"""
 import hashlib
@@ -32,7 +34,7 @@ VALUE_FIELDS = (
     # metric, 名前, 単位(答えに書く形), 丸めの刻み(約の表記), 出典の場所(短く)
     ("ridge_wind_ms", "稜線風速", "m/s", 1, "mountain_weather_mvp.py 表の列「稜線風速m/s」・README 探索モードの表"),
     ("day_peak_wind_ms", "日中ピークの風速", "m/s", 1, "README「スコアの仕組み」危険信号「稜線の強風(日中ピーク)」"),
-    ("cloud_pct", "雲量(較正後)", "%", 1, "README 探索モード「雲量%(較正/生)」の左「採点に使う較正後の実効雲量」"),
+    ("cloud_pct", "雲量", "%", 1, "README 探索モード「雲量%(較正/生)」の左「採点に使う較正後の実効雲量」"),
     ("cloud_pct_raw", "山頂雲量(予報そのまま)", "%", 1, "README 探索モード「雲量%(較正/生)」の右「予報そのままの山頂雲量」"),
     ("ridge_visibility", "視程(稜線)", "m", None, "mountain_weather_mvp.py 表の列「視程m(稜線)」"),
     ("precip_wet_pct", "雨天割合(活動時間)", "%", 1, "mountain_weather_mvp.py 表の列「雨天割合%(活動時間)」"),
@@ -40,6 +42,7 @@ VALUE_FIELDS = (
     ("chill", "体感温度(稜線)", "℃", 1, "mountain_weather_mvp.py 表の列「体感温度℃(稜線)」"),
     ("cape", "雷リスク(CAPE)", "J/kg", None, "mountain_weather_mvp.py 表の列「雷リスクCAPE」"),
 )
+LINE_KEYS = ("data_time", "coverage", "lead_time", "attribution", "hazard_note")      # 決まった文の並び(id の順)。危険信号の文はこのあと
 UNIT_OUT = {"degC": "℃"}
 NOT_SHOWN = ("precip_wet_hours", "precip_total_hours", "precip_msm_hours", "precip_moist_hours", "precip_prob_hours",
              "precip_total_mm", "day_peak_wind_hour")      # day_peak_wind_hour は日中ピークの風速の「時」として使う
@@ -178,6 +181,9 @@ def _values(p):
     return out
 
 
+HAZARD_NOTE = "危険信号は、点数とは別に出る警告です。"      # 山ごとの危険信号の文には付けず、答えに 1 回入れる(照合が確かめる)
+
+
 def _hazard_line(f):
     vals = {v["key"]: v for v in f["values"]}
     parts = []
@@ -195,12 +201,22 @@ def _hazard_line(f):
             parts.append(f"{h['label']}{h['level']}")
     head = f"{f['label']}の{f['name']}は"
     if parts:
-        return f"{head}、危険信号が出ています: {'・'.join(parts)}(危険信号は点数とは別の警告です)。"
+        return f"{head}、危険信号が出ています: {'・'.join(parts)}。"
     lv = f["hazards"][0]["level"]
-    return f"{head}、危険信号({lv}。種類は今回の予報に含まれていません)が出ています(危険信号は点数とは別の警告です)。"
+    return f"{head}、危険信号({lv}。種類は今回の予報に含まれていません)が出ています。"
 
 
-def _fact(p, mtn, origin, data_day, c, *, rank, named, selected_by):
+def main_key(f):
+    """主役の枠の並び: 点数の高い順 → 危険信号の軽い順(なし → 注意。同じ段階なら数の少ない順)→ 直線距離の近い順 → 山の ID の順。"""
+    return (-f["score"], LEVEL_RANK.get(f["hazard_level"], 0), len(f["hazards"]), f["distance_km"], f["mountain_id"])
+
+
+def skip_key(f):
+    """見送りの枠の並び: 点数の高い順 → 直線距離の近い順 → 山の ID の順。"""
+    return (-f["score"], f["distance_km"], f["mountain_id"])
+
+
+def _fact(p, mtn, origin, data_day, c, *, named, selected_by=None):
     d = date.fromisoformat(p["time_window"]["start"][:10])
     sc = p["suitability"]["score"]
     km = distance_km(origin["lat"], origin["lon"], mtn["lat"], mtn["lon"])
@@ -217,7 +233,8 @@ def _fact(p, mtn, origin, data_day, c, *, rank, named, selected_by):
         ng.append("score_only")
     f = {"id": None, "kind": "mountain_day", "mountain_id": mtn["id"], "name": mtn["name"], "elevation_m": mtn["elevation_m"],
          "region": mtn.get("region"), "access": mtn.get("access"), "date": d.isoformat(), "weekday": WEEKDAY_JA[d.weekday()],
-         "label": md_label(d), "score": sc["value"], "threshold": GO_THRESHOLD, "rank": rank,
+         "label": md_label(d), "score": sc["value"], "threshold": GO_THRESHOLD,
+         "rank": None, "day_rank": None, "day_rank_ties": None,
          "detail_level": "score_only" if score_only else "full", "hazards": hz,
          "hazard_level": {0: None, 1: "注意", 2: "警戒", 3: "危険"}[worst], "main_ok": not ng, "main_ng": ng,
          "distance_km": round(km, 1), "distance_say": distance_say(km, c), "lead_days": lead,
@@ -230,8 +247,6 @@ def _fact(p, mtn, origin, data_day, c, *, rank, named, selected_by):
         say.append(f"約{r}点")
     if _base_name(mtn["name"]) != mtn["name"]:
         say.append(_base_name(mtn["name"]))
-    if rank:
-        say += [f"{rank}位", f"{rank}番目"]
     if lead is not None:
         say.append(f"{lead}日先")
     say += day_says(d)
@@ -241,6 +256,49 @@ def _fact(p, mtn, origin, data_day, c, *, rank, named, selected_by):
         say += v["say"]
     f["say"] = list(dict.fromkeys(say))
     return f
+
+
+def rank_say(f):
+    """その日の順位の書いてよい表記。同点があるときは、同点があると分かる形だけ。"""
+    if not f["day_rank"]:
+        return []
+    if f["day_rank_ties"] > 1:
+        return [f"{f['day_rank']}位(同点 {f['day_rank_ties']} 座)"]
+    return [f"{f['day_rank']}位", f"{f['day_rank']}番目"]
+
+
+def _set_ranks(above):
+    """基準点以上の山(その日の全部)に順位を付ける。rank は並び順の番号(1, 2, 3…)、day_rank は同点を同じにした順位。"""
+    above.sort(key=main_key)
+    for i, f in enumerate(above, 1):
+        f["rank"] = i
+        f["day_rank"] = 1 + sum(1 for g in above if g["score"] > f["score"])
+        f["day_rank_ties"] = sum(1 for g in above if g["score"] == f["score"])
+        f["say"] = list(dict.fromkeys(f["say"] + rank_say(f)))
+
+
+def _comparisons(facts, origin):
+    """日ごとに、主役の枠の山の中で「比べた結果」の事実を作る(稜線の風がいちばん弱い山・出発地からいちばん近い山だけ。仮置き)。
+    枠の山が 2 座に満たない日、値のない山がある日、いちばんの山が 2 つ以上ある日は作らない(言い切れないため)。"""
+    out = []
+    for d in sorted({f["date"] for f in facts}):
+        frame = [f for f in facts if f["date"] == d and f["selected_by"] == "top"]
+        if len(frame) < 2:
+            continue
+        winds = {f["id"]: next((v["value"] for v in f["values"] if v["key"] == "ridge_wind_ms"), None) for f in frame}
+        near = {f["id"]: f["distance_km"] for f in frame}
+        kinds = (("ridge_wind_min", winds, ["主役の候補の中で稜線の風がいちばん弱い"]),
+                 ("nearest", near, [f"主役の候補の中で{origin['name']}からいちばん近い", "主役の候補の中で出発地からいちばん近い"]))
+        for kind, vals, say in kinds:
+            if any(v is None for v in vals.values()):
+                continue
+            best = [f for f in frame if vals[f["id"]] == min(vals.values())]
+            if len(best) != 1:
+                continue
+            f = best[0]
+            out.append({"id": f"C{len(out) + 1}", "kind": kind, "date": d, "label": f["label"], "fact": f["id"],
+                        "mountain_id": f["mountain_id"], "name": f["name"], "among": [x["id"] for x in frame], "say": say})
+    return out
 
 
 def _load_cards(fact_mids):
@@ -269,8 +327,10 @@ RULES = [
     "数字・日付・曜日・山の名前・危険信号を書いた文の終わりに、根拠の事実の印 [Y…] を付ける。書いてよい表記は事実の「書いてよい表記」だけ(自分で丸めない)。",
     "決まった文 [L…] は一字一句そのまま写し、終わりに印を付ける。",
     "天気の語(晴れ・雲・風・雨・雪・霧・見通し など)を書く文には、必ず事実の印を付ける。",
-    "山の難しさ・装備・積雪や凍結・ルート・所要時間は書かない。聞かれたら「足りないもの」[G…] を使って、判断できないと書く。",
-    "おすすめは事実の「主役にできる」山だけ。危険信号のある山をすすめるときは、その危険信号の決まった文を必ず入れる。",
+    "山の難しさ・装備・積雪や凍結・ルート・所要時間は書かない。聞かれたら「足りないもの」[G…] を使って、「この予報からは判断できません」の形で書く([G…] の印だけでは通らない)。",
+    "「いちばん」「最も」などで風・距離・点数を比べる文は、比べた結果 [C…] か、順位が 1 位の事実だけで書く。[C…] は「候補の中で」と書き、その山の事実の印 [Y…] も付ける。ほかの比べ方はしない(数字だけを書く)。",
+    "同点のある順位は「1位(同点 5 座)」のように、同点があると分かる形で書く。",
+    "おすすめは事実の「主役にできる」山だけ。危険信号のある山をすすめるときは、その危険信号の決まった文を必ず入れる。危険信号の文を 1 つでも写したら、「危険信号は、点数とは別に出る警告です。」の決まった文を 1 回入れる。",
     "最後の行に [おすすめ] と、すすめた事実の id(なければ「なし」)を書く。",
     "質問・提案(「〜しますか」「〜しましょうか」「?」)、内部の言葉、作業の説明、英語のメモを書かない。宿や山小屋の名前を書かない。",
 ]
@@ -354,7 +414,8 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
             if not dayp:
                 no_day.append(d)
                 continue
-            ex = {"out_of_range": 0, "region": 0, "no_forecast": 0, "below_threshold": 0, "outside_top": 0}
+            ex = {"out_of_range": 0, "region": 0, "no_forecast": 0, "below_threshold": 0, "score_only": 0,
+                  "outside_top": 0, "outside_skip": 0}
             pool_ = []
             for mt in mlist:
                 p = dayp.get(mt["id"])
@@ -368,27 +429,23 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
                     ex["region"] += 1
                     continue
                 pool_.append((mt, p))
-            above = sorted([x for x in pool_ if x[1]["suitability"]["score"]["value"] >= GO_THRESHOLD],
-                           key=lambda x: (-x[1]["suitability"]["score"]["value"], x[0]["id"]))
-            ranks = {mt["id"]: i + 1 for i, (mt, _) in enumerate(above)}
+            all_facts = [_fact(p, mt, org, data_day, c, named=mt["id"] in named) for mt, p in pool_]
+            above = [f for f in all_facts if f["score"] >= GO_THRESHOLD]
+            _set_ranks(above)                                                   # main_key の順に並ぶ
             ex["below_threshold"] = len(pool_) - len(above)
-            top = above[:bc["top_per_day"]]
-            outside = above[bc["top_per_day"]:]
-            ex["outside_top"] = len(outside)
-            day_facts = [_fact(p, mt, org, data_day, c, rank=ranks[mt["id"]], named=mt["id"] in named, selected_by="top")
-                         for mt, p in top]
-            # 枠の中に主役にできる山が main_ok_min 件より少ないときは、枠の外から主役にできる山を点数の順に足す(仮置き。
-            # 冬は上位が危険信号「警戒・危険」の高い山で埋まり、おすすめにできる山が資料に 1 つも入らないことがあるため)
-            need = bc["main_ok_min"] - sum(1 for f in day_facts if f["main_ok"])
-            for mt, p in outside:
-                if need <= 0:
-                    break
-                f = _fact(p, mt, org, data_day, c, rank=ranks[mt["id"]], named=mt["id"] in named, selected_by="main_fill")
-                if f["main_ok"]:
-                    day_facts.append(f)
-                    need -= 1
+            mains_ = [f for f in above if f["main_ok"]]
+            hard = sorted([f for f in above if "hazard_hard" in f["main_ng"]], key=skip_key)
+            ex["score_only"] = len(above) - len(mains_) - len(hard)
+            top, skip = mains_[:bc["top_per_day"]], hard[:bc["skip_per_day"]]
+            for f in top:
+                f["selected_by"] = "top"
+            for f in skip:
+                f["selected_by"] = "skip"
+            day_facts = top + skip
+            out_top, out_skip = mains_[len(top):], hard[len(skip):]
+            ex["outside_top"], ex["outside_skip"] = len(out_top), len(out_skip)
+            by_mid = {f["mountain_id"]: f for f in all_facts}
             picked = {f["mountain_id"] for f in day_facts}
-            ex["outside_top"] = sum(1 for mt, _ in outside if mt["id"] not in picked)
             for mid in named:
                 if mid in picked:
                     continue
@@ -396,13 +453,16 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
                 if p is None:
                     gap("named_no_forecast", f"{md_label(d)}の{by_id[mid]['name']}の予報はありません。", day_says(d)[:1] + [by_id[mid]["name"]])
                     continue
-                day_facts.append(_fact(p, by_id[mid], org, data_day, c, rank=ranks.get(mid), named=True, selected_by="named"))
+                f = by_mid.get(mid) or _fact(p, by_id[mid], org, data_day, c, named=True)      # 地域の外の名指しの山は順位なし
+                f["selected_by"] = "named"
+                day_facts.append(f)
             facts += day_facts
             if not above:
                 gap("no_mountain_above", f"{md_label(d)}は、基準の {num(GO_THRESHOLD)} 点以上の山がありませんでした。",
                     [md_label(d), f"{num(GO_THRESHOLD)}点"])
             excluded.append({"date": ds, "counts": ex,
-                             "outside_top_names": [mt["name"] for mt, _ in outside if mt["id"] not in picked and mt["id"] not in named]})
+                             "outside_top_names": [f["name"] for f in out_top if f["mountain_id"] not in named],
+                             "outside_skip_names": [f["name"] for f in out_skip if f["mountain_id"] not in named]})
         if no_day:
             labs = "・".join(md_label(d) for d in no_day)
             gap("day_not_in_forecast", f"{labs}の山の予報は、今回の予報の範囲にありません。", [md_label(d) for d in no_day])
@@ -433,8 +493,11 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
     cards = _load_cards({f["mountain_id"] for f in facts})
     for i, k in enumerate(cards, 1):
         k["id"] = f"K{i:03d}"
+    comparisons = _comparisons(facts, org)
     L = []
-    for key in ("data_time", "coverage", "lead_time", "attribution"):
+    if any(f["hazards"] for f in facts):
+        lines["hazard_note"] = HAZARD_NOTE
+    for key in LINE_KEYS:
         if key in lines:
             L.append({"key": key, "fact": None, "text": lines[key]})
     for f in facts:
@@ -442,25 +505,25 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
             L.append({"key": "hazards", "fact": f["id"], "text": _hazard_line(f)})
     for i, l_ in enumerate(L, 1):
         l_["id"] = f"L{i}"
-    lines_out = {"data_time": None, "coverage": None, "lead_time": None, "attribution": None, "hazards": []}
+    lines_out = {key: None for key in LINE_KEYS} | {"hazards": []}
     for l_ in L:
         item = {"id": l_["id"], "text": l_["text"]} | ({"fact": l_["fact"]} if l_["fact"] else {})
         if l_["key"] == "hazards":
             lines_out["hazards"].append(item)
         else:
             lines_out[l_["key"]] = item
-    mains = sorted([f for f in facts if f["main_ok"]], key=lambda f: (f["date"], "mountain", f["distance_km"], f["mountain_id"]))
+    mains = sorted([f for f in facts if f["main_ok"]], key=lambda f: (f["date"], main_key(f)))
     plans = [{"id": f"P{i}", "date": f["date"], "main": {"kind": "mountain", "fact": f["id"]}, "adds": []}
              for i, f in enumerate(mains, 1)]
     doc = {"schema": SCHEMA, "id": None, "question": question, "now": iso(now),
            "when": {"spec": W["spec"], "rule": W["rule"], "days": W["days"], "today": W["today"]},
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
-           "shelf": shelf_info, "facts": facts, "candidates": excluded, "lines": lines_out, "plans": plans,
+           "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "candidates": excluded, "lines": lines_out, "plans": plans,
            "cards": cards, "gaps": gaps, "rules": RULES,
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
-                      "top_per_day": bc["top_per_day"], "max_straight_line_km": max_km}}
+                      "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}
     h = hashlib.sha256(json.dumps(doc, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:8]
     doc["id"] = f"b{now.astimezone(JST).strftime('%Y%m%d-%H%M%S')}-{h}"
     errs = brief_schema_errors(doc)
@@ -494,12 +557,13 @@ def render_md(b):
         out.append(f"- 絞り込み: 地域 {b['filters']['region'] or 'なし'} / 興味 {b['filters']['interest'] or 'なし'} / 名指しの山 {b['filters']['mountains'] or 'なし'}")
     out += ["", "## 決まった文(一字一句そのまま写し、印を付ける)", ""]
     L = b["lines"]
-    for key in ("data_time", "coverage", "lead_time", "attribution"):
+    for key in LINE_KEYS:
         if L[key]:
-            out.append(f"- [{L[key]['id']}] {L[key]['text']}")
+            out.append(f"- [{L[key]['id']}]" + ("(危険信号の文を 1 つでも写したら、1 回入れる)" if key == "hazard_note" else "") + f" {L[key]['text']}")
     for h in L["hazards"]:
         out.append(f"- [{h['id']}](危険信号・{h['fact']}) {h['text']}")
-    out += ["", "## 候補(日ごと)", ""]
+    out += ["", "## 候補(日ごと)", "",
+            "(書き手への注: 「雲量」は、ヤマビヨリが採点に使う実効雲量(較正後)の値。答えには「雲量」とだけ書く)", ""]
     for day in b["when"]["days"]:
         fs = [f for f in b["facts"] if f["date"] == day["date"]]
         out.append(f"### {day['label']}")
@@ -511,9 +575,9 @@ def render_md(b):
                 {"below_threshold": "基準点未満", "hazard_hard": "危険信号が警戒以上", "score_only": "点数だけ"}[x] for x in f["main_ng"]) + ")"
             hz = "・".join(f"{h['label']}{h['level']}" for h in f["hazards"]) or "なし"
             out.append(f"- **[{f['id']}] {f['name']}**({f['region']}・標高 {num(f['elevation_m'])}m・{f['access']}・{f['distance_say']})"
-                       f" {num(f['score'])} 点(基準 {num(f['threshold'])} 点){'・' + str(f['rank']) + ' 位' if f['rank'] else ''}"
+                       f" {num(f['score'])} 点(基準 {num(f['threshold'])} 点){'・' + rank_say(f)[0] if f['day_rank'] else ''}"
                        f"・{f['lead_days']} 日先{'(信用してよい範囲の外)' if not f['reliable'] else ''}・{tag}"
-                       + ("・名指し" if f["named"] else "") + ("・枠の外から足した主役の候補" if f["selected_by"] == "main_fill" else ""))
+                       + ("・名指し" if f["named"] else "") + ("・見送りの枠" if f["selected_by"] == "skip" else ""))
             out.append(f"  - 危険信号: {hz}")
             for v in f["values"]:
                 out.append(f"  - {v['name']}: {v['say'][0]}" + (f"(約の表記: {'、'.join(v['say'][1:])})" if len(v["say"]) > 1 else ""))
@@ -524,7 +588,15 @@ def render_md(b):
         for x in b["candidates"]:
             c = x["counts"]
             out.append(f"- {x['date']}: 範囲外 {c['out_of_range']}・地域の外 {c['region']}・予報なし {c['no_forecast']}・基準点未満 "
-                       f"{c['below_threshold']}・枠の外 {c['outside_top']}" + (f"(枠の外: {'、'.join(x['outside_top_names'])})" if x["outside_top_names"] else ""))
+                       f"{c['below_threshold']}・点数だけ {c['score_only']}・主役の枠の外 {c['outside_top']}・見送りの枠の外 {c['outside_skip']}")
+            for key, ja in (("outside_top_names", "主役の枠の外"), ("outside_skip_names", "見送りの枠の外")):
+                if x[key]:
+                    out.append(f"  - {ja}: {'、'.join(x[key])}")
+        out.append("")
+    if b["comparisons"]:
+        out += ["### 比べた結果(主役の枠の山の中)", ""]
+        for x in b["comparisons"]:
+            out.append(f"- [{x['id']}] {x['label']}・{x['name']}({x['fact']}): {' / '.join(x['say'])}")
         out.append("")
     out += ["## 組み合わせ(主役になれる案)", ""]
     out += [f"- {p['id']}: {p['date']} 主役 {p['main']['fact']}" for p in b["plans"]] or ["(なし。おすすめにできる山はありません)"]
