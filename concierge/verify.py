@@ -13,6 +13,8 @@ from decimal import Decimal, InvalidOperation
 from .common import NL, config, verify_rules
 
 LAST_ANSWER = "last_answer.json"      # 置き場の中。verify が出した最後の文(Stop フックが最後のメッセージと比べる)
+HZ = "危険信号"
+RANK = {"注意": 1, "警戒": 2, "警戒以上": 2, "危険": 3}
 PH = ""           # 決まった文を写した部分の置き換え
 MT = ""           # 山の名前の置き換え
 DATE_RES = (re.compile(r"(\d{4})-(\d{1,2})-(\d{1,2})"), re.compile(r"(\d{1,2})月(\d{1,2})日"),
@@ -303,6 +305,65 @@ def _check_comparisons(X, s, t, ids, errs):
                              f"「{n}位(同点 {hit[0].get('rank_ties')} 座)」の形で書く"))
 
 
+def _marked_names(X, t):
+    """山の名前を ID の印(\x02m001\x03)に置き換える(節ごとの山が分かる)。"""
+    for w, mid in X.names:
+        t = t.replace(w, f"\x02{mid}\x03")
+    return t
+
+
+def _clause_facts(X, clause, whole, ys):
+    """節の中の山と日の事実。節に山がなければ文の中の山、それもなければ印の事実の全部。日も同じ(節に日がなければ絞らない)。"""
+    mids = set(re.findall(r"\x02(m\d{3})\x03", clause)) or set(re.findall(r"\x02(m\d{3})\x03", whole))
+    out = [f for f in ys if f["mountain_id"] in mids] if mids else list(ys)
+    tk = X.tokens(re.sub(r"\x02m\d{3}\x03", " ", clause))
+    if tk["dates"] or tk["wds"]:
+        out = [f for f in out if f["weekday"] in tk["wds"] or (int(f["date"][5:7]), int(f["date"][8:])) in tk["dates"]] or out
+    return out
+
+
+def _level_claims(text, W):
+    """種類を書かずに段階だけを言っているところ → [(言い方の種類 at_least / until / exact, 段階, 打ち消しか, 位置)]。言い方の形は verify.yaml。"""
+    out, t = [], text
+    lvs = "|".join(re.escape(x) for x in W["hazard_levels"] if not x.endswith("以上"))
+    kinds = "|".join(re.escape(k) for k in W["hazard_kinds"] if k != HZ)
+    for mode in ("at_least", "until", "exact"):
+        for form in W["hazard_level_forms"][mode]:
+            rx = re.compile(form.replace("{lv}", f"(?P<lv>{lvs})"))
+            for m in list(rx.finditer(t)):
+                before = t[:m.start("lv")]
+                if m.start() == m.start("lv") and re.search(rf"(?:{kinds})[のがはも:]?$", before):      # 「強風警戒の危険信号」は種類がある
+                    continue
+                neg = bool(re.search(W["hazard_level_not_re"], t[m.end():]))
+                out.append((mode, m.group("lv"), neg, m.start()))
+                t = t[:m.start()] + "\x00" * (m.end() - m.start()) + t[m.end():]      # 同じところを 2 回見ない
+    return sorted(out, key=lambda x: x[3])
+
+
+def _level_ok(mode, lv, neg, f):
+    """事実 f のいちばん重い段階が、言い方と合うか。簡易行の「警戒以上」は、上の段階が分からないので「まで」とは言えない。"""
+    worst = RANK.get(f["hazard_level"], 0)
+    open_ended = any(h["level"] == "警戒以上" for h in f["hazards"])
+    if neg:                      # 「警戒以上の危険信号は出ていません」
+        return worst < RANK[lv] if mode == "at_least" else mode == "exact" and not open_ended and all(h["level"] != lv for h in f["hazards"])
+    if mode == "at_least":
+        return worst >= RANK[lv]
+    return worst == RANK[lv] and not (mode == "until" and open_ended)
+
+
+def _check_level_only(X, s, t, ids, errs):
+    """種類を書かずに段階だけを言う文(「危険信号が警戒まで出ています」): 印の事実のいちばん重い段階と照らす。"""
+    tn = _marked_names(X, t)
+    ys = [X.ids[i][1] for i in ids if X.ids[i][0] == "Y"]
+    for clause in _clauses(tn):
+        for mode, lv, neg, _ in _level_claims(clause, X.R["words"]):
+            facts = _clause_facts(X, clause, tn, ys)
+            if not facts or not all(_level_ok(mode, lv, neg, f) for f in facts):
+                tail = {"at_least": "以上", "until": "まで", "exact": ""}[mode]
+                errs.append(_err("hazard_mismatch", s, f"危険信号の段階「{lv}{tail}{'(出ていない)' if neg else ''}」が、印の事実のいちばん重い段階と合わない",
+                                 "印の事実の危険信号のいちばん重い段階を書く(種類を書くなら「強風警戒」のように書く)"))
+
+
 def check(draft, brief):
     """→ {ok, errors, final, picks}。"""
     X = Ctx(brief)
@@ -366,10 +427,13 @@ def check(draft, brief):
                     errs.append(_err("number_mismatch", s, f"数「{'約' if ap else ''}{v}{u or ''}」が印の事実の書いてよい表記にない",
                                      "事実の「書いてよい表記」をそのまま使う(自分で丸めない)"))
             for kind in W["hazard_kinds"]:
+                if kind == HZ:                       # 種類を書かずに段階だけを言う文は、下の _check_level_only で見る
+                    continue
                 for lv in W["hazard_levels"]:
                     if re.search(re.escape(kind) + r"\s*[のが:は]?\s*" + re.escape(lv), tm) and (kind, lv) not in a["hazards"]:
                         if not (lv == "警戒" and (kind, "警戒以上") in a["hazards"]):
                             errs.append(_err("hazard_mismatch", s, f"危険信号「{kind}{lv}」が印の事実と合わない", "印の事実の危険信号の語を書く"))
+            _check_level_only(X, s, t, ids, errs)
             if tk["urls"]:
                 errs.append(_err("url_not_in_brief", s, "URL を書いている", "URL を書かない"))
         else:
