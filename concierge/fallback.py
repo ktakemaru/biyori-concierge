@@ -65,9 +65,16 @@ def draft(brief, compact=False):
     hz = {h["fact"]: h for h in L["hazards"]}
     gaps = list(brief["gaps"])
     out = []
+    stale = bool(brief["shelf"].get("stale"))
+    if stale:                                              # 予報が古いとき: 最初の文は時点(古さ)。言い切らない
+        if L["data_time"]:
+            out.append(f"{L['data_time']['text']}[{L['data_time']['id']}]")
     if chosen:
         f = chosen[0]
-        out.append(f"いちばんのおすすめは、{f['label']}の{f['name']}です。[{f['id']}]")
+        if stale:
+            out.append(f"古い予報では、{f['label']}の{f['name']}が候補です。[{f['id']}]")
+        else:
+            out.append(f"いちばんのおすすめは、{f['label']}の{f['name']}です。[{f['id']}]")
     elif not brief["shelf"]["available"]:
         g = next(g for g in gaps if g["kind"] == "shelf_unavailable")
         out.append(f"{g['text']}[{g['id']}]")
@@ -79,7 +86,7 @@ def draft(brief, compact=False):
     else:
         out.append("今回の対象の日には、条件のそろった山はありません。見送るのがよさそうです。")
     for key in ("data_time", "coverage"):
-        if L[key]:
+        if L[key] and not (stale and key == "data_time"):
             out.append(f"{L[key]['text']}[{L[key]['id']}]")
     out.append("")
     for i, f in enumerate(chosen, 1):
@@ -110,6 +117,8 @@ def draft(brief, compact=False):
         out.append(f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]")
     for g in gaps:
         out.append(f"{g['text']}[{g['id']}]")
+    if L.get("refresh"):
+        out += ["", f"{L['refresh']['text']}[{L['refresh']['id']}]"]
     if L["attribution"]:
         out += ["", f"{L['attribution']['text']}[{L['attribution']['id']}]"]
     out += ["", "[おすすめ] " + (", ".join(f["id"] for f in chosen) or "なし")]

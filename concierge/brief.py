@@ -40,7 +40,7 @@ VALUE_FIELDS = (
     ("day_total_precip_mm", "降水量(全日)", "mm", 1, "mountain_weather_mvp.py 表の列「降水量mm(全日)」"),
     ("chill", "体感温度(稜線)", "℃", 1, "mountain_weather_mvp.py 表の列「体感温度℃(稜線)」"),
 )
-LINE_KEYS = ("data_time", "coverage", "lead_time", "attribution", "hazard_note")      # 決まった文の並び(id の順)。危険信号の文はこのあと
+LINE_KEYS = ("data_time", "coverage", "lead_time", "attribution", "hazard_note", "refresh")      # 決まった文の並び(id の順)。危険信号の文はこのあと
 UNIT_OUT = {"degC": "℃"}
 # 資料に出さない値。cloud_pct_raw・cape は、答えに出さないと利用者が決めた(2026-11-23。docs/brief-fields.md)
 NOT_SHOWN = ("cloud_pct_raw", "cape", "precip_wet_hours", "precip_total_hours", "precip_msm_hours", "precip_moist_hours", "precip_prob_hours",
@@ -368,6 +368,15 @@ def _load_cards(fact_mids):
     return out
 
 
+REFRESH = ("新しい予報にするには、GitHub の Actions → collect → Run workflow を実行してください"
+           "(入力の書き方は docs/manual-collect.md にあります)。")      # 古い予報のときだけ。利用者の決定ではなく案(2026-11-25)
+
+STALE_RULES = [
+    "予報が古い。答えの最初の文は、決まった文 data_time を一字一句そのまま写す(古さが入っている)。結論はその次に書く。",
+    "予報が古いので、「おすすめします」「いちばんのおすすめ」のように言い切らない。「古い予報では、○○が候補です」の形で書く。「行くなら」を使うときも「候補」と書く。「おすすめの候補の中で」(比べた結果の言い方)は書いてよい。",
+    "答えの最後に、決まった文 refresh(新しくする方法)を写す(そのあとに書いてよいのは attribution だけ)。",
+]
+
 RULES = [
     "答えの形: 結論(1〜2文)→ いつ時点の予報か([L…] をそのまま)→ おすすめ(行くなら)3 つまで(理由は数字で。注意)→ 見送る山(まとめの文と件数)→ 危険信号の注記 → 分からないこと → 出典([L…] をそのまま)。見送りを聞かれたら、見送る山を先に、「行くなら」をあとに書く。",
     "数字・日付・曜日・山の名前・危険信号を書いた文の終わりに、根拠の事実の印 [Y…] を付ける。書いてよい表記は事実の「書いてよい表記」だけ(自分で丸めない)。",
@@ -438,6 +447,8 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
             lines["coverage"] = f"ヤマビヨリの {total} 座すべての予報がそろっています。"
         else:
             lines["coverage"] = f"山は、ヤマビヨリの {total} 座のうち {fetched} 座を調べた予報です。"
+        if stale:
+            lines["refresh"] = REFRESH
         lines["attribution"] = (f"気象データ: Weather data by Open-Meteo.com(CC BY 4.0)。元の予報は気象庁 MSM と ECMWF IFS で、"
                                 f"ヤマビヨリ {e.get('version')} が山頂の標高に合わせて計算した値です。")
         props = sh["proposals"]["proposals"]
@@ -585,7 +596,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
            "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
-           "cards": cards, "gaps": gaps, "rules": RULES,
+           "cards": cards, "gaps": gaps, "rules": RULES + (STALE_RULES if shelf_info.get("stale") else []),
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
                       "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}

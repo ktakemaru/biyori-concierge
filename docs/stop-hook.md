@@ -38,6 +38,6 @@
 - `python` と `-m concierge` のあいだに見慣れない書き方があると、`brief` を見つけられない(通す)。
 - 同じ置き場を 2 つの会話で同時に使うと `last_answer.json` は後のものになる(この回の資料の文 `briefs/<id>.final.txt` とも比べるので、ふつうは困らない)。
 - ファイルを読む前・コマンドを呼ぶ合間の文(「まず AGENTS.md を読みます」「最終確認しています」など)は見ない(見るのは最後のメッセージだけ)。手順として守る(`CLAUDE.md`・`AGENTS.md` §2 の 6)。
-  **予告の 1 行(「予報を確かめます。1 分ほどかかります。」)は、この決まりの例外**(`AGENTS.md` §6・`docs/wait-notice.md`)。合間の文なので、フックは止めない(見本 `tests/fixtures/stop_hook/notice.jsonl`)。
+  **予告の 1 行(「手元にある予報を読みます。1 分ほどかかります。」)は、この決まりの例外**(`AGENTS.md` §6・`docs/wait-notice.md`)。合間の文なので、フックは止めない(見本 `tests/fixtures/stop_hook/notice.jsonl`)。
   答えの前に付けて 1 つのメッセージにすると、`verify` の文と違うので止まる。
 - 開発の作業と質問を 1 つの文で頼まれた回は見ない。

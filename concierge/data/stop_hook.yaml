@@ -30,4 +30,5 @@ command_head: '(?:^|[\n;&|(`{])\s*(?:[A-Za-z_]\w*=\S*\s+)*["'']?(?:[^\s"''`;&|]*
 brief_failed: ['資料を作れませんでした']
 reasons:
   no_verify: '資料(concierge brief)を使った答えです。下書きを python -X utf8 -m concierge verify <下書き> --brief <資料の id> に通し、その標準出力だけを一字一句そのまま送ってください(AGENTS.md 2 章の 5・6)。'
+  stale: '予報が古いのに「おすすめ」と言い切っています。下書きを「古い予報では、○○が候補です」の形に直して、concierge verify をもう一度通し、その標準出力だけを送ってください。'
   mismatch: '最後のメッセージが、concierge verify の出した文と一致しません。verify の標準出力だけを、前にも後ろにも何も足さずに、一字一句そのまま送ってください(不合格のときは直して verify をもう一度)。'

@@ -1,7 +1,7 @@
 {"type": "user", "uuid": "u6", "message": {"role": "user", "content": "前の質問"}}
 {"type": "user", "uuid": "u7", "message": {"role": "user", "content": "今週末、登山に行くならどこ?"}}
 {"type": "user", "uuid": "u4", "message": {"role": "user", "content": "スキルの本文"}, "isMeta": true}
-{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "予報を確かめます。1 分ほどかかります。"}]}}
+{"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "手元にある予報を読みます。1 分ほどかかります。"}]}}
 {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t3", "name": "Bash", "input": {"command": "python -X utf8 -m concierge sync"}}]}}
 {"type": "user", "uuid": "u3r", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t3", "content": [{"type": "text", "text": "棚を取り込みました。"}]}]}}
 {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "tool_use", "id": "t1", "name": "Bash", "input": {"command": "python -X utf8 -m concierge brief --question \"今週末、登山に行くならどこ?\""}}]}}

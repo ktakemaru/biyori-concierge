@@ -20,7 +20,7 @@ import yaml
 from collect.common import ROOT
 
 from .common import DATA, NL, data_dir, read_json, write_text
-from .verify import LAST_ANSWER
+from .verify import LAST_ANSWER, stale_assertions
 
 BRIEF_ID = re.compile(r"\bb\d{8}-\d{6}-[0-9a-f]{8}\b")
 
@@ -185,7 +185,18 @@ def decide(message, turn, base, c=None):
         return {"block": True, "why": "no_verify"}
     if not matches(message, accepted_texts(turn, base, c)):
         return {"block": True, "why": "mismatch"}
+    if _stale_assertion(message, turn, base, c):
+        return {"block": True, "why": "stale"}
     return {"block": False, "why": "ok"}
+
+
+def _stale_assertion(message, turn, base, c):
+    """この回の資料の予報が古いのに、「おすすめします」と言い切った文か(verify の検査と同じ決まり。資料が読めなければ見ない)。"""
+    for bid in _brief_ids(turn["calls"], c):
+        doc = read_json(Path(base) / "briefs" / f"{bid}.json")
+        if isinstance(doc, dict) and isinstance(doc.get("shelf"), dict) and doc["shelf"].get("stale") and stale_assertions(message):
+            return True
+    return False
 
 
 # ---- 止めた回数(同じ回で上限まで) ----

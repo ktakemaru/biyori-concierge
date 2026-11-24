@@ -59,7 +59,7 @@ class Ctx:
         for x in brief["hazard_counts"]:
             self.ids[x["id"]] = ("N", x)
         L = brief["lines"]
-        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
+        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note"), L.get("refresh")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
         for x in self.lines:
             self.ids[x["id"]] = ("L", x)
         self.target_days = [date.fromisoformat(d["date"]) for d in brief["when"]["days"]]
@@ -340,6 +340,43 @@ def _check_lone_number(X, body, errs):
     if len(heads) == 1:
         errs.append(_err("number_lone", {"line": 0, "clean": heads[0]}, "比べる山のうち 1 座にだけ番号が付いている",
                          "番号を全部の山に付けるか、全部から外す"))
+
+
+def stale_assertions(text):
+    """古い予報のときに言い切ってはいけない言い方(「おすすめします」など)→ [(文, 語)]。Stop フックも使う。"""
+    S = verify_rules()["stale"]
+    mre = re.compile(verify_rules()["draft"]["marker_re"])
+    out = []
+    for s in sentences(text, mre):
+        t = _cut(_norm(s["clean"]), S["ok"])
+        bad = _has_any(t, S["assert"])
+        if not bad and _has_any(t, S["weak"]) and S["candidate"] not in t:
+            bad = _has_any(t, S["weak"])
+        if bad:
+            out.append((s, bad[0]))
+    return out
+
+
+def _check_stale(X, body, errs):
+    """予報が古いときの書き方(案): 最初の文は data_time、言い切らない、最後に新しくする方法。"""
+    L, mre = X.b["lines"], re.compile(X.R["draft"]["marker_re"])
+    if not X.b["shelf"].get("stale"):
+        return
+    first = L["data_time"]
+    if first and not mre.sub("", body).lstrip(" \t　" + NL + "-*・>").startswith(first["text"]):
+        errs.append(_err("stale_first", None, "予報が古いのに、答えの最初の文が予報の時点(古さ)の決まった文でない",
+                         f"[{first['id']}] の文を最初に置き、結論はその次に書く"))
+    for s, word in stale_assertions(mre.sub("", body)):
+        errs.append(_err("stale_assertion", s, f"予報が古いのに「{word}」と言い切っている", "「古い予報では、○○が候補です」の形で書く"))
+    ref, tail_ok = L.get("refresh"), L["attribution"]
+    if ref and ref["text"] in body:
+        tail = body.split(ref["text"])[-1]
+        if tail_ok:
+            tail = tail.replace(tail_ok["text"], "")
+        if mre.sub("", tail).strip(" \t　" + NL):
+            errs.append(_err("stale_refresh_last", None, "新しくする方法の文のあとに、ほかの文がある(あとに書けるのは帰属の文だけ)", f"[{ref['id']}] の文を最後に置く"))
+    elif ref:
+        errs.append(_err("line_missing", None, f"決まった文 refresh([{ref['id']}])がない(予報が古い)", f"[{ref['id']}] の文を、答えの最後にそのまま写す"))
 
 
 def _marked_names(X, t):
@@ -684,6 +721,7 @@ def check(draft, brief):
                 errs.append(_err("lodging_name", s, f"宿・山小屋の名前らしい語「{m.group(0)}」", "宿・山小屋の名前を書かない(「泊まりにすると」まで)"))
     # 全体
     _check_lone_number(X, body, errs)
+    _check_stale(X, body, errs)
     L = brief["lines"]
     for key in ("data_time", "coverage", "attribution"):
         if L[key] and L[key]["id"] not in present:
