@@ -409,7 +409,9 @@ class Rewrites(unittest.TestCase):
         base = base_with_shelf(self)
         doc = build(base, mountains=["谷川岳", "見本山"], region=["北陸信越"])
         self.assertTrue(doc["plans"])
-        self.assertTrue(F.draft(doc).startswith("いちばんのおすすめは、"))          # 名指しで主役にできる山を落とさない
+        d = F.draft(doc)                                                            # 名指しの答え(利用者の決定 2026-11-25): 予報の無い山を先に伝える
+        self.assertTrue(d.startswith("「見本山」は、ヤマビヨリの"), d)
+        self.assertIn("谷川岳は、おすすめの候補です。", d)                          # 名指しで主役にできる山を落とさない
         doc = build(base, when="来週末")
         self.assertTrue(F.draft(doc).startswith("10月24日(土)・10月25日(日)の山の予報は、今回の予報の範囲にありません。"))
 

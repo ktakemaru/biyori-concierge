@@ -85,6 +85,7 @@ class Ctx:
             names_in_brief.update(g["say"])
         self.in_brief |= {mid for n, mid in self.names if n in {_norm(x) for x in names_in_brief}}
         self.question = _norm(brief.get("question") or "")
+        self.named_specs = _norm(NL.join(brief["filters"].get("mountains") or []))      # 名指しの文字列(76 座に無い山は「足りないもの」の文で名前を出す)
         self.q_mountains = {mid for n, mid in self.names if n in self.question}
 
     # -- 表記の解析 --
@@ -412,6 +413,13 @@ def _check_cloud(X, sents, errs):
         errs.append(_err(code, s, detail, CLOUD_FIX[code]))
 
 
+def _check_named(X, body, mre, errs):
+    """山を名指しした質問(利用者の決定 2026-11-25): 名指しの山が答えに出ているか、名指しでない山を並べていないか。決まりは concierge/named.py。"""
+    from . import named as N
+    for s, code, detail in N.errors(X, strip_marks(body, mre), lambda t: sentences(t, mre), _norm):
+        errs.append(_err(code, s, detail, N.FIX[code]))
+
+
 def _check_lone_number(X, body, errs):
     """山を名指しで比べる答えで、番号が 1 行だけに付いていないか(比べる山の片方にだけ番号が付くのを止める)。"""
     if len(dict.fromkeys(X.b["filters"].get("mountains") or [])) < 2:
@@ -718,7 +726,7 @@ def check(draft, brief):
         # 76 座にない山の名前(形で見る。質問に書かれた名前は通す)
         for m in re.finditer(W["mountain_re"], tm):
             w = m.group(0)
-            if any(w.endswith(c) for c in W["mountain_common"]) or w in X.question:
+            if any(w.endswith(c) for c in W["mountain_common"]) or w in X.question or w in X.named_specs:
                 continue
             errs.append(_err("unknown_mountain", s, f"資料にない山の名前「{w}」", "資料にある山だけを書く(76 座にない山は「足りないもの」を使う)"))
         if ids:
@@ -804,6 +812,7 @@ def check(draft, brief):
     _check_lone_number(X, body, errs)
     _check_stale(X, body, errs)
     _check_cloud(X, sents, errs)
+    _check_named(X, body, mre, errs)
     L = brief["lines"]
     for key in ("data_time", "coverage", "attribution"):
         if L[key] and L[key]["id"] not in present:

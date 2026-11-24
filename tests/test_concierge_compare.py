@@ -121,7 +121,7 @@ class LevelOnly(unittest.TestCase):
     def setUp(self):
         rows = [("m029", 90.0, {"wind": "注意", "cold": "警戒"}, 9.0), ("m023", 89.0, {"wind": "危険"}, 20.0), ("m022", 88.0, {}, 4.0),
                 ("m027", 87.0, {"cold": "注意"}, 4.0)]
-        self.doc = build(base_with_shelf(self, edit=synthetic(rows)), when="2026-10-17", mountains=["m029", "m023", "m022", "m027"])
+        self.doc = build(base_with_shelf(self, edit=synthetic(rows)), when="2026-10-17")      # 4 座とも枠に入る
         self.y = {f["mountain_id"]: f["id"] for f in self.doc["facts"]}
 
     def codes(self, sentence, *mids):

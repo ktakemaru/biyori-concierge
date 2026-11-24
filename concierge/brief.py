@@ -414,6 +414,14 @@ RULES = [
 ]
 
 
+def _rules(named):
+    """書くときの決まり。山を名指しした質問では、答えの形と、見送りのまとめの文の決まりを、名指しの決まりに替える。"""
+    if not named:
+        return RULES
+    from .named import RULES as NAMED
+    return NAMED + [r for r in RULES if not r.startswith(("答えの形:", "見送る山の危険信号は、"))]
+
+
 def build(*, question, when, region=None, interest=None, origin=None, mountains=None, now, base):
     """→ 資料の dict(id つき)。"""
     c = config()
@@ -484,6 +492,8 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
                     [f"{len(mlist)}座"])
                 continue
             km = distance_km(org["lat"], org["lon"], mt["lat"], mt["lon"])
+            if mt["id"] in named:                                             # 同じ山を ID と名前で 2 回渡されたとき
+                continue
             if km > max_km:
                 gap("named_out_of_range", f"{mt['name']}は、出発地({org['name']})から直線 {max_km}km より遠いため、候補に入れていません。",
                     [f"{max_km}km", mt["name"]])
@@ -613,7 +623,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
            "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
-           "cards": cards, "gaps": gaps, "rules": RULES + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []),
+           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []),
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
                       "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}

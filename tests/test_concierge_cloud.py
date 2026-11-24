@@ -3,7 +3,7 @@
 import unittest
 from pathlib import Path
 
-from concierge_helpers import base_with_shelf, build, edit_json, fact
+from concierge_helpers import base_with_shelf, build, edit_json, fact, named_line
 from test_concierge_frames import synthetic
 from test_concierge_wording import both
 
@@ -60,7 +60,7 @@ class Cloud(unittest.TestCase):
     def errs(self, doc, sentence):
         L = doc["lines"]
         head = "\n".join(f"{L[k]['text']}[{L[k]['id']}]" for k in ("data_time", "coverage", "attribution"))
-        return {e["code"] for e in V.check(f"{sentence}\n{head}\n[おすすめ] なし", doc)["errors"]}
+        return {e["code"] for e in V.check(f"{sentence}\n{named_line(doc)}{head}\n[おすすめ] なし", doc)["errors"]}
 
     def ok(self, doc, sentence):
         self.assertEqual(self.errs(doc, sentence), set(), sentence)
@@ -181,6 +181,7 @@ class Cloud(unittest.TestCase):
         turn = {"prompt": "どっちがいい?", "key": "k", "calls": [run, done]}
 
         def why(text):
+            text = text if "ヤマビヨリの" in text else text + "\n" + named_line(doc)      # 控えの文でなければ、名指しの山の名前を全部出す
             write_text(base / "last_answer.json", dump_json({"brief": bid, "at": STALE_NOW, "text": text}))
             return SH.decide(text, turn, base, c)["why"]
         self.assertEqual(why("鍋割山の雲量は18.6 %の見込みです。"), "cloud")

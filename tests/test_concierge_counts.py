@@ -2,7 +2,7 @@
 見本の棚は 3 座しかないので、作り物の山の日(値は本物の予報ではない)で確かめる(test_concierge_frames.synthetic)。"""
 import unittest
 
-from concierge_helpers import base_with_shelf, build
+from concierge_helpers import base_with_shelf, build, named_line
 from test_concierge_answer import codes
 from test_concierge_frames import DAY, NEAR, synthetic
 
@@ -34,7 +34,7 @@ class Base(unittest.TestCase):
     def codes(self, sentence):
         L = self.doc["lines"]
         head = "\n".join(f"{L[k]['text']}[{L[k]['id']}]" for k in ("data_time", "coverage", "attribution"))
-        return codes(V.check(f"{sentence}\n{head}\n[おすすめ] なし", self.doc))
+        return codes(V.check(f"{sentence}\n{named_line(self.doc)}{head}\n[おすすめ] なし", self.doc))
 
     def ok(self, sentence):
         self.assertEqual(self.codes(sentence), [], sentence)
