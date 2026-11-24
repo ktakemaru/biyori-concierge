@@ -20,12 +20,16 @@ STALE_NOW = "2026-10-16T08:00:00+09:00"
 
 
 def clouds(values):
+    return clouds_on(DAY, values)
+
+
+def clouds_on(day, values):
     """作り物: 山ごとの (補正後の雲量, 生の雲量)。生が None なら値を消す。"""
     def fn(shelf_dir):
         def f(d):
             for p in d["proposals"]:
                 mid = p["place"]["site_ref"].split(":")[1]
-                if not p["time_window"]["start"].startswith(DAY) or mid not in values:
+                if not p["time_window"]["start"].startswith(day) or mid not in values:
                     continue
                 cal, raw = values[mid]
                 p["evidence"] = [e for e in p["evidence"] if not (e["metric"] == "cloud_pct_raw" and raw is None)]
@@ -188,6 +192,27 @@ class Cloud(unittest.TestCase):
         self.assertEqual(why("雲量は18.6 %の見込みです。"), "ok")                # どの山のことか分からない(迷う場合は通す。verify が先に止める)
         self.assertIn("cloud", c["reasons"])
         self.assertEqual(why(V.check(F.draft(doc), doc)["final"]), "ok")        # 控えの文は止めない
+
+
+    def test_stop_hook_does_not_read_the_other_days_brief(self):
+        """1 回に資料が 2 つ(印のある日と無い日): もう一方の日の数字を止めない。"""
+        base = base_with_shelf(self, edit=both(synthetic(ROWS), clouds({"m026": (18.6, 0.0), "m029": (18.6, 0.0)}),
+                                              synthetic(ROWS, day="2026-10-18"), clouds_on("2026-10-18", {"m026": (36.9, 3.5), "m029": (36.9, 3.5)})))
+        a = build(base, when=DAY, mountains=NAMES)
+        b = build(base, when="2026-10-18", mountains=NAMES)
+        self.assertTrue(fact(a, "高尾山", DAY)["cloud_clear"])
+        self.assertFalse(fact(b, "高尾山", "2026-10-18")["cloud_clear"])
+        c = SH.cfg()
+
+        def run(doc):
+            calls = [{"name": "Bash", "input": {"command": "python -X utf8 -m concierge brief --question x"}, "result": d["id"]} for d in (a, b)]
+            calls.append({"name": "Bash", "input": {"command": f"python -X utf8 -m concierge verify /tmp/d.txt --brief {doc['id']}"}, "result": "ok"})
+            return {"prompt": "どっち?", "key": "k", "calls": calls}
+        text = "10月18日(日)の高尾山は95点です。雲量は36.9 %の見込みです。"
+        self.assertFalse(SH._cloud_violation(text, run(b), base, c))
+        self.assertFalse(SH._cloud_violation("高尾山の雲量は36.9 %です。", run(b), base, c))
+        self.assertTrue(SH._cloud_violation("10月17日(土)の高尾山の雲量は18.6 %です。", run(a), base, c))
+        self.assertFalse(SH._cloud_violation("10月19日(月)の高尾山の雲量は40 %です。", run(a), base, c))
 
 
 if __name__ == "__main__":

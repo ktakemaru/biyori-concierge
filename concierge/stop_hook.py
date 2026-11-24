@@ -205,18 +205,17 @@ def _stale_assertion(message, turn, base, c):
 def _cloud_violation(message, turn, base, c):
     """生の雲量が 0 % の山(資料の cloud_clear)に、雲量の数字・「快晴」などの言い切りを書いた文か(verify の検査と同じ決まり。
     どの山のことか決められない文と、資料が読めないときは見ない)。"""
-    for bid in _brief_ids(turn["calls"], c):
-        doc = read_json(Path(base) / "briefs" / f"{bid}.json")
-        if not (isinstance(doc, dict) and any(isinstance(f, dict) and f.get("cloud_clear") for f in doc.get("facts") or [])):
-            continue
-        try:
-            X = Ctx(doc)
-            hits = cloud_errors(X, sentences(message, re.compile(X.R["draft"]["marker_re"])), lambda s: doc["facts"], carry=True)
-        except (KeyError, TypeError, ValueError):
-            continue
-        if any(code in ("cloud_number", "cloud_assertion") for _, code, _ in hits):
-            return True
-    return False
+    docs = [read_json(Path(base) / "briefs" / f"{bid}.json") for bid in _brief_ids(turn["calls"], c)]
+    docs = [d for d in docs if isinstance(d, dict) and d.get("facts")]
+    facts = [f for d in docs for f in d["facts"] if isinstance(f, dict)]      # 1 回に資料が 2 つ以上あれば、全部の事実で見る
+    if not any(f.get("cloud_clear") for f in facts):
+        return False
+    try:
+        X = Ctx(docs[-1])
+        hits = cloud_errors(X, sentences(message, re.compile(X.R["draft"]["marker_re"])), lambda s: facts, carry=True)
+    except (KeyError, TypeError, ValueError):
+        return False
+    return any(code in ("cloud_number", "cloud_assertion") for _, code, _ in hits)
 
 
 # ---- 止めた回数(同じ回で上限まで) ----

@@ -379,7 +379,8 @@ def cloud_errors(X, sents, facts_of, carry=False):
                 continue
             fs = [f for f in facts if f["mountain_id"] in who] if who else list(facts)
             if days[0] or days[1]:
-                fs = [f for f in fs if f["weekday"] in days[1] or (int(f["date"][5:7]), int(f["date"][8:])) in days[0]] or fs
+                on = [f for f in fs if f["weekday"] in days[1] or (int(f["date"][5:7]), int(f["date"][8:])) in days[0]]
+                fs = on if on or carry else fs                          # carry のとき、言っている日の事実が無ければ見ない(迷う場合は通す)
             clear = [f for f in fs if f.get("cloud_clear")]
             other = [f for f in fs if f.get("cloud_clear") is False]
             if other and re.search(CL["clear_re"], clause):
@@ -391,7 +392,7 @@ def cloud_errors(X, sents, facts_of, carry=False):
             rest = re.sub(CL["other_pct_re"], " ", _cut_clear(clause))
             if "雲" not in rest:
                 continue
-            ok = _cloud_value_nums(other, CL) - _cloud_value_nums(clear, CL)
+            ok = _cloud_value_nums([f for f in fs if not f.get("cloud_clear")], CL) - _cloud_value_nums(clear, CL)
             if _cloud_nums(re.sub(r"\x02m\d{3}\x03", " ", rest), CL) - ok:
                 out.append((s, "cloud_number", f"雲の印の付いた山({clear[0]['name']}・{clear[0]['label']})に、雲量の数字を書いている"))
     return out
