@@ -139,6 +139,8 @@ class Ctx:
                 texts += x["say"] + [x["text"]]
             else:
                 texts.append(x["text"])
+                if x is self.b["lines"]["data_time"] and self.b["shelf"].get("stale"):      # 古い予報: 「丸1日以上前」と言ってよい(実際の古さまで)
+                    texts += [f"丸{n}日以上前" for n in range(1, int(self.b["shelf"]["age_hours"] // 24) + 1)]
         if not any(self.ids[m][0] in ("Y", "C", "N") for m in marks):
             for d in self.target_days:
                 a["dates"].add((d.month, d.day))

@@ -1,5 +1,5 @@
 """古い予報のときの答え方(利用者の決定 2026-11-25): 最初の文・言い切らない・新しくする方法・Stop フック。通信しない。
-境目は config.yaml の collect.stale_after_hours(18 時間。利用者の決定 2026-11-25)。"""
+境目は config.yaml の collect.stale_after_hours(24 時間。利用者の決定 2026-11-25)。"""
 import unittest
 
 from concierge_helpers import base_with_shelf, build, fact
@@ -80,11 +80,11 @@ class Stale(unittest.TestCase):
             now = (data_time + dt.timedelta(hours=h)).isoformat()
             self.assertEqual(build(base_with_shelf(self), now=now)["shelf"]["stale"], want, h)
 
-    def test_17_hours_is_not_stale_and_18_hours_is(self):
+    def test_23_hours_is_not_stale_and_24_hours_is(self):
         import datetime as dt
         from concierge import status as ST
         data_time = dt.datetime.fromisoformat(self.doc["shelf"]["data_time"])
-        for h, want in ((17, False), (17.9, False), (18, True), (19, True)):
+        for h, want in ((18, False), (23, False), (23.9, False), (24, True), (25, True), (48, True)):
             with self.subTest(hours=h):
                 now = data_time + dt.timedelta(hours=h)
                 doc = build(base_with_shelf(self), now=now.isoformat())
@@ -92,6 +92,16 @@ class Stale(unittest.TestCase):
                 self.assertEqual("古い予報です" in doc["lines"]["data_time"]["text"], want)
                 self.assertEqual(doc["lines"]["refresh"] is not None, want)
                 self.assertEqual("古い予報" in ST.render(self.base, now), want)
+
+    def test_a_whole_day_or_more_can_be_said(self):
+        m = f"[{self.L['data_time']['id']}]"                                          # 27 時間前
+        good = f"丸1日以上前の予報なので、土曜の八ヶ岳(赤岳)は候補です。[{self.y}]{m}"
+        r = V.check(self.draft(conclusion=good), self.doc)
+        self.assertTrue(r["ok"], r["errors"])
+        self.assertIn(self.L["data_time"]["text"], r["final"])                       # 予報の時点は今までどおり必ず入る
+        bad = good.replace("丸1日", "丸4日")
+        self.assertIn("number_mismatch", self.codes(self.draft(conclusion=bad)))
+        self.assertTrue(any("丸1日以上前" in x for x in self.doc["rules"]))
 
     def test_stop_hook_stops_an_assertion_when_stale(self):
         c = SH.cfg()

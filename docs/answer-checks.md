@@ -68,7 +68,7 @@
 
 ## 古い予報のとき(利用者の決定 2026-11-25)
 
-資料の `shelf.stale` が真(予報の時点から `config.yaml` の `collect.stale_after_hours` 時間以上。18 時間)のときだけ見る。
+資料の `shelf.stale` が真(予報の時点から `config.yaml` の `collect.stale_after_hours` 時間以上。24 時間)のときだけ見る。
 
 | コード | 何を止めるか | 直し方 |
 |---|---|---|
