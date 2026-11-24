@@ -155,8 +155,8 @@ ATTRIBUTION.md                出典と利用条件(Open-Meteo CC BY 4.0、気�
 
 - 起動: `workflow_dispatch`(手動)と `schedule`。
   - cron は UTC で `27 19 * * *`(日本時間 4:27)と `47 7 * * *`(日本時間 16:47)。
-  - 定期実行は、リポジトリの変数 `BIYORI_COLLECT_SCHEDULE` が `on` のときだけ動く(停止スイッチ)。**段階 5 までは `on` にしない。**
-  - 手動実行の入力: `confirm`(`yes-run-live` と入れたときだけ実通信)、`agents`(`yamabiyori` / `hoshibiyori` / `both`)、`yama_limit`(山の数。全76座は `all`、一部なら 1 以上の整数。初期値 `all`(2026-11-25 に 3 から変更)。空・`all` 以外の文字・0 以下はエラーで止める。定期実行は全76座)、`publish`(棚に残すか。初期値 チェックあり。2026-11-25 に変更)。
+  - 定期実行は、リポジトリの変数 `BIYORI_COLLECT_SCHEDULE` が `on` のときだけ動く(停止スイッチ)。**山だけの定期取得は、段階 2 のあとで `on` にする**(利用者の決定 2026-11-25。前の「段階 5 までは `on` にしない」から変更)。
+  - 手動実行の入力: `confirm`(`yes-run-live` と入れたときだけ実通信)、`agents`(`yamabiyori` / `hoshibiyori` / `both`)、`yama_limit`(山の数。全76座は `all`、一部なら 1 以上の整数。初期値 `all`(2026-11-25 に 3 から変更)。空・`all` 以外の文字・0 以下はエラーで止める。定期実行は全76座)、`publish`(棚に残すか。初期値 チェックあり。2026-11-25 に変更。棚に残るのは `yama_limit` が `all` の回だけ)。
 - ジョブを2つに分ける(hub の `fetch-autumn.yml` と同じ考え方):
   - `collect`: 権限は `contents: read` だけ。実通信はここだけ。成果物は artifact に置く。
   - `publish`: `contents: write` はここだけ。取得のコードは実行しない(整形と git 操作だけ)。既存の `data` と artifact から木を組み立て、親なしの1コミットを **`data` にだけ**強制 push する。
