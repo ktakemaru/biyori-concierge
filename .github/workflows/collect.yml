@@ -28,20 +28,20 @@ on:
         options: [yamabiyori, hoshibiyori, both]
         default: yamabiyori
       yama_limit:
-        description: "山の数。全 76 座は all と入れる。一部なら 1 以上の整数(初期値 3)。空・0 以下・それ以外の文字はエラーで止まる"
+        description: "山の数。全 76 座は all と入れる。一部なら 1 以上の整数(初期値 all)。一部だけ試すときは publish のチェックも外す(棚がその山だけに置き換わる)。空・0 以下・それ以外の文字はエラーで止まる"
         required: false
         type: string
-        default: "3"
+        default: "all"
       yamabiyori_ref:
         description: "ヤマビヨリのブランチか commit(初期値 main)。main 以外で取った回は、publish にチェックがあっても棚に載せない。定期実行は常に main"
         required: false
         type: string
         default: main
       publish:
-        description: "取得の結果を棚(data ブランチ)に残す"
+        description: "取得の結果を棚(data ブランチ)に残す(初期値 チェックあり)"
         required: false
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read

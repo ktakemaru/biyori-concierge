@@ -164,12 +164,14 @@ class Collect(unittest.TestCase):
         inp = self.wf["on"]["workflow_dispatch"]["inputs"]
         self.assertEqual(set(inp), {"confirm", "agents", "yama_limit", "yamabiyori_ref", "publish"})
         self.assertEqual(inp["agents"]["options"], ["yamabiyori", "hoshibiyori", "both"])
-        self.assertFalse(inp["publish"]["default"])
+        self.assertIs(inp["publish"]["default"], True)      # 利用者の決定(2026-11-25)。うっかり起動は confirm で防ぐ
+        self.assertNotIn("default", inp["confirm"])
+        self.assertTrue(inp["confirm"]["required"])
 
-    def test_yama_limit_default_3_and_all_for_every_mountain(self):
-        # 欄を空にしても 3 座で動いたため、全座は all と入れる方式(初期値 3 はそのまま)。定期実行は all
+    def test_yama_limit_default_all_for_every_mountain(self):
+        # 欄を空にしても 3 座で動いたため、全座は all と入れる方式。初期値は 3 → all(利用者の決定 2026-11-25)。定期実行は all
         y = self.wf["on"]["workflow_dispatch"]["inputs"]["yama_limit"]
-        self.assertEqual((y["type"], y["default"]), ("string", "3"))
+        self.assertEqual((y["type"], y["default"]), ("string", "all"))
         self.assertIn("all", y["description"])
         self.assertNotIn("空 = 全", y["description"])
         env = self.jobs["collect"]["env"]["YAMA_LIMIT"]
