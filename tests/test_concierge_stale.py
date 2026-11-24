@@ -1,5 +1,5 @@
 """古い予報のときの答え方(案。2026-11-25): 最初の文・言い切らない・新しくする方法・Stop フック。通信しない。
-境目は config.yaml の collect.stale_after_hours(仮の値 12 時間)。"""
+境目は config.yaml の collect.stale_after_hours(18 時間。利用者の決定 2026-11-25)。"""
 import unittest
 
 from concierge_helpers import base_with_shelf, build, fact
@@ -79,6 +79,19 @@ class Stale(unittest.TestCase):
         for h, want in ((hours - 1, False), (hours, True)):
             now = (data_time + dt.timedelta(hours=h)).isoformat()
             self.assertEqual(build(base_with_shelf(self), now=now)["shelf"]["stale"], want, h)
+
+    def test_17_hours_is_not_stale_and_18_hours_is(self):
+        import datetime as dt
+        from concierge import status as ST
+        data_time = dt.datetime.fromisoformat(self.doc["shelf"]["data_time"])
+        for h, want in ((17, False), (17.9, False), (18, True), (19, True)):
+            with self.subTest(hours=h):
+                now = data_time + dt.timedelta(hours=h)
+                doc = build(base_with_shelf(self), now=now.isoformat())
+                self.assertEqual(doc["shelf"]["stale"], want)
+                self.assertEqual("古い予報です" in doc["lines"]["data_time"]["text"], want)
+                self.assertEqual(doc["lines"]["refresh"] is not None, want)
+                self.assertEqual("古い予報" in ST.render(self.base, now), want)
 
     def test_stop_hook_stops_an_assertion_when_stale(self):
         c = SH.cfg()

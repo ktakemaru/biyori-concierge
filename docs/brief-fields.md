@@ -46,7 +46,7 @@
 
 | 文 | 中身 | 出典 |
 |---|---|---|
-| `data_time` | 「山の予報は 11月22日(日) 7:32 時点のものです(気象庁 MSM は … の回、ECMWF は … の回)。」棚が `collect.stale_after_hours`(12 時間)以上古いときは「… 時点のもので、○ 時間前の古い予報です」。前回のファイルを残した回(`kept_previous`)はその旨を足す | 棚の `manifest.json` の `agents.yamabiyori.data_time`・`model_runs` |
+| `data_time` | 「山の予報は 11月22日(日) 7:32 時点のものです(気象庁 MSM は … の回、ECMWF は … の回)。」棚が `collect.stale_after_hours`(18 時間)以上古いときは「… 時点のもので、○ 時間前の古い予報です」。前回のファイルを残した回(`kept_previous`)はその旨を足す | 棚の `manifest.json` の `agents.yamabiyori.data_time`・`model_runs` |
 | `coverage` | 「山は、ヤマビヨリの 76 座のうち 76 座を調べた予報です。」山を 2 座以上名指しした質問で、全部そろっているときは「ヤマビヨリの 76 座すべての予報がそろっています。」`incomplete` や取れなかった山があるときは「… 座だけを調べた予報です(調べられなかった山があります)。」 | 同 `coverage` |
 | `lead_time` | 「11月29日(日)は 7 日先の予報です。ヤマビヨリが山頂の値として信用してよいとしているのは 3 日先までなので、傾向として読んでください。」(対象の日が `data_time` の日から 4 日以上先のとき) | README「精度と限界」「3日前までは山頂の値として信用してよく…14日表示は『傾向』として読む」。境界の日数は `collect/yamabiyori.py` の `RELIABLE_UP_TO_DAYS`(3) |
 | `hazards` | 「11月22日(日)の権現岳は、危険信号が出ています: 強風危険(6時に16.4 m/s)・低体温症危険(体感 -24.2℃)。」危険信号のある事実ごとに 1 文 | 段階の語(注意・警戒・危険)と種類(雷・強風・低体温症)は README「危険信号はスコアに混ぜない…注意 / 警戒 / 危険の3段階で別枠表示」、強風と低体温症の括弧の中の形は `mountain_weather_mvp.py` の `hazard_warning_cell()`(「強風危険(06時16.4m/s)」「低体温症危険(体感-24.2℃)」)。雷は段階だけ(CAPE の数字は出さない)。装備などの注意の中身は足さない |
@@ -64,7 +64,7 @@
 
 ## 古い予報のときの決まった文 `refresh`(案・未決定)
 
-`shelf.stale` が真のときだけ入る、新しくする方法の文(GitHub の Actions → collect → Run workflow。入力は `docs/manual-collect.md`)。境目は `config.yaml` の `collect.stale_after_hours`(仮の値 12 時間)。
+`shelf.stale` が真のときだけ入る、新しくする方法の文(GitHub の Actions → collect → Run workflow。入力は `docs/manual-collect.md`)。境目は `config.yaml` の `collect.stale_after_hours`(18 時間)。
 
 ## 比べた結果(`comparisons`。印 `[C1]`〜)
 

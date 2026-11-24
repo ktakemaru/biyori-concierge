@@ -21,7 +21,7 @@ def render(base, now):
             stale = config()["collect"]["stale_after_hours"]
             total, pool, fetched = coverage_counts(e)
             lines.append(f"- 山: {data_time_label(e)} 時点({SLOT_JA.get(m.get('slot'), m.get('slot'))}の回。{runs_text(e.get('model_runs'))})")
-            lines.append(f"  - {age} 時間前" + (f"(半日 {stale} 時間より古い)" if age is not None and age >= stale else ""))
+            lines.append(f"  - {age} 時間前" + (f"({stale} 時間以上前の古い予報)" if age is not None and age >= stale else ""))
             lines.append(f"  - {total} 座のうち {fetched} 座(この回に調べた山 {pool} 座)。状態 {e.get('status')}"
                          + (f"(前回のファイルを残した回: {e.get('kept_from')})" if e.get("status") == "kept_previous" else ""))
             lines.append(f"  - ヤマビヨリ {e.get('version')}(commit {str(e.get('commit') or '')[:7]})")
