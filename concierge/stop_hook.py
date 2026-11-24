@@ -5,6 +5,7 @@
 止めるとき(この回に concierge brief を実行したときだけ見る):
 - 最後の brief のあとに concierge verify … --brief を実行していない。
 - 最後のメッセージが、verify の出した文(合格した最終の文か控えの文)と一致しない(前後の空白と改行の形の違いは見ない)。
+- 予報が古いのに「おすすめ」と言い切っている・生の雲量が 0 % の山に雲量の数字などを書いている。
 止めないとき: brief を使っていない回・開発の作業の回(利用者の文の語、git や unittest、リポジトリの中のファイルの書き込み)・
 同じ回で上限の回数だけ止めたあと・切ってあるとき・入力や記録が読めないとき・フックの中のエラー。**迷う場合は通す。**"""
 import hashlib
@@ -20,7 +21,7 @@ import yaml
 from collect.common import ROOT
 
 from .common import DATA, NL, data_dir, read_json, write_text
-from .verify import LAST_ANSWER, stale_assertions
+from .verify import LAST_ANSWER, Ctx, cloud_errors, sentences, stale_assertions
 
 BRIEF_ID = re.compile(r"\bb\d{8}-\d{6}-[0-9a-f]{8}\b")
 
@@ -187,6 +188,8 @@ def decide(message, turn, base, c=None):
         return {"block": True, "why": "mismatch"}
     if _stale_assertion(message, turn, base, c):
         return {"block": True, "why": "stale"}
+    if _cloud_violation(message, turn, base, c):
+        return {"block": True, "why": "cloud"}
     return {"block": False, "why": "ok"}
 
 
@@ -195,6 +198,23 @@ def _stale_assertion(message, turn, base, c):
     for bid in _brief_ids(turn["calls"], c):
         doc = read_json(Path(base) / "briefs" / f"{bid}.json")
         if isinstance(doc, dict) and isinstance(doc.get("shelf"), dict) and doc["shelf"].get("stale") and stale_assertions(message):
+            return True
+    return False
+
+
+def _cloud_violation(message, turn, base, c):
+    """生の雲量が 0 % の山(資料の cloud_clear)に、雲量の数字・「快晴」などの言い切りを書いた文か(verify の検査と同じ決まり。
+    どの山のことか決められない文と、資料が読めないときは見ない)。"""
+    for bid in _brief_ids(turn["calls"], c):
+        doc = read_json(Path(base) / "briefs" / f"{bid}.json")
+        if not (isinstance(doc, dict) and any(isinstance(f, dict) and f.get("cloud_clear") for f in doc.get("facts") or [])):
+            continue
+        try:
+            X = Ctx(doc)
+            hits = cloud_errors(X, sentences(message, re.compile(X.R["draft"]["marker_re"])), lambda s: doc["facts"], carry=True)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if any(code in ("cloud_number", "cloud_assertion") for _, code, _ in hits):
             return True
     return False
 

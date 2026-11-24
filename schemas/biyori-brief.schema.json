@@ -197,6 +197,7 @@
         "main_ok": {"type": "boolean"},
         "main_ng": {"type": "array", "items": {"enum": ["below_threshold", "hazard_hard", "score_only"]}},
         "selected_by": {"enum": ["top", "skip", "named", "main_fill"], "description": "top=主役の枠(2026-11-23 から主役にできる山だけ) / skip=見送りの枠(2026-11-23 に追加) / named=名指し / main_fill=2026-11-23 にやめた(それより前の資料だけにある)"},
+        "cloud_clear": {"type": "boolean", "description": "雲の印。生の雲量(予報そのまま)がちょうど 0 % の山。真なら、答えに雲量の数字を書かず言葉で書く(書いてよい表記に数字を入れない)。生の値そのものは入れない。2026-11-25 に追加"},
         "values": {
           "type": "array",
           "items": {"type": "object", "required": ["key", "name", "value", "unit", "say"],

@@ -156,6 +156,15 @@ def _hazards(p):
     return out
 
 
+CLOUD_CLEAR_SAY = "雲はほとんど無い予報"
+
+
+def _cloud_clear(p):
+    """生の雲量(ヤマビヨリの cloud_pct_raw)がちょうど 0 % か。値が棚に無ければ False(今までどおり補正後の数字を書く)。生の値そのものは資料に入れない。"""
+    v = next((e.get("value") for e in p.get("evidence") or [] if e.get("metric") == "cloud_pct_raw"), None)
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v == 0
+
+
 def _values(p):
     ev = {e.get("metric"): e for e in p.get("evidence") or []}
     out = []
@@ -171,6 +180,8 @@ def _values(p):
             r = round_to(v, step)
             if r != num(v):
                 say.append(f"約{r} {unit}")
+        if metric == "cloud_pct" and _cloud_clear(p):        # 生の雲量が 0 %: 補正後の数字を書かず、言葉で書く(利用者の決定 2026-11-25)
+            say = [CLOUD_CLEAR_SAY]
         item = {"key": metric, "name": name, "value": v, "unit": unit, "say": say}
         if metric == "day_peak_wind_ms" and isinstance((ev.get("day_peak_wind_hour") or {}).get("value"), int):
             h = ev["day_peak_wind_hour"]["value"]
@@ -248,7 +259,7 @@ def _fact(p, mtn, origin, data_day, c, *, named, selected_by=None):
          "hazard_level": {0: None, 1: "注意", 2: "警戒", 3: "危険"}[worst], "main_ok": not ng, "main_ng": ng,
          "distance_km": round(km, 1), "distance_say": distance_say(km, c), "lead_days": lead,
          "reliable": lead is not None and lead <= RELIABLE_UP_TO_DAYS, "named": named, "selected_by": selected_by,
-         "values": [] if score_only else _values(p)}
+         "cloud_clear": not score_only and _cloud_clear(p), "values": [] if score_only else _values(p)}
     say = [mtn["name"], f"{num(sc['value'])}点", f"基準の{num(GO_THRESHOLD)}点", f"{num(GO_THRESHOLD)}点",
            f"標高{num(mtn['elevation_m'])}m", f"{num(mtn['elevation_m'])}m", f["distance_say"], f["distance_say"].replace("直線で", "")]
     r = round_to(sc["value"], 1)
@@ -375,6 +386,11 @@ STALE_RULES = [
     "予報が古い。答えの最初の文は、決まった文 data_time を一字一句そのまま写す(古さが入っている)。結論はその次に書く。",
     "予報が古いので、「おすすめします」「いちばんのおすすめ」のように言い切らない。「古い予報では、○○が候補です」の形で書く。「行くなら」を使うときも「候補」と書く。「おすすめの候補の中で」(比べた結果の言い方)は書いてよい。",
     "答えの最後に、決まった文 refresh(新しくする方法)を写す(そのあとに書いてよいのは attribution だけ)。",
+]
+
+CLOUD_RULES = [
+    "「雲はほとんど無い予報」とある山(雲の印の付いた山)では、雲量の数字(%・割)を書かない。「雲はほとんど無い予報です」のように言葉で書く(事実の印 [Y…] を付ける)。「快晴」「雲ひとつない」と言い切らない。",
+    "雲の印の付いた山どうしを比べるときは、「どちらも雲はほとんど無い予報で、差がつきません」と書ける(両方の山の [Y…] を付ける)。印の無い山には「雲はほとんど無い」と書かず、今までどおり雲量の数字を書く。",
 ]
 
 RULES = [
@@ -596,7 +612,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
            "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
-           "cards": cards, "gaps": gaps, "rules": RULES + (STALE_RULES if shelf_info.get("stale") else []),
+           "cards": cards, "gaps": gaps, "rules": RULES + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []),
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
                       "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}
@@ -663,6 +679,9 @@ def render_md(b):
                        + ("・名指し" if f["named"] else "") + ("・見送りの枠" if f["selected_by"] == "skip" else ""))
             out.append(f"  - 危険信号: {hz}")
             for v in f["values"]:
+                if v["key"] == "cloud_pct" and f.get("cloud_clear"):
+                    out.append(f"  - {v['name']}: {v['say'][0]}(雲の印あり。雲量の数字は書かない)")
+                    continue
                 out.append(f"  - {v['name']}: {v['say'][0]}" + (f"(約の表記: {'、'.join(v['say'][1:])})" if len(v["say"]) > 1 else ""))
             out.append(f"  - 書いてよい表記: {' / '.join(f['say'])}")
         out.append("")

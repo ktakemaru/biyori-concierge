@@ -2,7 +2,7 @@
 印つきの下書きとして組み立て、verify と同じ検査に通してから出す(テストで必ず通ることを確かめる)。
 並びは指示書 6.5 の答えの形: 結論 → いつ時点(data_time・coverage)→ おすすめ 3 つまで(日ごとの上位。主役にできる山だけ)と事実
 → 注意(危険信号・先の予報)→ 見送り(名指しの山と、見送りの枠のまとめの文・件数)→ 危険信号の注記 → 足りないもの → 出典(attribution)。"""
-from .brief import skip_key
+from .brief import CLOUD_CLEAR_SAY, skip_key
 from .common import NL
 
 MAX_PICKS = 3
@@ -32,10 +32,14 @@ def _fact_sentences(f):
     first = (f"{f['label']}の{f['name']}(標高{_n(f['elevation_m'])}m・{f['distance_say']})は"
              f"{_n(f['score'])}点で、基準の{_n(f['threshold'])}点を超えています。[{f['id']}]")
     vals = [v for v in f["values"] if v["key"] in ("ridge_wind_ms", "cloud_pct", "precip_wet_pct", "chill")]
+    clear = []
+    if f.get("cloud_clear"):                               # 生の雲量が 0 %: 数字でなく言葉で書く
+        vals = [v for v in vals if v["key"] != "cloud_pct"]
+        clear = [f"{CLOUD_CLEAR_SAY}です。[{f['id']}]"]
     if not vals:
-        return [first]
+        return [first] + clear
     body = "、".join(f"{v['name']}は{v['say'][0]}" for v in vals)
-    return [first, f"{body}の見込みです。[{f['id']}]"]
+    return [first, f"{body}の見込みです。[{f['id']}]"] + clear
 
 
 def _n(v):

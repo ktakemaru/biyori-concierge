@@ -8,7 +8,7 @@
 import re
 import unicodedata
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from .common import NL, config, md_label, verify_rules
 
@@ -319,7 +319,7 @@ def _check_comparisons(X, s, t, ids, errs):
 def _check_named_gap(X, s, t, ids, errs):
     """「差はわずか」を、名指しの山どうしの差の事実 [C…](kind = peak_wind_gap)と照らす。"""
     G = X.R["named_gap"]
-    tn = _cut(t, G["ok"])
+    tn = _cut_clear(_cut(t, G["ok"]))
     if not (any(w in tn for w in G["diff"]) and any(w in tn for w in G["small"])):
         return
     if not any(w in tn for w in G["topic"]) and not any(X.ids[i][1].get("kind") == "peak_wind_gap" for i in ids if X.ids[i][0] == "C"):
@@ -330,6 +330,83 @@ def _check_named_gap(X, s, t, ids, errs):
                          "資料の「名指しの山どうしの差」にある印を付ける"))
     elif not all(x["small"] for x in hit):
         errs.append(_err("gap_mismatch", s, "「差はわずか」ではない差を、わずかだと言っている", "差の数字だけを書く"))
+
+
+def _cut_clear(t):
+    """「雲はほとんど無い」の部分を取り除く(「ほとんど」を、危険信号の割合の語や、風の差の語と読み違えないため)。"""
+    return re.sub(verify_rules()["cloud"]["clear_re"], " ", t)
+
+
+def _cloud_nums(text, CL):
+    out = set()
+    for m in re.finditer(CL["number_re"], _norm(text)):
+        v = Decimal("一二三四五六七八九".index(m["v"]) + 1) if m["v"] in "一二三四五六七八九" else Decimal(m["v"])
+        out.add(v * 10 if m["u"] == "割" else v)
+    return out
+
+
+def _cloud_value_nums(facts, CL):
+    """事実の雲量(補正後)の数: そのままの値・書いてよい表記・1 % に丸めた値。"""
+    out = set()
+    for f in facts:
+        for v in f["values"]:
+            if v["key"] == "cloud_pct":
+                out |= {Decimal(str(v["value"])), Decimal(str(v["value"])).quantize(Decimal("1"), rounding=ROUND_HALF_UP)}
+                out |= {n for s in v["say"] for n in _cloud_nums(s, CL)}
+    return out
+
+
+def cloud_errors(X, sents, facts_of, carry=False):
+    """雲の書き方(生の雲量が 0 % の山 = 事実の cloud_clear)の検査 → [(文, コード, 詳しく)]。Stop フックも使う。
+    節ごとに、どの山のどの日かを決める(節に無ければ、文の中の前の節。carry なら前の文も)。facts_of(文) はその文の事実。"""
+    CL = X.R["cloud"]
+    out, mids, days = [], set(), (set(), set())
+    for s in sents:
+        if not carry:
+            mids, days = set(), (set(), set())
+        facts = facts_of(s)
+        tn = _marked_names(X, _cut(_norm(s["clean"]), CL["not_cloud"]))
+        tn = re.sub(r"(\x03)[、,](?=\x02)", r"\1・", tn)                 # 「A、B は」の並びを 1 つの節に
+        tn = re.sub(r"(雲量?[はがも])[、,]", r"\1", tn)                   # 「雲量は、18.6 %」を 1 つの節に
+        whole = set(re.findall(r"\x02(m\d{3})\x03", tn))
+        for clause in _clauses(tn):
+            here = set(re.findall(r"\x02(m\d{3})\x03", clause))
+            tk = X.tokens(re.sub(r"\x02m\d{3}\x03", " ", clause))
+            mids = here or mids
+            days = (tk["dates"], tk["wds"]) if tk["dates"] or tk["wds"] else days
+            who = mids or whole
+            if carry and not who:                                      # どの山のことか分からない(迷う場合は通す)
+                continue
+            fs = [f for f in facts if f["mountain_id"] in who] if who else list(facts)
+            if days[0] or days[1]:
+                fs = [f for f in fs if f["weekday"] in days[1] or (int(f["date"][5:7]), int(f["date"][8:])) in days[0]] or fs
+            clear = [f for f in fs if f.get("cloud_clear")]
+            other = [f for f in fs if f.get("cloud_clear") is False]
+            if other and re.search(CL["clear_re"], clause):
+                out.append((s, "cloud_mismatch", f"雲の印の無い山({other[0]['name']}・{other[0]['label']})に「雲はほとんど無い」と書いている"))
+            if not clear:
+                continue
+            if re.search(CL["assert_re"], _cut(clause, CL["assert_ok"])):
+                out.append((s, "cloud_assertion", f"予報なのに、空に雲が無いと言い切っている({clear[0]['name']}・{clear[0]['label']})"))
+            rest = re.sub(CL["other_pct_re"], " ", _cut_clear(clause))
+            if "雲" not in rest:
+                continue
+            ok = _cloud_value_nums(other, CL) - _cloud_value_nums(clear, CL)
+            if _cloud_nums(re.sub(r"\x02m\d{3}\x03", " ", rest), CL) - ok:
+                out.append((s, "cloud_number", f"雲の印の付いた山({clear[0]['name']}・{clear[0]['label']})に、雲量の数字を書いている"))
+    return out
+
+
+CLOUD_FIX = {"cloud_number": "雲量の数字を書かず、「雲はほとんど無い予報です」のように言葉で書く(比べるときは、数字を書く山の名前を同じ節に書く)",
+             "cloud_assertion": "「快晴」「雲ひとつない」と言い切らず、「雲はほとんど無い予報です」と書く",
+             "cloud_mismatch": "雲の印の無い山は、雲量の数字を「書いてよい表記」で書く(予報の無い山には雲のことを書かない)"}
+
+
+def _check_cloud(X, sents, errs):
+    def facts_of(s):
+        return [X.ids[i][1] for i in s["ids"] if i in X.ids and X.ids[i][0] == "Y"]
+    for s, code, detail in cloud_errors(X, sents, facts_of):
+        errs.append(_err(code, s, detail, CLOUD_FIX[code]))
 
 
 def _check_lone_number(X, body, errs):
@@ -474,6 +551,7 @@ def _named_days(X, t):
 def _check_hazard_counts(X, s, t, ids, errs):
     """危険信号の件数(○ 座)と「どれも・全部」の文を、件数の事実 [N…] と照らす。合うかどうかを決められない言い方は止める。"""
     W, CN = X.R["words"], X.R["hazard_count"]
+    t = _cut_clear(t)
     fix = "「どれも」などをやめて、日を書き、件数の事実 [N…] の「書いてよい言い方」で件数を書く(例: 日曜は、危険信号が警戒以上の山は 30 座です)"
     tn = re.sub(r"\x02m\d{3}\x03", MT, _marked_names(X, t))
     tn = re.sub(r"同点\s*\d+\s*座", " ", tn)               # 順位の表記の数
@@ -722,6 +800,7 @@ def check(draft, brief):
     # 全体
     _check_lone_number(X, body, errs)
     _check_stale(X, body, errs)
+    _check_cloud(X, sents, errs)
     L = brief["lines"]
     for key in ("data_time", "coverage", "attribution"):
         if L[key] and L[key]["id"] not in present:
