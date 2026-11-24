@@ -10,9 +10,9 @@
 2. `confirm` に `yes-run-live` と入れる。ほかは次の初期値のまま。
    - **Use workflow from**: `Branch: main`
    - `agents`: `yamabiyori`
-   - `yama_limit`: `all`(全 76 座。一部だけ試すときは 1 以上の整数。**そのときは `publish` のチェックも外す**)
+   - `yama_limit`: `all`(全 76 座。一部だけ試すときは 1 以上の整数。**`all` でない回は、`publish` にチェックがあっても棚を置き換えない**。ログと Summary にその旨と理由が出る。棚に残すには `all` で実行し直す)
    - `yamabiyori_ref`: `main`
-   - `publish`: チェックあり(外すと棚が新しくならない。main 以外から取った回は、チェックがあっても棚に載らない)
+   - `publish`: チェックあり(外すと棚が新しくならない。main 以外から取った回と、`yama_limit` が `all` でない回は、チェックがあっても棚に載らない)
 3. 緑の **Run workflow** を押す。終わったら、コンシェルで質問し直す(`sync` が棚を取り込む)。
 
 全 76 座の取得にかかった時間の記録: 2026-11-23 16:48 の回で 318.8 秒(棚の `manifest.json` の `runtime_s`。通信 228 件)。ほかの回は未確認です。
