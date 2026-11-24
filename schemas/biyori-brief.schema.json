@@ -54,6 +54,21 @@
         }
       }
     },
+    "named_gaps": {
+      "type": "array",
+      "description": "名指しの山の組ごとの、日中ピークの風速の差(日ごと)。small = config.yaml の small_wind_diff_ms(仮の値)以下。2026-11-25 に追加",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "date", "label", "fact", "mountain_id", "mountains", "name", "among", "diff", "small", "hazard_differs", "say"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^C\\d+$"},
+          "kind": {"const": "peak_wind_gap"},
+          "diff": {"type": "number", "minimum": 0},
+          "small": {"type": "boolean"},
+          "say": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+        }
+      }
+    },
     "hazard_counts": {
       "type": "array",
       "description": "日ごとの、基準点以上で危険信号が警戒・危険の山の件数(山のいちばん重い段階で数える)。above = 基準点以上の山の数、all = 見送りの枠の中と外を合わせた数、outside = 見送りの枠の外の数。2026-11-24 に追加",

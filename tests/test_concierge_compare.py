@@ -54,23 +54,23 @@ class GapMark(Base):
 class Superlatives(Base):
     def test_weakest_wind(self):
         y, c = self.y("横岳", "2026-10-17"), self.c("ridge_wind_min", "2026-10-17")
-        self.ok(f"土曜の横岳は、主役の候補の中で稜線の風がいちばん弱い見込みです。[{y}][{c}]")
-        self.ok(f"土曜の横岳の稜線風速は5.2 m/sで、主役の候補の中で最も弱い見込みです。[{y}][{c}]")
+        self.ok(f"土曜の横岳は、おすすめの候補の中で稜線の風がいちばん弱い見込みです。[{y}][{c}]")
+        self.ok(f"土曜の横岳の稜線風速は5.2 m/sで、おすすめの候補の中で最も弱い見込みです。[{y}][{c}]")
         self.ng(f"土曜の横岳は、候補の中で稜線の風がいちばん弱い見込みです。[{y}]", "comparison_unmarked")
 
     def test_nearest(self):
         y, c = self.y("八ヶ岳", "2026-10-17"), self.c("nearest", "2026-10-17")
-        self.ok(f"八ヶ岳(赤岳)は、主役の候補の中で横浜からいちばん近い山です。[{y}][{c}]")
+        self.ok(f"八ヶ岳(赤岳)は、おすすめの候補の中で横浜からいちばん近い山です。[{y}][{c}]")
         self.ng(f"八ヶ岳(赤岳)は、候補の中で横浜から一番近い山です。[{y}]", "comparison_unmarked")
 
     def test_wrong_mountain_topic_or_day(self):
         y1, y2 = self.y("八ヶ岳", "2026-10-17"), self.y("横岳", "2026-10-17")
         cw, cn, cn2 = (self.c("ridge_wind_min", "2026-10-17"), self.c("nearest", "2026-10-17"), self.c("nearest", "2026-10-18"))
-        self.ng(f"八ヶ岳(赤岳)は、主役の候補の中で稜線の風がいちばん弱い見込みです。[{y1}][{cw}]", "comparison_mismatch")
-        self.ng(f"横岳は、主役の候補の中で稜線の風がいちばん弱い見込みです。[{y2}][{cn}]", "comparison_unmarked")     # 対象が違う
-        self.ng(f"八ヶ岳(赤岳)は、主役の候補の中で横浜からいちばん近い山です。[{y1}][{cn2}]", "comparison_mismatch")   # 日が違う
-        self.ng(f"横岳と八ヶ岳(赤岳)は、主役の候補の中で稜線の風がいちばん弱い見込みです。[{y1}][{y2}][{cw}]", "comparison_mismatch")
-        self.ok(f"八ヶ岳(赤岳)と比べると、横岳は主役の候補の中で稜線の風がいちばん弱い見込みです。[{y1}][{y2}][{cw}]")
+        self.ng(f"八ヶ岳(赤岳)は、おすすめの候補の中で稜線の風がいちばん弱い見込みです。[{y1}][{cw}]", "comparison_mismatch")
+        self.ng(f"横岳は、おすすめの候補の中で稜線の風がいちばん弱い見込みです。[{y2}][{cn}]", "comparison_unmarked")     # 対象が違う
+        self.ng(f"八ヶ岳(赤岳)は、おすすめの候補の中で横浜からいちばん近い山です。[{y1}][{cn2}]", "comparison_mismatch")   # 日が違う
+        self.ng(f"横岳と八ヶ岳(赤岳)は、おすすめの候補の中で稜線の風がいちばん弱い見込みです。[{y1}][{y2}][{cw}]", "comparison_mismatch")
+        self.ok(f"八ヶ岳(赤岳)と比べると、横岳はおすすめの候補の中で稜線の風がいちばん弱い見込みです。[{y1}][{y2}][{cw}]")
 
     def test_directions_and_topics_without_a_fact_fail(self):
         y = self.y("八ヶ岳", "2026-10-17")
@@ -89,7 +89,7 @@ class Superlatives(Base):
         c = {x["kind"]: x["id"] for x in doc["comparisons"]}
         L = doc["lines"]
         head = "\n".join(f"{L[k]['text']}[{L[k]['id']}]" for k in ("data_time", "coverage", "attribution"))
-        s = "高尾山は、主役の候補の中で稜線の風がいちばん弱く、横浜からもいちばん近い山です。"
+        s = "高尾山は、おすすめの候補の中で稜線の風がいちばん弱く、横浜からもいちばん近い山です。"
         for marks, ok in ((f"[{c['ridge_wind_min']}][{c['nearest']}]", True), (f"[{c['ridge_wind_min']}]", False)):
             r = V.check(f"{s}[{y}]{marks}\n{head}\n[おすすめ] なし", doc)
             self.assertEqual(r["ok"], ok, r["errors"])

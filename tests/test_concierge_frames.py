@@ -143,8 +143,8 @@ class Comparisons(unittest.TestCase):
         doc = self.doc([("m029", 90.0, {}, 5.0), ("m023", 91.0, {}, 3.0), ("m027", 100.0, {"wind": "危険"}, 1.0)])
         self.assertEqual([(x["id"], x["kind"], x["mountain_id"]) for x in doc["comparisons"]],
                          [("C1", "ridge_wind_min", "m023"), ("C2", "nearest", "m029")])      # 見送りの枠の m027 のほうが近く、風も弱いが、比べない
-        self.assertIn("主役の候補の中で稜線の風がいちばん弱い", doc["comparisons"][0]["say"])
-        self.assertIn("主役の候補の中で横浜からいちばん近い", doc["comparisons"][1]["say"])
+        self.assertIn("おすすめの候補の中で稜線の風がいちばん弱い", doc["comparisons"][0]["say"])
+        self.assertIn("おすすめの候補の中で横浜からいちばん近い", doc["comparisons"][1]["say"])
 
     def test_not_made_when_tied_or_alone(self):
         doc = self.doc([("m029", 90.0, {}, 3.0), ("m023", 91.0, {}, 3.0)])

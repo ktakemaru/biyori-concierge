@@ -83,7 +83,7 @@ def draft(brief, compact=False):
             out.append(f"{L[key]['text']}[{L[key]['id']}]")
     out.append("")
     for i, f in enumerate(chosen, 1):
-        out.append(f"{i}. " + "".join(_fact_sentences(f)))
+        out.append((f"{i}. " if len(chosen) > 1 else "") + "".join(_fact_sentences(f)))      # 番号は、並べる山が 2 つ以上のときだけ
         if f["id"] in hz:
             out.append(f"{hz[f['id']]['text']}[{hz[f['id']]['id']}]")
     if L["lead_time"] and any(not f["reliable"] for f in chosen):

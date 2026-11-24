@@ -54,7 +54,7 @@ class Ctx:
             self.ids[k["id"]] = ("K", k)
         for g in brief["gaps"]:
             self.ids[g["id"]] = ("G", g)
-        for x in brief.get("comparisons") or []:
+        for x in (brief.get("comparisons") or []) + (brief.get("named_gaps") or []):
             self.ids[x["id"]] = ("C", x)
         for x in brief["hazard_counts"]:
             self.ids[x["id"]] = ("N", x)
@@ -129,6 +129,7 @@ class Ctx:
             elif kind == "C":
                 texts += x["say"] + [x["label"]]
                 a["mountains"].add(x["mountain_id"])
+                a["mountains"].update(x.get("mountains") or [])
             elif kind == "N":
                 texts += x["say"] + day_forms(x["date"])
             elif kind == "K":
@@ -305,14 +306,40 @@ def _check_comparisons(X, s, t, ids, errs):
         if days and not days & {x["date"] for x in hit if x["mountain_id"] == who[0]}:
             errs.append(_err("comparison_mismatch", s, "比べた結果の事実の日と、文の山の日が合わない", "同じ日の事実の印を付ける"))
         if not any(w in t for w in CP["scope"]):
-            errs.append(_err("comparison_scope", s, "何の中でいちばんかが書いていない(比べたのは主役の候補の中だけ)",
-                             "「主役の候補の中で」と書く"))
+            errs.append(_err("comparison_scope", s, "何の中でいちばんかが書いていない(比べたのはおすすめの候補の中だけ)",
+                             "「おすすめの候補の中で」と書く"))
     # 同点のある順位を、同点と分からない形で書いていないか
     for n in re.findall(r"(\d+)\s*(?:位|番目)", tn):
         hit = [f for f in ys if f.get("rank") == int(n)]
         if hit and all((f.get("rank_ties") or 1) > 1 for f in hit) and "同点" not in t:
             errs.append(_err("rank_tie_hidden", s, f"同点のある順位({n}位)を、同点と分からない形で書いている",
                              f"「{n}位(同点 {hit[0].get('rank_ties')} 座)」の形で書く"))
+
+
+def _check_named_gap(X, s, t, ids, errs):
+    """「差はわずか」を、名指しの山どうしの差の事実 [C…](kind = peak_wind_gap)と照らす。"""
+    G = X.R["named_gap"]
+    tn = _cut(t, G["ok"])
+    if not (any(w in tn for w in G["diff"]) and any(w in tn for w in G["small"])):
+        return
+    if not any(w in tn for w in G["topic"]) and not any(X.ids[i][1].get("kind") == "peak_wind_gap" for i in ids if X.ids[i][0] == "C"):
+        return
+    hit = [X.ids[i][1] for i in ids if X.ids[i][0] == "C" and X.ids[i][1]["kind"] == "peak_wind_gap"]
+    if not hit:
+        errs.append(_err("gap_unmarked", s, "風の差が小さいと言っているのに、名指しの山どうしの差の印 [C…] がない",
+                         "資料の「名指しの山どうしの差」にある印を付ける"))
+    elif not all(x["small"] for x in hit):
+        errs.append(_err("gap_mismatch", s, "「差はわずか」ではない差を、わずかだと言っている", "差の数字だけを書く"))
+
+
+def _check_lone_number(X, body, errs):
+    """山を名指しで比べる答えで、番号が 1 行だけに付いていないか(比べる山の片方にだけ番号が付くのを止める)。"""
+    if len(dict.fromkeys(X.b["filters"].get("mountains") or [])) < 2:
+        return
+    heads = [x for x in body.split(NL) if NUMBER_HEAD.match(x)]
+    if len(heads) == 1:
+        errs.append(_err("number_lone", {"line": 0, "clean": heads[0]}, "比べる山のうち 1 座にだけ番号が付いている",
+                         "番号を全部の山に付けるか、全部から外す"))
 
 
 def _marked_names(X, t):
@@ -631,6 +658,7 @@ def check(draft, brief):
                 if not any(n in X.question for n, m_ in X.names if m_ == mid):
                     errs.append(_err("mountain_not_in_brief", s, f"資料にない山({mid})を書いている", "資料にある山だけを書く"))
         _check_comparisons(X, s, t, ids, errs)
+        _check_named_gap(X, s, t, ids, errs)
         _check_hazard_counts(X, s, t, ids, errs)
         # 種類 C(山の安全): 危険信号の事実・知識カードの印、または「判断できません」の形(足りないものの印だけでは通さない)
         sc = _has_any(exempt_re.sub(" ", t), W["safety"])
@@ -644,7 +672,7 @@ def check(draft, brief):
                 errs.append(_err("safety_assertion", s, f"安全の言い切り「{'・'.join(_has_any(t, W['safety_positive'])[:3])}」に知識カードの裏づけがない",
                                  "行ける・安全だと言い切らない(予報の数字と危険信号の文だけを書く)"))
         # おすすめの語と、宣言したおすすめ
-        if picks is not None and _has_any(t, W["recommend"]) and not _has_any(t, W["recommend_not"]):
+        if picks is not None and _has_any(_cut(t, W["recommend_ok"]), W["recommend"]) and not _has_any(t, W["recommend_not"]):
             ys = [i for i in ids if X.ids[i][0] == "Y"]
             if ys and not set(ys) & set(picks):
                 errs.append(_err("pick_undeclared", s, f"すすめている山({', '.join(ys)})が [おすすめ] にない", "[おすすめ] の行にその事実の id を書く"))
@@ -655,6 +683,7 @@ def check(draft, brief):
             if m.group(0) not in lodging_ok:
                 errs.append(_err("lodging_name", s, f"宿・山小屋の名前らしい語「{m.group(0)}」", "宿・山小屋の名前を書かない(「泊まりにすると」まで)"))
     # 全体
+    _check_lone_number(X, body, errs)
     L = brief["lines"]
     for key in ("data_time", "coverage", "attribution"):
         if L[key] and L[key]["id"] not in present:
@@ -712,6 +741,7 @@ def check(draft, brief):
             "marked": sum(1 for s in sents if s["ids"])}
 
 
+NUMBER_HEAD = re.compile(r"^\s*(?:[-*・]\s*)?(?:\*\*)?(?:\d{1,2}[.)．]|[①-⑨])")
 LIST_HEAD = re.compile(r"^(?:[-*・#>\s]+|\d{1,2}[.)．]\s*|[①-⑨]\s*)+")
 
 

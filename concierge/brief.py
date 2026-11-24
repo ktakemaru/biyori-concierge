@@ -295,8 +295,8 @@ def _comparisons(facts, origin):
             continue
         winds = {f["id"]: next((v["value"] for v in f["values"] if v["key"] == "ridge_wind_ms"), None) for f in frame}
         near = {f["id"]: f["distance_km"] for f in frame}
-        kinds = (("ridge_wind_min", winds, ["主役の候補の中で稜線の風がいちばん弱い"]),
-                 ("nearest", near, [f"主役の候補の中で{origin['name']}からいちばん近い", "主役の候補の中で出発地からいちばん近い"]))
+        kinds = (("ridge_wind_min", winds, ["おすすめの候補の中で稜線の風がいちばん弱い"]),
+                 ("nearest", near, [f"おすすめの候補の中で{origin['name']}からいちばん近い", "おすすめの候補の中で出発地からいちばん近い"]))
         for kind, vals, say in kinds:
             if any(v is None for v in vals.values()):
                 continue
@@ -306,6 +306,28 @@ def _comparisons(facts, origin):
             f = best[0]
             out.append({"id": f"C{len(out) + 1}", "kind": kind, "date": d, "label": f["label"], "fact": f["id"],
                         "mountain_id": f["mountain_id"], "name": f["name"], "among": [x["id"] for x in frame], "say": say})
+    return out
+
+
+def _named_gaps(facts, c, start):
+    """日ごとに、名指しの山の組(2 座ずつ)の、日中ピークの風速の差の事実を作る。値のない山がある組は作らない。
+    差が config.yaml の small_wind_diff_ms(仮の値)以下の組だけ「差はわずか」と書いてよい。"""
+    limit = Decimal(str(c["concierge"]["brief"]["small_wind_diff_ms"]))
+    out = []
+    for d in sorted({f["date"] for f in facts if f["named"]}):
+        fs = [f for f in facts if f["date"] == d and f["named"]]
+        winds = [(f, next((v["value"] for v in f["values"] if v["key"] == "day_peak_wind_ms"), None)) for f in fs]
+        winds = [(f, v) for f, v in winds if v is not None]
+        for i, (a, va) in enumerate(winds):
+            for b, vb in winds[i + 1:]:
+                diff = abs(Decimal(str(va)) - Decimal(str(vb)))
+                small = diff <= limit
+                wind_level = {x["kind"]: x["level"] for x in a["hazards"]}.get("wind"), {x["kind"]: x["level"] for x in b["hazards"]}.get("wind")
+                out.append({"id": f"C{start + len(out) + 1}", "kind": "peak_wind_gap", "date": d, "label": a["label"], "fact": a["id"],
+                            "mountain_id": a["mountain_id"], "mountains": [a["mountain_id"], b["mountain_id"]],
+                            "name": f"{a['name']}・{b['name']}", "among": [a["id"], b["id"]], "diff": float(diff), "small": small,
+                            "hazard_differs": wind_level[0] != wind_level[1],
+                            "say": [f"日中ピークの風速の差は {num(diff)} m/s"] + (["差はわずか"] if small else [])})
     return out
 
 
@@ -357,6 +379,8 @@ RULES = [
     "「ほとんど」「大半」「半分以上」「多くの山」「ほかの山も」「高い山ほど」などの割合・ぼかした言い方と危険信号を 1 文に書かない。件数の文を写す。",
     "見送る山の危険信号は、日ごとの「見送りのまとめ」の決まった文を写して書く(続けて、件数の文)。山ごとの危険信号の文は、風速・体感の数字を書きたい山だけ。おすすめにした山の危険信号の文は、まとめの文があっても必ず要る。",
     "危険信号の注記の決まった文は、verify が正しい位置(最後の危険信号の文・件数の文のあと。足りないものの文の前)に 1 回だけ置く。下書きに書かなくてよい(書いても 1 回に直る)。",
+    "名指しの山どうしの差(資料の「名指しの山どうしの差」[C…])に「差はわずか」とあるときは、危険信号の有無が分かれていても「差はわずかです」と書ける(その [C…] と両方の山の [Y…] の印を付ける)。「差はわずか」は、この印があるときだけ書く。",
+    "2 座以上を名指しで比べる答えでは、番号を付けるなら並べる山の全部に付ける(1 座だけに「1.」「①」を付けない)。",
     "同点のある順位は「1位(同点 5 座)」のように、同点があると分かる形で書く。",
     "おすすめは事実の「主役にできる」山だけ。危険信号のある山をすすめるときは、その危険信号の決まった文を必ず入れる。",
     "最後の行に [おすすめ] と、すすめた事実の id(なければ「なし」)を書く。",
@@ -410,6 +434,8 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
         total, pool, fetched = coverage_counts(e)
         if e.get("status") == "incomplete" or (pool is not None and fetched is not None and fetched < pool):
             lines["coverage"] = f"山は、ヤマビヨリの {total} 座のうち {fetched} 座だけを調べた予報です(調べられなかった山があります)。"
+        elif fetched is not None and fetched == total and len({s for s in named_specs}) >= 2:      # 山を名指しで比べる質問で、全部そろっているとき(短く)
+            lines["coverage"] = f"ヤマビヨリの {total} 座すべての予報がそろっています。"
         else:
             lines["coverage"] = f"山は、ヤマビヨリの {total} 座のうち {fetched} 座を調べた予報です。"
         lines["attribution"] = (f"気象データ: Weather data by Open-Meteo.com(CC BY 4.0)。元の予報は気象庁 MSM と ECMWF IFS で、"
@@ -526,6 +552,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
     for i, k in enumerate(cards, 1):
         k["id"] = f"K{i:03d}"
     comparisons = _comparisons(facts, org)
+    named_gaps = _named_gaps(facts, c, len(comparisons))
     L = []
     if any(f["hazards"] for f in facts):
         lines["hazard_note"] = HAZARD_NOTE
@@ -557,7 +584,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
            "when": {"spec": W["spec"], "rule": W["rule"], "days": W["days"], "today": W["today"]},
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
-           "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
+           "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
            "cards": cards, "gaps": gaps, "rules": RULES,
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
@@ -650,6 +677,12 @@ def render_md(b):
         out += ["### 比べた結果(主役の枠の山の中)", ""]
         for x in b["comparisons"]:
             out.append(f"- [{x['id']}] {x['label']}・{x['name']}({x['fact']}): {' / '.join(x['say'])}")
+        out.append("")
+    if b.get("named_gaps"):
+        out += ["### 名指しの山どうしの差(日中ピークの風速)", ""]
+        for x in b["named_gaps"]:
+            note = "。危険信号の強風の段階は違う" if x["hazard_differs"] else ""
+            out.append(f"- [{x['id']}] {x['label']}・{x['name']}({'・'.join(x['among'])}): {' / '.join(x['say'])}{note}")
         out.append("")
     out += ["## 組み合わせ(主役になれる案)", ""]
     out += [f"- {p['id']}: {p['date']} 主役 {p['main']['fact']}" for p in b["plans"]] or ["(なし。おすすめにできる山はありません)"]
