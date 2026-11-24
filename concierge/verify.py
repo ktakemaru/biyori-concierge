@@ -435,7 +435,7 @@ def stale_assertions(text):
 
 
 def _check_stale(X, body, errs):
-    """予報が古いときの書き方(案): 最初の文は data_time、言い切らない、最後に新しくする方法。"""
+    """予報が古いときの書き方(利用者の決定 2026-11-25): 最初の文は data_time、言い切らない、最後に新しくする方法。"""
     L, mre = X.b["lines"], re.compile(X.R["draft"]["marker_re"])
     if not X.b["shelf"].get("stale"):
         return

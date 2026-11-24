@@ -65,7 +65,7 @@
 
 順位を表す項目はこの 1 つだけ(2026-11-24 に `day_rank` をやめてまとめた)。並び順そのもの(点数 → 危険信号の軽さ → 距離 → 山の ID)は、資料の `facts` の順で表す。
 
-## 古い予報のときの決まった文 `refresh`(案・未決定)
+## 古い予報のときの決まった文 `refresh`(利用者の決定 2026-11-25)
 
 `shelf.stale` が真のときだけ入る、新しくする方法の文(GitHub の Actions → collect → Run workflow。入力は `docs/manual-collect.md`)。境目は `config.yaml` の `collect.stale_after_hours`(18 時間)。
 

@@ -380,7 +380,7 @@ def _load_cards(fact_mids):
 
 
 REFRESH = ("新しい予報にするには、GitHub の Actions → collect → Run workflow を実行してください"
-           "(入力の書き方は docs/manual-collect.md にあります)。")      # 古い予報のときだけ。利用者の決定ではなく案(2026-11-25)
+           "(入力の書き方は docs/manual-collect.md にあります)。")      # 古い予報のときだけ(利用者の決定 2026-11-25)
 
 STALE_RULES = [
     "予報が古い。答えの最初の文は、決まった文 data_time を一字一句そのまま写す(古さが入っている)。結論はその次に書く。",

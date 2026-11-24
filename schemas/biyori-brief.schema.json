@@ -112,7 +112,7 @@
         "lead_time": {"$ref": "#/$defs/line_or_null"},
         "attribution": {"$ref": "#/$defs/line_or_null"},
         "hazard_note": {"$ref": "#/$defs/line_or_null", "description": "危険信号の注記(危険信号つきの山が 1 つでもあれば入る)。2026-11-23 に追加"},
-        "refresh": {"$ref": "#/$defs/line_or_null", "description": "予報が古いとき(shelf.stale)だけ入る、新しくする方法の文。2026-11-25 に追加(案)"},
+        "refresh": {"$ref": "#/$defs/line_or_null", "description": "予報が古いとき(shelf.stale)だけ入る、新しくする方法の文。2026-11-25 に追加"},
         "hazards": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["fact"]}]}},
         "skips": {
           "type": "array",
