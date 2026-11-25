@@ -23,7 +23,7 @@ def good_draft(doc):
         f"{L['data_time']['text']}[{L['data_time']['id']}]",
         f"{L['coverage']['text']}[{L['coverage']['id']}]",
         "",
-        f"土曜の八ヶ岳(赤岳)は90.4点で、稜線風速は5.4 m/s、雲量は約32 %の見込みです。[{y1['id']}]",
+        f"土曜の八ヶ岳(赤岳)は90.4点で、稜線風速は5.4 m/s、雲はほとんど無い予報です。[{y1['id']}]",
         f"{line_for(doc, y1['id'])['text']}[{line_for(doc, y1['id'])['id']}]",
         f"{L['hazard_note']['text']}[{L['hazard_note']['id']}]",
         f"日曜なら谷川岳が84.9点で、危険信号は出ていません。[{y4['id']}]",
@@ -201,9 +201,9 @@ class Verify(unittest.TestCase):
         self.assertNotRegex(r["final"], r"\[[YLKG]\d+\]")
         self.assertNotIn("[おすすめ]", r["final"])
         self.assertIn("横岳という名前の由来", r["final"])
-        r = self.check(good_draft(self.doc).replace("約32 %の見込みです。[Y001]", "約32 %の見込みです。[Y001] 横浜から直線で約125kmです。[Y001]"))
+        r = self.check(good_draft(self.doc).replace("雲はほとんど無い予報です。[Y001]", "雲はほとんど無い予報です。[Y001] 横浜から直線で約125kmです。[Y001]"))
         self.assertTrue(r["ok"], r["errors"])
-        self.assertIn("約32 %の見込みです。横浜から直線で約125kmです。\n", r["final"])     # 印の後ろの空白は残さない
+        self.assertIn("雲はほとんど無い予報です。横浜から直線で約125kmです。\n", r["final"])     # 印の後ろの空白は残さない
         self.assertTrue(r["final"].startswith("今週末なら、土曜の八ヶ岳(赤岳)がいちばんのおすすめです。\n"))
 
     def test_added_number_date_and_mountain_fail(self):
@@ -409,7 +409,9 @@ class Rewrites(unittest.TestCase):
         base = base_with_shelf(self)
         doc = build(base, mountains=["谷川岳", "見本山"], region=["北陸信越"])
         self.assertTrue(doc["plans"])
-        self.assertTrue(F.draft(doc).startswith("いちばんのおすすめは、"))          # 名指しで主役にできる山を落とさない
+        d = F.draft(doc)                                                            # 名指しの答え(利用者の決定 2026-11-25): 予報の無い山を先に伝える
+        self.assertTrue(d.startswith("「見本山」は、ヤマビヨリの"), d)
+        self.assertIn("谷川岳は、おすすめの候補です。", d)                          # 名指しで主役にできる山を落とさない
         doc = build(base, when="来週末")
         self.assertTrue(F.draft(doc).startswith("10月24日(土)・10月25日(日)の山の予報は、今回の予報の範囲にありません。"))
 

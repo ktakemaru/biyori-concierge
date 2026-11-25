@@ -191,8 +191,9 @@ class SkipLine(Base):
             self.assertTrue(r["ok"], r["errors"])
         t = V.check(F.draft(doc), doc)["final"]
         h = {f["mountain_id"]: line_for(doc, f["id"])["text"] for f in doc["facts"] if f["named"]}
-        self.assertNotIn(h[NEAR[0]], t)                                                  # まとめの文で言っている
-        self.assertIn(h[NEAR[3]], t)                                                     # まとめの文にいない名指しの山は、山ごとの文
+        self.assertIn(h[NEAR[0]], t)                                                     # 名指しの答え(利用者の決定 2026-11-25)は、まとめの文でなく山ごとの文
+        self.assertIn(h[NEAR[3]], t)
+        self.assertFalse([x["text"] for x in doc["lines"]["skips"] if x["text"] in t])   # まとめの文には名指しでない山が入るので使わない
 
     def test_a_brief_without_the_line_still_works(self):
         doc = self.build(self.rows())

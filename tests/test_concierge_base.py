@@ -149,7 +149,7 @@ class Status(unittest.TestCase):
         self.assertIn("76 座のうち 3 座", text)
         self.assertIn("ヤマビヨリ 1.9.0", text)
         self.assertIn("星: まだありません(段階 3 から)", text)
-        self.assertIn("半日 12 時間より古い", ST.render(base_with_shelf(self), parse_now("2026-10-16T08:00:00+09:00")))
+        self.assertIn("24 時間以上前の古い予報", ST.render(base_with_shelf(self), parse_now("2026-10-16T08:00:00+09:00")))
 
     def test_status_without_or_with_broken_shelf(self):
         self.assertIn("手元に棚の写しがありません", ST.render(base_with_shelf(self, shelf=False), parse_now(NOW)))

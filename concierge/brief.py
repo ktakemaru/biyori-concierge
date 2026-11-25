@@ -40,7 +40,7 @@ VALUE_FIELDS = (
     ("day_total_precip_mm", "降水量(全日)", "mm", 1, "mountain_weather_mvp.py 表の列「降水量mm(全日)」"),
     ("chill", "体感温度(稜線)", "℃", 1, "mountain_weather_mvp.py 表の列「体感温度℃(稜線)」"),
 )
-LINE_KEYS = ("data_time", "coverage", "lead_time", "attribution", "hazard_note")      # 決まった文の並び(id の順)。危険信号の文はこのあと
+LINE_KEYS = ("data_time", "coverage", "lead_time", "attribution", "hazard_note", "refresh")      # 決まった文の並び(id の順)。危険信号の文はこのあと
 UNIT_OUT = {"degC": "℃"}
 # 資料に出さない値。cloud_pct_raw・cape は、答えに出さないと利用者が決めた(2026-11-23。docs/brief-fields.md)
 NOT_SHOWN = ("cloud_pct_raw", "cape", "precip_wet_hours", "precip_total_hours", "precip_msm_hours", "precip_moist_hours", "precip_prob_hours",
@@ -156,6 +156,15 @@ def _hazards(p):
     return out
 
 
+CLOUD_CLEAR_SAY = "雲はほとんど無い予報"
+
+
+def _cloud_clear(p):
+    """生の雲量(ヤマビヨリの cloud_pct_raw)がちょうど 0 % か。値が棚に無ければ False(今までどおり補正後の数字を書く)。生の値そのものは資料に入れない。"""
+    v = next((e.get("value") for e in p.get("evidence") or [] if e.get("metric") == "cloud_pct_raw"), None)
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v == 0
+
+
 def _values(p):
     ev = {e.get("metric"): e for e in p.get("evidence") or []}
     out = []
@@ -171,6 +180,8 @@ def _values(p):
             r = round_to(v, step)
             if r != num(v):
                 say.append(f"約{r} {unit}")
+        if metric == "cloud_pct" and _cloud_clear(p):        # 生の雲量が 0 %: 補正後の数字を書かず、言葉で書く(利用者の決定 2026-11-25)
+            say = [CLOUD_CLEAR_SAY]
         item = {"key": metric, "name": name, "value": v, "unit": unit, "say": say}
         if metric == "day_peak_wind_ms" and isinstance((ev.get("day_peak_wind_hour") or {}).get("value"), int):
             h = ev["day_peak_wind_hour"]["value"]
@@ -248,7 +259,7 @@ def _fact(p, mtn, origin, data_day, c, *, named, selected_by=None):
          "hazard_level": {0: None, 1: "注意", 2: "警戒", 3: "危険"}[worst], "main_ok": not ng, "main_ng": ng,
          "distance_km": round(km, 1), "distance_say": distance_say(km, c), "lead_days": lead,
          "reliable": lead is not None and lead <= RELIABLE_UP_TO_DAYS, "named": named, "selected_by": selected_by,
-         "values": [] if score_only else _values(p)}
+         "cloud_clear": not score_only and _cloud_clear(p), "values": [] if score_only else _values(p)}
     say = [mtn["name"], f"{num(sc['value'])}点", f"基準の{num(GO_THRESHOLD)}点", f"{num(GO_THRESHOLD)}点",
            f"標高{num(mtn['elevation_m'])}m", f"{num(mtn['elevation_m'])}m", f["distance_say"], f["distance_say"].replace("直線で", "")]
     r = round_to(sc["value"], 1)
@@ -295,8 +306,8 @@ def _comparisons(facts, origin):
             continue
         winds = {f["id"]: next((v["value"] for v in f["values"] if v["key"] == "ridge_wind_ms"), None) for f in frame}
         near = {f["id"]: f["distance_km"] for f in frame}
-        kinds = (("ridge_wind_min", winds, ["主役の候補の中で稜線の風がいちばん弱い"]),
-                 ("nearest", near, [f"主役の候補の中で{origin['name']}からいちばん近い", "主役の候補の中で出発地からいちばん近い"]))
+        kinds = (("ridge_wind_min", winds, ["おすすめの候補の中で稜線の風がいちばん弱い"]),
+                 ("nearest", near, [f"おすすめの候補の中で{origin['name']}からいちばん近い", "おすすめの候補の中で出発地からいちばん近い"]))
         for kind, vals, say in kinds:
             if any(v is None for v in vals.values()):
                 continue
@@ -306,6 +317,28 @@ def _comparisons(facts, origin):
             f = best[0]
             out.append({"id": f"C{len(out) + 1}", "kind": kind, "date": d, "label": f["label"], "fact": f["id"],
                         "mountain_id": f["mountain_id"], "name": f["name"], "among": [x["id"] for x in frame], "say": say})
+    return out
+
+
+def _named_gaps(facts, c, start):
+    """日ごとに、名指しの山の組(2 座ずつ)の、日中ピークの風速の差の事実を作る。値のない山がある組は作らない。
+    差が config.yaml の small_wind_diff_ms(仮の値)以下の組だけ「差はわずか」と書いてよい。"""
+    limit = Decimal(str(c["concierge"]["brief"]["small_wind_diff_ms"]))
+    out = []
+    for d in sorted({f["date"] for f in facts if f["named"]}):
+        fs = [f for f in facts if f["date"] == d and f["named"]]
+        winds = [(f, next((v["value"] for v in f["values"] if v["key"] == "day_peak_wind_ms"), None)) for f in fs]
+        winds = [(f, v) for f, v in winds if v is not None]
+        for i, (a, va) in enumerate(winds):
+            for b, vb in winds[i + 1:]:
+                diff = abs(Decimal(str(va)) - Decimal(str(vb)))
+                small = diff <= limit
+                wind_level = {x["kind"]: x["level"] for x in a["hazards"]}.get("wind"), {x["kind"]: x["level"] for x in b["hazards"]}.get("wind")
+                out.append({"id": f"C{start + len(out) + 1}", "kind": "peak_wind_gap", "date": d, "label": a["label"], "fact": a["id"],
+                            "mountain_id": a["mountain_id"], "mountains": [a["mountain_id"], b["mountain_id"]],
+                            "name": f"{a['name']}・{b['name']}", "among": [a["id"], b["id"]], "diff": float(diff), "small": small,
+                            "hazard_differs": wind_level[0] != wind_level[1],
+                            "say": [f"日中ピークの風速の差は {num(diff)} m/s"] + (["差はわずか"] if small else [])})
     return out
 
 
@@ -346,6 +379,21 @@ def _load_cards(fact_mids):
     return out
 
 
+REFRESH = ("新しい予報にするには、GitHub の Actions → collect → Run workflow を実行してください"
+           "(入力の書き方は docs/manual-collect.md にあります)。")      # 古い予報のときだけ(利用者の決定 2026-11-25)
+
+STALE_RULES = [
+    "予報が古い。答えの最初の文は、決まった文 data_time を一字一句そのまま写す(古さが入っている)。結論はその次に書く。",
+    "予報が古いので、「おすすめします」「いちばんのおすすめ」のように言い切らない。「古い予報では、○○が候補です」の形で書く。「行くなら」を使うときも「候補」と書く。「おすすめの候補の中で」(比べた結果の言い方)は書いてよい。",
+    "答えの最後に、決まった文 refresh(新しくする方法)を写す(そのあとに書いてよいのは attribution だけ)。",
+    "古さは、data_time の文のほかに「丸1日以上前の予報」のように言ってよい(data_time の印 [L…] を付ける。日数は、資料の予報の古さ(時間)を 24 で割った数まで)。予報の時点は、data_time の文で必ず書く。",
+]
+
+CLOUD_RULES = [
+    "「雲はほとんど無い予報」とある山(雲の印の付いた山)では、雲量の数字(%・割)を書かない。「雲はほとんど無い予報です」のように言葉で書く(事実の印 [Y…] を付ける)。「快晴」「雲ひとつない」と言い切らない。",
+    "雲の印の付いた山どうしを比べるときは、「どちらも雲はほとんど無い予報で、差がつきません」と書ける(両方の山の [Y…] を付ける)。印の無い山には「雲はほとんど無い」と書かず、今までどおり雲量の数字を書く。",
+]
+
 RULES = [
     "答えの形: 結論(1〜2文)→ いつ時点の予報か([L…] をそのまま)→ おすすめ(行くなら)3 つまで(理由は数字で。注意)→ 見送る山(まとめの文と件数)→ 危険信号の注記 → 分からないこと → 出典([L…] をそのまま)。見送りを聞かれたら、見送る山を先に、「行くなら」をあとに書く。",
     "数字・日付・曜日・山の名前・危険信号を書いた文の終わりに、根拠の事実の印 [Y…] を付ける。書いてよい表記は事実の「書いてよい表記」だけ(自分で丸めない)。",
@@ -357,11 +405,21 @@ RULES = [
     "「ほとんど」「大半」「半分以上」「多くの山」「ほかの山も」「高い山ほど」などの割合・ぼかした言い方と危険信号を 1 文に書かない。件数の文を写す。",
     "見送る山の危険信号は、日ごとの「見送りのまとめ」の決まった文を写して書く(続けて、件数の文)。山ごとの危険信号の文は、風速・体感の数字を書きたい山だけ。おすすめにした山の危険信号の文は、まとめの文があっても必ず要る。",
     "危険信号の注記の決まった文は、verify が正しい位置(最後の危険信号の文・件数の文のあと。足りないものの文の前)に 1 回だけ置く。下書きに書かなくてよい(書いても 1 回に直る)。",
+    "名指しの山どうしの差(資料の「名指しの山どうしの差」[C…])に「差はわずか」とあるときは、危険信号の有無が分かれていても「差はわずかです」と書ける(その [C…] と両方の山の [Y…] の印を付ける)。「差はわずか」は、この印があるときだけ書く。",
+    "2 座以上を名指しで比べる答えでは、番号を付けるなら並べる山の全部に付ける(1 座だけに「1.」「①」を付けない)。",
     "同点のある順位は「1位(同点 5 座)」のように、同点があると分かる形で書く。",
     "おすすめは事実の「主役にできる」山だけ。危険信号のある山をすすめるときは、その危険信号の決まった文を必ず入れる。",
     "最後の行に [おすすめ] と、すすめた事実の id(なければ「なし」)を書く。",
     "質問・提案(「〜しますか」「〜しましょうか」「?」)、内部の言葉、作業の説明、英語のメモを書かない。宿や山小屋の名前を書かない。",
 ]
+
+
+def _rules(named):
+    """書くときの決まり。山を名指しした質問では、答えの形と、見送りのまとめの文の決まりを、名指しの決まりに替える。"""
+    if not named:
+        return RULES
+    from .named import RULES as NAMED
+    return NAMED + [r for r in RULES if not r.startswith(("答えの形:", "見送る山の危険信号は、"))]
 
 
 def build(*, question, when, region=None, interest=None, origin=None, mountains=None, now, base):
@@ -410,8 +468,12 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
         total, pool, fetched = coverage_counts(e)
         if e.get("status") == "incomplete" or (pool is not None and fetched is not None and fetched < pool):
             lines["coverage"] = f"山は、ヤマビヨリの {total} 座のうち {fetched} 座だけを調べた予報です(調べられなかった山があります)。"
+        elif fetched is not None and fetched == total and len({s for s in named_specs}) >= 2:      # 山を名指しで比べる質問で、全部そろっているとき(短く)
+            lines["coverage"] = f"ヤマビヨリの {total} 座すべての予報がそろっています。"
         else:
             lines["coverage"] = f"山は、ヤマビヨリの {total} 座のうち {fetched} 座を調べた予報です。"
+        if stale:
+            lines["refresh"] = REFRESH
         lines["attribution"] = (f"気象データ: Weather data by Open-Meteo.com(CC BY 4.0)。元の予報は気象庁 MSM と ECMWF IFS で、"
                                 f"ヤマビヨリ {e.get('version')} が山頂の標高に合わせて計算した値です。")
         props = sh["proposals"]["proposals"]
@@ -430,6 +492,8 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
                     [f"{len(mlist)}座"])
                 continue
             km = distance_km(org["lat"], org["lon"], mt["lat"], mt["lon"])
+            if mt["id"] in named:                                             # 同じ山を ID と名前で 2 回渡されたとき
+                continue
             if km > max_km:
                 gap("named_out_of_range", f"{mt['name']}は、出発地({org['name']})から直線 {max_km}km より遠いため、候補に入れていません。",
                     [f"{max_km}km", mt["name"]])
@@ -526,6 +590,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
     for i, k in enumerate(cards, 1):
         k["id"] = f"K{i:03d}"
     comparisons = _comparisons(facts, org)
+    named_gaps = _named_gaps(facts, c, len(comparisons))
     L = []
     if any(f["hazards"] for f in facts):
         lines["hazard_note"] = HAZARD_NOTE
@@ -557,8 +622,8 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
            "when": {"spec": W["spec"], "rule": W["rule"], "days": W["days"], "today": W["today"]},
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
-           "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
-           "cards": cards, "gaps": gaps, "rules": RULES,
+           "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
+           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []),
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
                       "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}
@@ -625,6 +690,9 @@ def render_md(b):
                        + ("・名指し" if f["named"] else "") + ("・見送りの枠" if f["selected_by"] == "skip" else ""))
             out.append(f"  - 危険信号: {hz}")
             for v in f["values"]:
+                if v["key"] == "cloud_pct" and f.get("cloud_clear"):
+                    out.append(f"  - {v['name']}: {v['say'][0]}(雲の印あり。雲量の数字は書かない)")
+                    continue
                 out.append(f"  - {v['name']}: {v['say'][0]}" + (f"(約の表記: {'、'.join(v['say'][1:])})" if len(v["say"]) > 1 else ""))
             out.append(f"  - 書いてよい表記: {' / '.join(f['say'])}")
         out.append("")
@@ -650,6 +718,12 @@ def render_md(b):
         out += ["### 比べた結果(主役の枠の山の中)", ""]
         for x in b["comparisons"]:
             out.append(f"- [{x['id']}] {x['label']}・{x['name']}({x['fact']}): {' / '.join(x['say'])}")
+        out.append("")
+    if b.get("named_gaps"):
+        out += ["### 名指しの山どうしの差(日中ピークの風速)", ""]
+        for x in b["named_gaps"]:
+            note = "。危険信号の強風の段階は違う" if x["hazard_differs"] else ""
+            out.append(f"- [{x['id']}] {x['label']}・{x['name']}({'・'.join(x['among'])}): {' / '.join(x['say'])}{note}")
         out.append("")
     out += ["## 組み合わせ(主役になれる案)", ""]
     out += [f"- {p['id']}: {p['date']} 主役 {p['main']['fact']}" for p in b["plans"]] or ["(なし。おすすめにできる山はありません)"]

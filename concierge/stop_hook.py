@@ -5,6 +5,8 @@
 止めるとき(この回に concierge brief を実行したときだけ見る):
 - 最後の brief のあとに concierge verify … --brief を実行していない。
 - 最後のメッセージが、verify の出した文(合格した最終の文か控えの文)と一致しない(前後の空白と改行の形の違いは見ない)。
+- 予報が古いのに「おすすめ」と言い切っている・生の雲量が 0 % の山に雲量の数字などを書いている。
+- 山を名指しした質問で、名指しの山が答えに出ていない・名指しでない山を並べている(例外の 1 文は除く)。
 止めないとき: brief を使っていない回・開発の作業の回(利用者の文の語、git や unittest、リポジトリの中のファイルの書き込み)・
 同じ回で上限の回数だけ止めたあと・切ってあるとき・入力や記録が読めないとき・フックの中のエラー。**迷う場合は通す。**"""
 import hashlib
@@ -20,7 +22,7 @@ import yaml
 from collect.common import ROOT
 
 from .common import DATA, NL, data_dir, read_json, write_text
-from .verify import LAST_ANSWER
+from .verify import LAST_ANSWER, Ctx, _norm as norm_text, cloud_errors, sentences, stale_assertions
 
 BRIEF_ID = re.compile(r"\bb\d{8}-\d{6}-[0-9a-f]{8}\b")
 
@@ -185,7 +187,59 @@ def decide(message, turn, base, c=None):
         return {"block": True, "why": "no_verify"}
     if not matches(message, accepted_texts(turn, base, c)):
         return {"block": True, "why": "mismatch"}
+    if _stale_assertion(message, turn, base, c):
+        return {"block": True, "why": "stale"}
+    if _cloud_violation(message, turn, base, c):
+        return {"block": True, "why": "cloud"}
+    if _named_violation(message, turn, base, c):
+        return {"block": True, "why": "named"}
     return {"block": False, "why": "ok"}
+
+
+def _stale_assertion(message, turn, base, c):
+    """この回の資料の予報が古いのに、「おすすめします」と言い切った文か(verify の検査と同じ決まり。資料が読めなければ見ない)。"""
+    for bid in _brief_ids(turn["calls"], c):
+        doc = read_json(Path(base) / "briefs" / f"{bid}.json")
+        if isinstance(doc, dict) and isinstance(doc.get("shelf"), dict) and doc["shelf"].get("stale") and stale_assertions(message):
+            return True
+    return False
+
+
+def _cloud_violation(message, turn, base, c):
+    """生の雲量が 0 % の山(資料の cloud_clear)に、雲量の数字・「快晴」などの言い切りを書いた文か(verify の検査と同じ決まり。
+    どの山のことか決められない文と、資料が読めないときは見ない)。"""
+    docs = [read_json(Path(base) / "briefs" / f"{bid}.json") for bid in _brief_ids(turn["calls"], c)]
+    docs = [d for d in docs if isinstance(d, dict) and d.get("facts")]
+    facts = [f for d in docs for f in d["facts"] if isinstance(f, dict)]      # 1 回に資料が 2 つ以上あれば、全部の事実で見る
+    if not any(f.get("cloud_clear") for f in facts):
+        return False
+    try:
+        X = Ctx(docs[-1])
+        hits = cloud_errors(X, sentences(message, re.compile(X.R["draft"]["marker_re"])), lambda s: facts, carry=True)
+    except (KeyError, TypeError, ValueError):
+        return False
+    return any(code in ("cloud_number", "cloud_assertion") for _, code, _ in hits)
+
+
+def _named_violation(message, turn, base, c):
+    """山を名指しした質問の答えが、名指しの決まり(concierge/named.py。verify と同じ)に合わないか。
+    その文を verify が出した資料だけで見る(1 回に資料が 2 つ以上あるとき、もう一方の決まりを当てない。決められなければ通す)。"""
+    from . import named as N
+    last = read_json(Path(base) / LAST_ANSWER) or {}
+    for bid in _brief_ids(turn["calls"], c):
+        p = Path(base) / "briefs" / f"{bid}.final.txt"
+        texts = ([p.read_text(encoding="utf-8")] if p.is_file() else []) + ([last["text"]] if last.get("brief") == bid and last.get("text") else [])
+        if _norm(message) not in [_norm(t) for t in texts]:
+            continue
+        doc = read_json(Path(base) / "briefs" / f"{bid}.json")
+        try:
+            X = Ctx(doc)
+            mre = re.compile(X.R["draft"]["marker_re"])
+            if N.errors(X, message, lambda t: sentences(t, mre), norm_text):
+                return True
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+    return False
 
 
 # ---- 止めた回数(同じ回で上限まで) ----

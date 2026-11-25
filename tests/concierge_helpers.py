@@ -61,5 +61,11 @@ def fact(doc, name, day):
     return next(f for f in doc["facts"] if f["name"].startswith(name) and f["date"] == day)
 
 
+def named_line(doc):
+    """1 文だけの検査を見るテストの下書きに足す行: 名指しの山の名前を全部出す(答えに出ていないと named_missing で止まるため)。名指しが無ければ空。"""
+    names = list(dict.fromkeys(f["name"] for f in doc["facts"] if f["named"]))
+    return ("・".join(names) + "という名前の由来には、いくつかの説があるといわれます。" + chr(10)) if names else ""
+
+
 def line_for(doc, fid):
     return next(h for h in doc["lines"]["hazards"] if h["fact"] == fid)

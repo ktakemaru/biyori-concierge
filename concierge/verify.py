@@ -8,7 +8,7 @@
 import re
 import unicodedata
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from .common import NL, config, md_label, verify_rules
 
@@ -54,12 +54,12 @@ class Ctx:
             self.ids[k["id"]] = ("K", k)
         for g in brief["gaps"]:
             self.ids[g["id"]] = ("G", g)
-        for x in brief.get("comparisons") or []:
+        for x in (brief.get("comparisons") or []) + (brief.get("named_gaps") or []):
             self.ids[x["id"]] = ("C", x)
         for x in brief["hazard_counts"]:
             self.ids[x["id"]] = ("N", x)
         L = brief["lines"]
-        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
+        self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note"), L.get("refresh")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
         for x in self.lines:
             self.ids[x["id"]] = ("L", x)
         self.target_days = [date.fromisoformat(d["date"]) for d in brief["when"]["days"]]
@@ -85,6 +85,7 @@ class Ctx:
             names_in_brief.update(g["say"])
         self.in_brief |= {mid for n, mid in self.names if n in {_norm(x) for x in names_in_brief}}
         self.question = _norm(brief.get("question") or "")
+        self.named_specs = _norm(NL.join(brief["filters"].get("mountains") or []))      # 名指しの文字列(76 座に無い山は「足りないもの」の文で名前を出す)
         self.q_mountains = {mid for n, mid in self.names if n in self.question}
 
     # -- 表記の解析 --
@@ -129,6 +130,7 @@ class Ctx:
             elif kind == "C":
                 texts += x["say"] + [x["label"]]
                 a["mountains"].add(x["mountain_id"])
+                a["mountains"].update(x.get("mountains") or [])
             elif kind == "N":
                 texts += x["say"] + day_forms(x["date"])
             elif kind == "K":
@@ -138,6 +140,8 @@ class Ctx:
                 texts += x["say"] + [x["text"]]
             else:
                 texts.append(x["text"])
+                if x is self.b["lines"]["data_time"] and self.b["shelf"].get("stale"):      # 古い予報: 「丸1日以上前」と言ってよい(実際の古さまで)
+                    texts += [f"丸{n}日以上前" for n in range(1, int(self.b["shelf"]["age_hours"] // 24) + 1)]
         if not any(self.ids[m][0] in ("Y", "C", "N") for m in marks):
             for d in self.target_days:
                 a["dates"].add((d.month, d.day))
@@ -305,14 +309,162 @@ def _check_comparisons(X, s, t, ids, errs):
         if days and not days & {x["date"] for x in hit if x["mountain_id"] == who[0]}:
             errs.append(_err("comparison_mismatch", s, "比べた結果の事実の日と、文の山の日が合わない", "同じ日の事実の印を付ける"))
         if not any(w in t for w in CP["scope"]):
-            errs.append(_err("comparison_scope", s, "何の中でいちばんかが書いていない(比べたのは主役の候補の中だけ)",
-                             "「主役の候補の中で」と書く"))
+            errs.append(_err("comparison_scope", s, "何の中でいちばんかが書いていない(比べたのはおすすめの候補の中だけ)",
+                             "「おすすめの候補の中で」と書く"))
     # 同点のある順位を、同点と分からない形で書いていないか
     for n in re.findall(r"(\d+)\s*(?:位|番目)", tn):
         hit = [f for f in ys if f.get("rank") == int(n)]
         if hit and all((f.get("rank_ties") or 1) > 1 for f in hit) and "同点" not in t:
             errs.append(_err("rank_tie_hidden", s, f"同点のある順位({n}位)を、同点と分からない形で書いている",
                              f"「{n}位(同点 {hit[0].get('rank_ties')} 座)」の形で書く"))
+
+
+def _check_named_gap(X, s, t, ids, errs):
+    """「差はわずか」を、名指しの山どうしの差の事実 [C…](kind = peak_wind_gap)と照らす。"""
+    G = X.R["named_gap"]
+    tn = _cut_clear(_cut(t, G["ok"]))
+    if not (any(w in tn for w in G["diff"]) and any(w in tn for w in G["small"])):
+        return
+    if not any(w in tn for w in G["topic"]) and not any(X.ids[i][1].get("kind") == "peak_wind_gap" for i in ids if X.ids[i][0] == "C"):
+        return
+    hit = [X.ids[i][1] for i in ids if X.ids[i][0] == "C" and X.ids[i][1]["kind"] == "peak_wind_gap"]
+    if not hit:
+        errs.append(_err("gap_unmarked", s, "風の差が小さいと言っているのに、名指しの山どうしの差の印 [C…] がない",
+                         "資料の「名指しの山どうしの差」にある印を付ける"))
+    elif not all(x["small"] for x in hit):
+        errs.append(_err("gap_mismatch", s, "「差はわずか」ではない差を、わずかだと言っている", "差の数字だけを書く"))
+
+
+def _cut_clear(t):
+    """「雲はほとんど無い」の部分を取り除く(「ほとんど」を、危険信号の割合の語や、風の差の語と読み違えないため)。"""
+    return re.sub(verify_rules()["cloud"]["clear_re"], " ", t)
+
+
+def _cloud_nums(text, CL):
+    out = set()
+    for m in re.finditer(CL["number_re"], _norm(text)):
+        v = Decimal("一二三四五六七八九".index(m["v"]) + 1) if m["v"] in "一二三四五六七八九" else Decimal(m["v"])
+        out.add(v * 10 if m["u"] == "割" else v)
+    return out
+
+
+def _cloud_value_nums(facts, CL):
+    """事実の雲量(補正後)の数: そのままの値・書いてよい表記・1 % に丸めた値。"""
+    out = set()
+    for f in facts:
+        for v in f["values"]:
+            if v["key"] == "cloud_pct":
+                out |= {Decimal(str(v["value"])), Decimal(str(v["value"])).quantize(Decimal("1"), rounding=ROUND_HALF_UP)}
+                out |= {n for s in v["say"] for n in _cloud_nums(s, CL)}
+    return out
+
+
+def cloud_errors(X, sents, facts_of, carry=False):
+    """雲の書き方(生の雲量が 0 % の山 = 事実の cloud_clear)の検査 → [(文, コード, 詳しく)]。Stop フックも使う。
+    節ごとに、どの山のどの日かを決める(節に無ければ、文の中の前の節。carry なら前の文も)。facts_of(文) はその文の事実。"""
+    CL = X.R["cloud"]
+    out, mids, days = [], set(), (set(), set())
+    for s in sents:
+        if not carry:
+            mids, days = set(), (set(), set())
+        facts = facts_of(s)
+        tn = _marked_names(X, _cut(_norm(s["clean"]), CL["not_cloud"]))
+        tn = re.sub(r"(\x03)[、,](?=\x02)", r"\1・", tn)                 # 「A、B は」の並びを 1 つの節に
+        tn = re.sub(r"(雲量?[はがも])[、,]", r"\1", tn)                   # 「雲量は、18.6 %」を 1 つの節に
+        whole = set(re.findall(r"\x02(m\d{3})\x03", tn))
+        for clause in _clauses(tn):
+            here = set(re.findall(r"\x02(m\d{3})\x03", clause))
+            tk = X.tokens(re.sub(r"\x02m\d{3}\x03", " ", clause))
+            mids = here or mids
+            days = (tk["dates"], tk["wds"]) if tk["dates"] or tk["wds"] else days
+            who = mids or whole
+            if carry and not who:                                      # どの山のことか分からない(迷う場合は通す)
+                continue
+            fs = [f for f in facts if f["mountain_id"] in who] if who else list(facts)
+            if days[0] or days[1]:
+                on = [f for f in fs if f["weekday"] in days[1] or (int(f["date"][5:7]), int(f["date"][8:])) in days[0]]
+                fs = on if on or carry else fs                          # carry のとき、言っている日の事実が無ければ見ない(迷う場合は通す)
+            clear = [f for f in fs if f.get("cloud_clear")]
+            other = [f for f in fs if f.get("cloud_clear") is False]
+            if other and re.search(CL["clear_re"], clause):
+                out.append((s, "cloud_mismatch", f"雲の印の無い山({other[0]['name']}・{other[0]['label']})に「雲はほとんど無い」と書いている"))
+            if not clear:
+                continue
+            if re.search(CL["assert_re"], _cut(clause, CL["assert_ok"])):
+                out.append((s, "cloud_assertion", f"予報なのに、空に雲が無いと言い切っている({clear[0]['name']}・{clear[0]['label']})"))
+            rest = re.sub(CL["other_pct_re"], " ", _cut_clear(clause))
+            if "雲" not in rest:
+                continue
+            ok = _cloud_value_nums([f for f in fs if not f.get("cloud_clear")], CL) - _cloud_value_nums(clear, CL)
+            if _cloud_nums(re.sub(r"\x02m\d{3}\x03", " ", rest), CL) - ok:
+                out.append((s, "cloud_number", f"雲の印の付いた山({clear[0]['name']}・{clear[0]['label']})に、雲量の数字を書いている"))
+    return out
+
+
+CLOUD_FIX = {"cloud_number": "雲量の数字を書かず、「雲はほとんど無い予報です」のように言葉で書く(比べるときは、数字を書く山の名前を同じ節に書く)",
+             "cloud_assertion": "「快晴」「雲ひとつない」と言い切らず、「雲はほとんど無い予報です」と書く",
+             "cloud_mismatch": "雲の印の無い山は、雲量の数字を「書いてよい表記」で書く(予報の無い山には雲のことを書かない)"}
+
+
+def _check_cloud(X, sents, errs):
+    def facts_of(s):
+        return [X.ids[i][1] for i in s["ids"] if i in X.ids and X.ids[i][0] == "Y"]
+    for s, code, detail in cloud_errors(X, sents, facts_of):
+        errs.append(_err(code, s, detail, CLOUD_FIX[code]))
+
+
+def _check_named(X, body, mre, errs):
+    """山を名指しした質問(利用者の決定 2026-11-25): 名指しの山が答えに出ているか、名指しでない山を並べていないか。決まりは concierge/named.py。"""
+    from . import named as N
+    for s, code, detail in N.errors(X, strip_marks(body, mre), lambda t: sentences(t, mre), _norm):
+        errs.append(_err(code, s, detail, N.FIX[code]))
+
+
+def _check_lone_number(X, body, errs):
+    """山を名指しで比べる答えで、番号が 1 行だけに付いていないか(比べる山の片方にだけ番号が付くのを止める)。"""
+    if len(dict.fromkeys(X.b["filters"].get("mountains") or [])) < 2:
+        return
+    heads = [x for x in body.split(NL) if NUMBER_HEAD.match(x)]
+    if len(heads) == 1:
+        errs.append(_err("number_lone", {"line": 0, "clean": heads[0]}, "比べる山のうち 1 座にだけ番号が付いている",
+                         "番号を全部の山に付けるか、全部から外す"))
+
+
+def stale_assertions(text):
+    """古い予報のときに言い切ってはいけない言い方(「おすすめします」など)→ [(文, 語)]。Stop フックも使う。"""
+    S = verify_rules()["stale"]
+    mre = re.compile(verify_rules()["draft"]["marker_re"])
+    out = []
+    for s in sentences(text, mre):
+        t = _cut(_norm(s["clean"]), S["ok"])
+        bad = _has_any(t, S["assert"])
+        if not bad and _has_any(t, S["weak"]) and S["candidate"] not in t:
+            bad = _has_any(t, S["weak"])
+        if bad:
+            out.append((s, bad[0]))
+    return out
+
+
+def _check_stale(X, body, errs):
+    """予報が古いときの書き方(利用者の決定 2026-11-25): 最初の文は data_time、言い切らない、最後に新しくする方法。"""
+    L, mre = X.b["lines"], re.compile(X.R["draft"]["marker_re"])
+    if not X.b["shelf"].get("stale"):
+        return
+    first = L["data_time"]
+    if first and not mre.sub("", body).lstrip(" \t　" + NL + "-*・>").startswith(first["text"]):
+        errs.append(_err("stale_first", None, "予報が古いのに、答えの最初の文が予報の時点(古さ)の決まった文でない",
+                         f"[{first['id']}] の文を最初に置き、結論はその次に書く"))
+    for s, word in stale_assertions(mre.sub("", body)):
+        errs.append(_err("stale_assertion", s, f"予報が古いのに「{word}」と言い切っている", "「古い予報では、○○が候補です」の形で書く"))
+    ref, tail_ok = L.get("refresh"), L["attribution"]
+    if ref and ref["text"] in body:
+        tail = body.split(ref["text"])[-1]
+        if tail_ok:
+            tail = tail.replace(tail_ok["text"], "")
+        if mre.sub("", tail).strip(" \t　" + NL):
+            errs.append(_err("stale_refresh_last", None, "新しくする方法の文のあとに、ほかの文がある(あとに書けるのは帰属の文だけ)", f"[{ref['id']}] の文を最後に置く"))
+    elif ref:
+        errs.append(_err("line_missing", None, f"決まった文 refresh([{ref['id']}])がない(予報が古い)", f"[{ref['id']}] の文を、答えの最後にそのまま写す"))
 
 
 def _marked_names(X, t):
@@ -410,6 +562,7 @@ def _named_days(X, t):
 def _check_hazard_counts(X, s, t, ids, errs):
     """危険信号の件数(○ 座)と「どれも・全部」の文を、件数の事実 [N…] と照らす。合うかどうかを決められない言い方は止める。"""
     W, CN = X.R["words"], X.R["hazard_count"]
+    t = _cut_clear(t)
     fix = "「どれも」などをやめて、日を書き、件数の事実 [N…] の「書いてよい言い方」で件数を書く(例: 日曜は、危険信号が警戒以上の山は 30 座です)"
     tn = re.sub(r"\x02m\d{3}\x03", MT, _marked_names(X, t))
     tn = re.sub(r"同点\s*\d+\s*座", " ", tn)               # 順位の表記の数
@@ -573,7 +726,7 @@ def check(draft, brief):
         # 76 座にない山の名前(形で見る。質問に書かれた名前は通す)
         for m in re.finditer(W["mountain_re"], tm):
             w = m.group(0)
-            if any(w.endswith(c) for c in W["mountain_common"]) or w in X.question:
+            if any(w.endswith(c) for c in W["mountain_common"]) or w in X.question or w in X.named_specs:
                 continue
             errs.append(_err("unknown_mountain", s, f"資料にない山の名前「{w}」", "資料にある山だけを書く(76 座にない山は「足りないもの」を使う)"))
         if ids:
@@ -631,6 +784,7 @@ def check(draft, brief):
                 if not any(n in X.question for n, m_ in X.names if m_ == mid):
                     errs.append(_err("mountain_not_in_brief", s, f"資料にない山({mid})を書いている", "資料にある山だけを書く"))
         _check_comparisons(X, s, t, ids, errs)
+        _check_named_gap(X, s, t, ids, errs)
         _check_hazard_counts(X, s, t, ids, errs)
         # 種類 C(山の安全): 危険信号の事実・知識カードの印、または「判断できません」の形(足りないものの印だけでは通さない)
         sc = _has_any(exempt_re.sub(" ", t), W["safety"])
@@ -644,7 +798,7 @@ def check(draft, brief):
                 errs.append(_err("safety_assertion", s, f"安全の言い切り「{'・'.join(_has_any(t, W['safety_positive'])[:3])}」に知識カードの裏づけがない",
                                  "行ける・安全だと言い切らない(予報の数字と危険信号の文だけを書く)"))
         # おすすめの語と、宣言したおすすめ
-        if picks is not None and _has_any(t, W["recommend"]) and not _has_any(t, W["recommend_not"]):
+        if picks is not None and _has_any(_cut(t, W["recommend_ok"]), W["recommend"]) and not _has_any(t, W["recommend_not"]):
             ys = [i for i in ids if X.ids[i][0] == "Y"]
             if ys and not set(ys) & set(picks):
                 errs.append(_err("pick_undeclared", s, f"すすめている山({', '.join(ys)})が [おすすめ] にない", "[おすすめ] の行にその事実の id を書く"))
@@ -655,6 +809,10 @@ def check(draft, brief):
             if m.group(0) not in lodging_ok:
                 errs.append(_err("lodging_name", s, f"宿・山小屋の名前らしい語「{m.group(0)}」", "宿・山小屋の名前を書かない(「泊まりにすると」まで)"))
     # 全体
+    _check_lone_number(X, body, errs)
+    _check_stale(X, body, errs)
+    _check_cloud(X, sents, errs)
+    _check_named(X, body, mre, errs)
     L = brief["lines"]
     for key in ("data_time", "coverage", "attribution"):
         if L[key] and L[key]["id"] not in present:
@@ -712,6 +870,7 @@ def check(draft, brief):
             "marked": sum(1 for s in sents if s["ids"])}
 
 
+NUMBER_HEAD = re.compile(r"^\s*(?:[-*・]\s*)?(?:\*\*)?(?:\d{1,2}[.)．]|[①-⑨])")
 LIST_HEAD = re.compile(r"^(?:[-*・#>\s]+|\d{1,2}[.)．]\s*|[①-⑨]\s*)+")
 
 
