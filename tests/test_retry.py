@@ -92,7 +92,7 @@ class ThroughCollect(unittest.TestCase):
         env = {"FAKE_YAMA_PLAN": "partial:9,ok:3", "FAKE_YAMA_STATE": str(d / "state.txt")}
         with mock.patch.dict(os.environ, env):
             run = collect(agents=["yamabiyori"], out_dir=d / "art", checkouts={"yamabiyori": FAKE_YAMA},
-                          pythons={"yamabiyori": sys.executable}, yama_limit=3, meta_fetch=lambda ph: meta)
+                          pythons={"yamabiyori": sys.executable}, yama_limit=None, meta_fetch=lambda ph: meta)
         self.assertEqual(schema_errors(read_json(d / "art/run.json"), "biyori-collect-run"), [])
         self.assertEqual([a["requests"] for a in run["agents"]["yamabiyori"]["attempts"]], [9, 3])
         logs = read_json(d / "art/logs/requests.json")

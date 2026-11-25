@@ -164,12 +164,14 @@ class Collect(unittest.TestCase):
         inp = self.wf["on"]["workflow_dispatch"]["inputs"]
         self.assertEqual(set(inp), {"confirm", "agents", "yama_limit", "yamabiyori_ref", "publish"})
         self.assertEqual(inp["agents"]["options"], ["yamabiyori", "hoshibiyori", "both"])
-        self.assertFalse(inp["publish"]["default"])
+        self.assertIs(inp["publish"]["default"], True)      # 利用者の決定(2026-11-25)。うっかり起動は confirm で防ぐ
+        self.assertNotIn("default", inp["confirm"])
+        self.assertTrue(inp["confirm"]["required"])
 
-    def test_yama_limit_default_3_and_all_for_every_mountain(self):
-        # 欄を空にしても 3 座で動いたため、全座は all と入れる方式(初期値 3 はそのまま)。定期実行は all
+    def test_yama_limit_default_all_for_every_mountain(self):
+        # 欄を空にしても 3 座で動いたため、全座は all と入れる方式。初期値は 3 → all(利用者の決定 2026-11-25)。定期実行は all
         y = self.wf["on"]["workflow_dispatch"]["inputs"]["yama_limit"]
-        self.assertEqual((y["type"], y["default"]), ("string", "3"))
+        self.assertEqual((y["type"], y["default"]), ("string", "all"))
         self.assertIn("all", y["description"])
         self.assertNotIn("空 = 全", y["description"])
         env = self.jobs["collect"]["env"]["YAMA_LIMIT"]
@@ -196,6 +198,26 @@ class Collect(unittest.TestCase):
         cond = self.jobs["publish"]["if"]
         self.assertIn("inputs.publish == true && (inputs.yamabiyori_ref == 'main' || inputs.agents == 'hoshibiyori')", cond)
         self.assertIn("github.event_name == 'schedule' ||", cond)        # 定期実行は常に main
+
+    def test_publish_skipped_when_yama_limit_is_not_all(self):
+        # 一部の山だけを取った手動実行は、publish にチェックがあっても棚を置き換えない(利用者の決定 2026-11-25)。定期実行は変えない
+        cond = self.jobs["publish"]["if"]
+        base = {"github.event_name": "workflow_dispatch", "needs.collect.result": "success", "inputs.publish": True,
+                "inputs.yamabiyori_ref": "main", "inputs.agents": "yamabiyori", "inputs.yama_limit": "all"}
+        cases = [({}, True), ({"inputs.yama_limit": "3"}, False), ({"inputs.yama_limit": "76"}, False), ({"inputs.yama_limit": ""}, False),
+                 ({"inputs.yama_limit": "3", "inputs.agents": "both"}, False), ({"inputs.yama_limit": "3", "inputs.agents": "hoshibiyori"}, True),
+                 ({"inputs.yama_limit": "3", "inputs.publish": False}, False), ({"inputs.publish": False}, False),
+                 ({"inputs.yamabiyori_ref": "feature/x"}, False), ({"needs.collect.result": "skipped"}, False),
+                 ({"github.event_name": "schedule", "inputs.publish": None, "inputs.yama_limit": None, "inputs.yamabiyori_ref": None, "inputs.agents": None}, True)]
+        for change, want in cases:
+            with self.subTest(**change):
+                self.assertEqual(bool(eval_expr(cond, {**base, **change}, funcs={"always()": True})), want)
+
+    def test_input_descriptions_tell_the_guard(self):
+        inp = self.wf["on"]["workflow_dispatch"]["inputs"]
+        self.assertIn("棚は置き換わらない", inp["yama_limit"]["description"])
+        self.assertNotIn("チェックも外す", inp["yama_limit"]["description"])
+        self.assertIn("all の回だけ", inp["publish"]["description"])
 
     def test_scheduled_agents_come_from_the_variable(self):
         # 段階 2 の終わり(指示書 5.1。2026-11-22): 定期実行で取るビヨリは変数 BIYORI_COLLECT_AGENTS。未設定・それ以外は yamabiyori

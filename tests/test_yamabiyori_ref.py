@@ -24,7 +24,7 @@ def artifact(test, ref="main"):
     out = tmpdir(test) / "art"
     with mock.patch.dict(os.environ, {"FAKE_YAMA": "ok"}):
         collect(agents=["yamabiyori"], out_dir=out, checkouts={"yamabiyori": FAKE_YAMA}, pythons={"yamabiyori": sys.executable},
-                yama_limit=3, yamabiyori_ref=ref, meta_fetch=lambda ph: META)
+                yama_limit=None, yamabiyori_ref=ref, meta_fetch=lambda ph: META)
     return out
 
 

@@ -42,7 +42,7 @@ class Records(unittest.TestCase):
         out = tmpdir(self) / "art"
         with mock.patch.dict(os.environ, {"FAKE_YAMA": mode, "FAKE_YAMA_429_BODY": bodies}):
             run = collect(agents=["yamabiyori"], out_dir=out, checkouts={"yamabiyori": FAKE_YAMA},
-                          pythons={"yamabiyori": sys.executable}, yama_limit=3, meta_fetch=lambda ph: META)
+                          pythons={"yamabiyori": sys.executable}, yama_limit=None, meta_fetch=lambda ph: META)
         return run, out
 
     def publish(self, art, existing=None):

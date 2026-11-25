@@ -28,20 +28,20 @@ on:
         options: [yamabiyori, hoshibiyori, both]
         default: yamabiyori
       yama_limit:
-        description: "山の数。全 76 座は all と入れる。一部なら 1 以上の整数(初期値 3)。空・0 以下・それ以外の文字はエラーで止まる"
+        description: "山の数。全 76 座は all と入れる。一部なら 1 以上の整数(初期値 all)。all でない回は、publish にチェックがあっても棚に載せない(棚は置き換わらない)。空・0 以下・それ以外の文字はエラーで止まる"
         required: false
         type: string
-        default: "3"
+        default: "all"
       yamabiyori_ref:
         description: "ヤマビヨリのブランチか commit(初期値 main)。main 以外で取った回は、publish にチェックがあっても棚に載せない。定期実行は常に main"
         required: false
         type: string
         default: main
       publish:
-        description: "取得の結果を棚(data ブランチ)に残す"
+        description: "取得の結果を棚(data ブランチ)に残す(初期値 チェックあり)。残るのは yama_limit が all の回だけ"
         required: false
         type: boolean
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -86,7 +86,7 @@ jobs:
           python-version: "3.13"
       - name: Install concierge dependencies
         run: python -m pip install -r requirements.txt
-      # 山の数とヤマビヨリの ref を、ヤマビヨリを取り出す前に検査する(通信なし)。main 以外なら「棚に載せない」と表示する
+      # 山の数とヤマビヨリの ref を、ヤマビヨリを取り出す前に検査する(通信なし)。main 以外・山の一部だけなら「棚に載せない」と表示する
       - name: Check inputs (no network)
         run: python -X utf8 -m collect check-inputs --yama-limit "$YAMA_LIMIT" --yamabiyori-ref="$YAMABIYORI_REF"
       - name: Get yamabiyori (main, or yamabiyori_ref on a manual run)
@@ -128,10 +128,11 @@ jobs:
         run: python -X utf8 -m collect verdict --artifact _out
 
   # ヤマビヨリを main 以外の ref で取った手動実行は、publish にチェックがあっても動かさない(棚に載せない。collect の Summary にその旨が出る)。
-  # 念のため collect prepare も、run.json の ref が main でなければ木を組み立てずに止まる。
+  # 一部の山だけを取った手動実行(yama_limit が all でない)も、同じように動かさない(棚がその山だけに置き換わるため。利用者の決定 2026-11-25)。
+  # 念のため collect prepare も、run.json の ref が main でない・山の数が全部でないときは、木を組み立てずに止まる。
   publish:
     needs: collect
-    if: ${{ always() && needs.collect.result != 'cancelled' && needs.collect.result != 'skipped' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == true && (inputs.yamabiyori_ref == 'main' || inputs.agents == 'hoshibiyori'))) }}
+    if: ${{ always() && needs.collect.result != 'cancelled' && needs.collect.result != 'skipped' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == true && (inputs.yamabiyori_ref == 'main' || inputs.agents == 'hoshibiyori') && (inputs.yama_limit == 'all' || inputs.agents == 'hoshibiyori'))) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

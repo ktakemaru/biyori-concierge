@@ -16,7 +16,7 @@
     "requested_agents": {"type": "array", "items": {"enum": ["yamabiyori", "hoshibiyori"]}},
     "yama_limit": {"type": ["integer", "null"]},
     "yamabiyori_ref": {"type": ["string", "null"], "description": "取り出したヤマビヨリの ref(手動実行の yamabiyori_ref。定期実行は main)。ヤマビヨリを取らない回は null"},
-    "publish_blocked": {"type": ["string", "null"], "description": "この回を棚に載せない理由(yamabiyori_ref_not_main)。載せてよいなら null"},
+    "publish_blocked": {"type": ["string", "null"], "description": "この回を棚に載せない理由(yamabiyori_ref_not_main・yama_limit_not_all)。載せてよいなら null"},
     "agents": {
       "type": "object",
       "propertyNames": {"enum": ["yamabiyori", "hoshibiyori"]},

@@ -134,7 +134,7 @@ class Shelf(unittest.TestCase):
         out = tmpdir(self) / "art"
         with mock.patch.dict(os.environ, {"FAKE_YAMA": mode}):
             run = collect(agents=["yamabiyori"], out_dir=out, checkouts={"yamabiyori": FAKE_YAMA},
-                          pythons={"yamabiyori": sys.executable}, yama_limit=3, meta_fetch=lambda ph: META)   # config.yaml の値(5)
+                          pythons={"yamabiyori": sys.executable}, yama_limit=None, meta_fetch=lambda ph: META)   # config.yaml の値(5)
         return run, out
 
     def publish(self, art, existing=None):

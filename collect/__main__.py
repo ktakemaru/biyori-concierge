@@ -57,11 +57,14 @@ def main(argv=None):
         from .run import MAIN_REF, parse_yama_limit, parse_yamabiyori_ref
         try:
             limit, ref = parse_yama_limit(a.yama_limit), parse_yamabiyori_ref(a.yamabiyori_ref)
+            if limit is None and a.yama_limit != "all":            # 前後の空白つきの all。ワークフローの条件(== 'all')と食い違うので止める
+                raise ValueError(f"山の数(yama_limit)は、空白を入れずに all と書いてください(入力: {a.yama_limit!r})")
         except ValueError as e:
             print(f"中止(通信していません): {e}", file=sys.stderr)
             return 2
         print(f"yama_limit={'all' if limit is None else limit} yamabiyori_ref={ref}"
-              + ("" if ref == MAIN_REF else "(main でないので、この回は棚に載せません)"))
+              + ("" if ref == MAIN_REF else "(main でないので、この回は棚に載せません)")
+              + ("" if limit is None else "(山の一部だけの取得なので、この回は棚に載せません。棚は置き換えません。棚に残すには yama_limit を all にします)"))
         return 0
     if a.cmd == "prepare":
         print(json.dumps(shelf.prepare(a.artifact, a.existing, a.out), ensure_ascii=False, indent=1))

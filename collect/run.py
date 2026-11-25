@@ -23,6 +23,7 @@ from . import meta as meta_mod
 from . import yamabiyori as yama
 from .common import allow_hosts, config, iso, now_jst, read_json, schema_errors, write_json
 from .runner import rate_limit_kinds, read_request_log, run_hooked, summarize
+from .shelf import publish_block_texts
 
 AGENTS = ("yamabiyori", "hoshibiyori")
 RUN_SCHEMA = "biyori-collect-run/1"
@@ -236,7 +237,7 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_
            "model_runs": {m: {k: v for k, v in r.items() if k != "init_before"} for m, r in model_runs.items()},
            "requested_agents": [a for a in AGENTS if a in agents], "yama_limit": yama_limit,
            "yamabiyori_ref": yamabiyori_ref if "yamabiyori" in agents else None,
-           "publish_blocked": publish_blocked(agents, yamabiyori_ref),
+           "publish_blocked": publish_blocked(agents, yamabiyori_ref, yama_limit),
            "agents": {a: {k: v for k, v in r.items() if k != "fetch"} for a, r in results.items()},
            "requests": {"total": totals["requests"], "by_host": totals["by_host"], "estimated_calls": totals["estimated_calls"]}}
     for a, r in run["agents"].items():
@@ -249,10 +250,13 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_
     return run
 
 
-def publish_blocked(agents, yamabiyori_ref):
-    """この回を棚に載せない理由(載せてよいなら None)。ヤマビヨリを main 以外の ref で取った回は載せない(利用者の決定)。"""
+def publish_blocked(agents, yamabiyori_ref, yama_limit=None):
+    """この回を棚に載せない理由(載せてよいなら None)。ヤマビヨリを main 以外の ref で取った回と、
+    一部の山だけを取った回(yama_limit が all でない。棚がその山だけに置き換わるため)は載せない(利用者の決定)。"""
     if "yamabiyori" in agents and yamabiyori_ref != MAIN_REF:
         return "yamabiyori_ref_not_main"
+    if "yamabiyori" in agents and yama_limit is not None:
+        return "yama_limit_not_all"
     return None
 
 
@@ -298,7 +302,8 @@ def main_run(args):
     if run.get("yamabiyori_ref") is not None:
         print(f"yamabiyori: ref={run['yamabiyori_ref']} commit={run['agents'].get('yamabiyori', {}).get('commit')}")
     if run.get("publish_blocked"):
-        print(f"この回は棚に載せません({run['publish_blocked']}: ヤマビヨリの ref が {MAIN_REF} でない)。publish にチェックがあっても載せません")
+        for t in publish_block_texts(run):
+            print(t)
     for a, r in run["agents"].items():
         print(f"{a}: {r['status']}" + (f" ({r.get('reason')})" if r.get("reason") else "")
               + (f" 山={yama.coverage_text(r['coverage'])}" if "coverage" in r else "")

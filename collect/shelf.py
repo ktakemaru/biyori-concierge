@@ -30,14 +30,46 @@ PUBLISHABLE = ("ok", "incomplete")
 
 
 def publish_block_reason(run):
-    """この回を棚に載せない理由(載せてよいなら None)。ヤマビヨリを main 以外の ref で取った回は載せない(利用者の決定)。
-    run.json の publish_blocked と、ヤマビヨリの ref の両方を見る(どちらかが当てはまれば載せない)。"""
+    """この回を棚に載せない理由(載せてよいなら None)。ヤマビヨリを main 以外の ref で取った回と、一部の山だけを取った回は載せない(利用者の決定)。
+    run.json の publish_blocked と、ヤマビヨリの ref・山の数(limit)の両方を見る(どれかが当てはまれば載せない)。"""
     if run.get("publish_blocked"):
         return run["publish_blocked"]
-    ref = ((run.get("agents") or {}).get("yamabiyori") or {}).get("ref")
-    if ref is not None and ref != "main":
+    if _yama_ref_not_main(run):
         return "yamabiyori_ref_not_main"
+    if _yama_limit(run) is not None:
+        return "yama_limit_not_all"
     return None
+
+
+def _yama(run):
+    return (run.get("agents") or {}).get("yamabiyori") or {}
+
+
+def _yama_ref_not_main(run):
+    ref = _yama(run).get("ref")
+    return ref is not None and ref != "main"
+
+
+def _yama_limit(run):
+    """一部の山だけを取った回なら、その山の数(--limit)。全座なら None。"""
+    return _yama(run).get("limit")
+
+
+def publish_block_texts(run):
+    """棚に載せないことを伝える文(ログと要約)。載せてよいなら空。理由が 2 つあれば 2 つとも書く。"""
+    reason = publish_block_reason(run)
+    if not reason:
+        return []
+    out = []
+    if reason == "yamabiyori_ref_not_main" or _yama_ref_not_main(run):
+        out.append("この回は棚(data ブランチ)に載せません(yamabiyori_ref_not_main): ヤマビヨリの ref が main でないため。"
+                   "publish にチェックがあっても載せません(publish ジョブは skipped になります)")
+    if reason == "yama_limit_not_all" or _yama_limit(run) is not None:
+        n = _yama_limit(run) if _yama_limit(run) is not None else run.get("yama_limit")
+        out.append(f"この回は棚(data ブランチ)に載せません(yama_limit_not_all): 一部の山だけの取得だったため(yama_limit が {n})。"
+                   "棚は置き換えていません(publish にチェックがあっても載せません。publish ジョブは skipped になります)。"
+                   "棚に残すには、yama_limit を all にして実行し直してください")
+    return out
 
 
 def _plain(p):
@@ -150,7 +182,8 @@ def prepare(artifact, existing, out):
         raise ValueError("artifact の run.json がない・スキーマに合わない(公開しない)")
     blocked = publish_block_reason(run)
     if blocked:
-        raise ValueError(f"この回は棚に載せない({blocked}: ヤマビヨリの ref が main でない。ref={run.get('yamabiyori_ref')})")
+        raise ValueError(f"この回は棚に載せない({blocked}: ref={run.get('yamabiyori_ref')}・yama_limit={run.get('yama_limit')}): "
+                         + " / ".join(publish_block_texts(run)))
     previous = load_manifest(ex)
     prev_agents = (previous or {}).get("agents") or {}
     outcome, reasons = {}, {}
@@ -207,10 +240,9 @@ def render_summary(artifact):
     y = (run.get("agents") or {}).get("yamabiyori")
     if y:
         lines.append(f"- ヤマビヨリの取り出し: ref `{y.get('ref') or run.get('yamabiyori_ref')}`、commit `{y.get('commit')}`")
-    blocked = publish_block_reason(run)
-    if blocked:
-        lines.append(f"- **この回は棚(data ブランチ)に載せません**({blocked}): ヤマビヨリの ref が main でないため。"
-                     "publish にチェックがあっても載せません(publish ジョブは skipped になります)")
+    for t in publish_block_texts(run):
+        head = "この回は棚(data ブランチ)に載せません"
+        lines.append(f"- **{head}**{t[len(head):]}")
     lines.append("")
     lines += ["| ビヨリ | 状態 | 理由 | 山の数 | 通信の回数 | 所要(秒) | データの時刻 |", "|---|---|---|---|---|---|---|"]
     for a, r in (run.get("agents") or {}).items():
