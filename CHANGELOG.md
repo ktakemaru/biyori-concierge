@@ -1,5 +1,14 @@
 # 変更履歴
 
+## 未公開(段階 3 第 2 部 A: 星の取得。2026-11-25。ブランチ `feature/stage3-collect-stars`)
+
+- 星の取得 `collect/hoshibiyori.py`・`collect/run.py` の `run_hoshibiyori()`: ホシビヨリの `--json-out` を、星空・星座モード → 天の川モードの順に、計測フックつきで 2 回(14 夜ぶんの `--nights` つき)。
+  2 つのモードは一緒に入れ替える(片方でも失敗したら、棚の星は前回のまま)。429 はホシビヨリの待つ回数(5 回)まで通す。対応表は `docs/hoshibiyori-mapping.md`。
+- 提案 `proposals/hoshibiyori.json`(`biyori-proposal/1`)。1 件は「モード・地点・夜」。月の無い時間帯で条件を通った地点だけ。スコアの無いものは `null`。
+- manifest の `agents.hoshibiyori` に、モードごとの記録 `modes`(通信の回数・秒・取得セル)を足した(項目の追加だけ。山だけの回の出力は変わらない)。
+- `collect.yml`: `agents=hoshibiyori`・`both` が動く形にした。ホシビヨリの main を別の venv で使う。天文暦と、薄明・月の時刻の計算結果だけを `actions/cache` で持ち越す。cron・停止スイッチ・権限・publish の作り・定期実行の既定(山だけ)は変えていない。
+- 上限は実測から仮置き(`config.yaml`): 通信 870 回、1 モード 1500 秒、合計 2300 秒。許可ホストに `ssd.jpl.nasa.gov`(天文暦)を足した。
+
 ## 未公開(言い回しと古い予報。2026-11-25。ブランチ `feature/stale-forecast-wording`)
 
 - 答えに「主役の候補」を出さない。書いてよい言い方を「おすすめの候補の中で」に変え、`verify` が「主役の候補」「主役の枠」を内部の言葉として止める(テストの文言も合わせて直した)。

@@ -76,6 +76,35 @@ collect:
       http_429_max_total: 5
       # 出力の schema の文字列(mountain_weather_mvp.py --json-out。report_data.py)
       expected_schema: yamabiyori-report-data/1
+    hoshibiyori:
+      repo: ktakemaru/hoshibiyori
+      ref: main
+      # --nights に渡す夜の数(取得を始めた日から)。出典: ホシビヨリ explore_hoshibiyori.py 58 行 NUM_NIGHTS_TO_SCAN = 14
+      # (commit 3860af7・1.2.0 で確認。走査するのは今日から 14 夜で、それより先の夜は調べられない)。
+      nights: 14
+      # HTTP リクエストの上限(計測フックで強制)。2 つのモードの合計。仮置き。
+      # 式: 1 モードぶんの実測の多いほう 617 + 取り直しの余裕 617 × 0.20 × 2 + 天文暦の取得 1 = 864.8 → 870
+      #   617 = ホシビヨリ AGENTS.md の時間の表(2026-11-16、全 897 地点)。手元の実測(2026-11-25 の stars.json・milkyway.json の
+      #   fetch.api_calls)は 455 + 0 = 455 で、近日中(MSM)の候補の夜が 0 夜の日だったため少ない。
+      #   0.20 = FAILED_CELL_RATE_ABORT(失敗したセルがこの割合以上ならホシビヨリが自分で止まる)、2 = 失敗したセルの 2 回までの再試行
+      #   (cloud_forecast.py の _FETCH_MAX_RETRIES = 3 は 1 回目を含む数)。2 つ目のモードは通信 0 回の実測なので足さない。
+      # 開発指示書 5.2 の「星 300」は実測の前の仮置きで、実測より少ないので使わない。
+      max_requests: 870
+      # 1 つのモードの子プロセスの時間の上限(秒)。仮置き。
+      # 式: 実測の長いほう(天の川モード)583.2 秒 × 2 + 429 の待ち 65 秒 × 5 回 = 1491.4 → 1500
+      #   実測: 2026-11-25 手元の PC(C:/temp/stage3/run-log.txt)。星空・星座モード 234.1 秒(うち通信 131.0・間隔の調整 70.7)、
+      #   天の川モード 583.2 秒(通信 0.0。全部が計算)。× 2 は、GitHub のマシンの計算の速さが分からないための余裕(未確認)。
+      timeout_s: 1500
+      # 2 つのモードの合計の上限(秒)。超えたら次のモードを始めない。仮置き。
+      # 式: (234.1 + 583.2) × 2 + 65 × 5 × 2 = 2284.6 → 2300。collect.yml の timeout-minutes 90(5400 秒)から山の上限 2700 を引いた
+      # 残りの 2700 秒の内側で、準備(取り出し・pip・メタデータ・成果物の保存)に 400 秒が残る。
+      total_timeout_s: 2300
+      # 計測フックが、子プロセス 1 回(1 つのモード)の中で通す 429 の回数(BIYORI_HTTP_429_MAX_TOTAL)。
+      # 出典: ホシビヨリ step5_cloud_forecast/grid_cache.py 55・56 行 MINUTELY_RETRY_WAIT_SEC = 65.0・MINUTELY_RETRY_MAX = 5
+      # (1 分の上限の 429 で 65 秒待って同じセルを取り直すのは 1 回の実行で 5 回まで。commit 3860af7・1.2.0 で確認)。
+      http_429_max_total: 5
+      # 出力の schema の文字列(--json-out。schemas/hoshibiyori-explore.schema.json)
+      expected_schema: hoshibiyori-explore/1
   # Open-Meteo のメタデータ(利用上限に数えられない。yamabiyori-backtest backtest/collect_forecast_snapshot.py の説明)で記録するモデル
   model_runs: [jma_msm, ecmwf_ifs025]
   # メタデータ取得のリクエスト上限(子プロセス 1 回あたり。モデル 2 つ + 失敗したモデルの読み直し 最大 2 = 4。余裕を見て 8。仮置き)

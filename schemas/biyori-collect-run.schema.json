@@ -29,6 +29,7 @@
           "coverage": {"$ref": "#/$defs/coverage"},
           "attempts": {"$ref": "#/$defs/attempts"},
           "used_run": {"type": "integer", "minimum": 1, "description": "棚に載せる出力を作った回(最も多く取れた回)"},
+          "modes": {"$ref": "#/$defs/modes"},
           "retry_stop": {"type": ["string", "null"], "description": "取り直しを途中でやめた理由(max_runs・request_budget・time_budget・run_<回>_<理由>)。そろったか取り直しが要らなければ null"},
           "reason": {"type": ["string", "null"]},
           "requests": {"type": "integer", "minimum": 0},
@@ -57,6 +58,31 @@
         "fetched": {"type": "integer", "minimum": 0},
         "missing": {"type": "integer", "minimum": 0},
         "total_mountains": {"type": "integer", "minimum": 0}
+      }
+    },
+    "modes": {
+      "type": "array",
+      "description": "ホシビヨリのモードごとの結果(実行した順)。requests は計測フックの数、ほかの回数は出力の fetch の値。2026-11-25 に追加",
+      "items": {
+        "type": "object",
+        "required": ["mode", "status", "reason", "requests", "runtime_s"],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {"enum": ["stars", "milkyway"]},
+          "status": {"enum": ["ok", "failed", "rate_limited"]},
+          "reason": {"type": ["string", "null"]},
+          "detail": {"type": "string"},
+          "requests": {"type": "integer", "minimum": 0},
+          "runtime_s": {"type": "number", "minimum": 0},
+          "http_429": {"type": "integer", "minimum": 0},
+          "http_429_kinds": {"type": "object", "propertyNames": {"enum": ["daily", "hourly", "minutely", "unknown"]}, "additionalProperties": {"type": "integer", "minimum": 0}},
+          "fetch_status": {"enum": ["ok", "partial", null]},
+          "api_calls": {"type": ["integer", "null"], "minimum": 0},
+          "cache_hits": {"type": ["integer", "null"], "minimum": 0},
+          "total_cells": {"type": ["integer", "null"], "minimum": 0},
+          "failed_cells": {"type": ["integer", "null"], "minimum": 0},
+          "generated_at": {"type": ["string", "null"]}
+        }
       }
     },
     "attempts": {

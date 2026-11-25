@@ -22,7 +22,7 @@ on:
         required: true
         type: string
       agents:
-        description: "取得するビヨリ(hoshibiyori は段階 3 から)"
+        description: "取得するビヨリ(yamabiyori = 山だけ / hoshibiyori = 星だけ。棚の山は前回のまま / both = 山と星)"
         required: true
         type: choice
         options: [yamabiyori, hoshibiyori, both]
@@ -61,7 +61,7 @@ jobs:
     env:
       PYTHONUTF8: "1"
       # 定期実行で取るビヨリは、リポジトリの変数 BIYORI_COLLECT_AGENTS(yamabiyori / hoshibiyori / both)で選ぶ(指示書 5.1。2026-11-22)。
-      # 未設定・それ以外の値は yamabiyori(星の取得は段階 3 から)。手動実行は入力の agents のまま。
+      # 未設定・それ以外の値は yamabiyori(山だけ)。手動実行は入力の agents のまま。
       # 値は変数をそのまま渡さず、決まった文字列だけを出す(式の == は大文字・小文字を区別しないため、Both と書いても both になる)。
       AGENTS: ${{ github.event_name == 'schedule' && ((vars.BIYORI_COLLECT_AGENTS == 'both' && 'both') || (vars.BIYORI_COLLECT_AGENTS == 'hoshibiyori' && 'hoshibiyori') || 'yamabiyori') || inputs.agents }}
       # 定期実行は all(全 76 座)。手動実行は入力のまま渡し、検査は collect run が通信の前に行う(空・0 以下などはエラー)
@@ -103,6 +103,35 @@ jobs:
         run: |
           python -m venv _venvs/yamabiyori
           _venvs/yamabiyori/bin/python -m pip install -r _agents/yamabiyori/requirements.txt
+      - name: Get hoshibiyori (always main)
+        if: ${{ env.AGENTS == 'hoshibiyori' || env.AGENTS == 'both' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ktakemaru/hoshibiyori
+          ref: main
+          path: _agents/hoshibiyori
+          persist-credentials: false
+      # ホシビヨリも別の venv に、ホシビヨリの requirements.txt だけを入れる(天気図の取得に使う任意の依存は入れない)。
+      - name: Install hoshibiyori dependencies (own venv)
+        if: ${{ env.AGENTS == 'hoshibiyori' || env.AGENTS == 'both' }}
+        run: |
+          python -m venv _venvs/hoshibiyori
+          _venvs/hoshibiyori/bin/python -m pip install -r _agents/hoshibiyori/requirements.txt
+      # 持ち越すのは、期限の無いもの 2 つだけ: 天文暦 de421.bsp と、薄明・月の時刻の計算結果(astro_cache。7 日より前の夜はホシビヨリが消す)。
+      # 予報の保存(cloud_cache。期限 3 時間・6 時間)は次の回には使えないので持ち越さない。
+      - name: Carry over the ephemeris
+        if: ${{ env.AGENTS == 'hoshibiyori' || env.AGENTS == 'both' }}
+        uses: actions/cache@v4
+        with:
+          path: _hoshi_data/step1_astronomy/de421.bsp
+          key: hoshibiyori-de421-v1
+      - name: Carry over the computed twilight and moon times
+        if: ${{ env.AGENTS == 'hoshibiyori' || env.AGENTS == 'both' }}
+        uses: actions/cache@v4
+        with:
+          path: _hoshi_data/step1_astronomy/astro_cache
+          key: hoshibiyori-astro-v1-${{ github.run_id }}
+          restore-keys: hoshibiyori-astro-v1-
       - name: Collect (live)
         id: run
         env:
@@ -110,6 +139,8 @@ jobs:
         run: |
           python -X utf8 -m collect run --agents "$AGENTS" --out _out \
             --yamabiyori-checkout _agents/yamabiyori --yamabiyori-python "$PWD/_venvs/yamabiyori/bin/python" \
+            --hoshibiyori-checkout _agents/hoshibiyori --hoshibiyori-python "$PWD/_venvs/hoshibiyori/bin/python" \
+            --hoshibiyori-data-dir "$PWD/_hoshi_data" \
             --yama-limit "$YAMA_LIMIT" --yamabiyori-ref="$YAMABIYORI_REF" --trigger "$EVENT_NAME" --concierge-commit "$GITHUB_SHA"
       # 確認で止まったとき(取得していないとき)は、成果物も要約も作らない。
       - name: Upload results

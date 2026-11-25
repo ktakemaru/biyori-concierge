@@ -2,6 +2,7 @@
 
   python -X utf8 -m collect run --agents yamabiyori|hoshibiyori|both --out <dir> --yamabiyori-checkout <dir>
                                [--yamabiyori-python <venv の python>] --yama-limit all|N [--yamabiyori-ref <ref>(既定 main)]
+                               [--hoshibiyori-checkout <dir> --hoshibiyori-python <venv の python> --hoshibiyori-data-dir <保存先>]
                                [--trigger schedule|workflow_dispatch] [--concierge-commit <sha>]
                                                                    … 実通信(Actions の collect ジョブの中だけで使う)
   python -X utf8 -m collect check-inputs --yama-limit all|N --yamabiyori-ref <ref>  … 手動実行の入力の検査(通信なし。取り出しの前に使う)
@@ -29,6 +30,9 @@ def main(argv=None):
     r.add_argument("--yamabiyori-python")
     r.add_argument("--yama-limit", required=True, help="山の数。all = 全座、または 1 以上の整数(空・0 以下はエラー)")
     r.add_argument("--yamabiyori-ref", default="main", help="取り出したヤマビヨリのブランチ・commit(main 以外の回は棚に載せない)")
+    r.add_argument("--hoshibiyori-checkout")
+    r.add_argument("--hoshibiyori-python")
+    r.add_argument("--hoshibiyori-data-dir", help="ホシビヨリの保存先(HOSHIBIYORI_DATA_DIR。予報・天文計算の保存と天文暦)")
     r.add_argument("--trigger", default="workflow_dispatch")
     r.add_argument("--concierge-commit", default=None)
     c = sub.add_parser("check-inputs")
@@ -51,6 +55,8 @@ def main(argv=None):
     if a.cmd == "run":
         if a.agents in ("yamabiyori", "both") and not a.yamabiyori_checkout:
             ap.error("--yamabiyori-checkout が必要")
+        if a.agents in ("hoshibiyori", "both") and not a.hoshibiyori_checkout:
+            ap.error("--hoshibiyori-checkout が必要")
         from .run import main_run
         return main_run(a)
     if a.cmd == "check-inputs":

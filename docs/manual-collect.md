@@ -9,7 +9,7 @@
 1. リポジトリの **Actions** タブ → 左の一覧で **collect** → 右上の **Run workflow**。
 2. `confirm` に `yes-run-live` と入れる。ほかは次の初期値のまま。
    - **Use workflow from**: `Branch: main`
-   - `agents`: `yamabiyori`
+   - `agents`: `yamabiyori`(山だけ)。星も取るときは `both`。`hoshibiyori` は星だけで、棚の山は前回のまま残る(状態は `kept_previous`、理由は `not_requested`。答えの予報の時点の文に「最新の取得がうまくいかなかったため、前の回の予報を使っています。」が付く)
    - `yama_limit`: `all`(全 76 座。一部だけ試すときは 1 以上の整数。**`all` でない回は、`publish` にチェックがあっても棚を置き換えない**。ログと Summary にその旨と理由が出る。棚に残すには `all` で実行し直す)
    - `yamabiyori_ref`: `main`
    - `publish`: チェックあり(外すと棚が新しくならない。main 以外から取った回と、`yama_limit` が `all` でない回は、チェックがあっても棚に載らない)

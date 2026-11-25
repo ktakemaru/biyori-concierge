@@ -4,6 +4,9 @@ schema: biyori-collect-hosts/1
 hosts:
   yamabiyori:
     - api.open-meteo.com          # mountain_weather_core.py OPEN_METEO_URL
+  hoshibiyori:
+    - api.open-meteo.com          # step5_cloud_forecast/cloud_forecast.py(ヤマビヨリと同じ Open-Meteo)
+    - ssd.jpl.nasa.gov            # 天文暦 de421.bsp(無いときだけ 1 回)。Skyfield 1.55 の iokit.py 64 行 _JPL = 'https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/' と 127 行 ('*.bsp', _JPL)。手元に入っている版で確認(2026-11-25。実通信では未確認)
   meta:
     - api.open-meteo.com          # /data/<model>/static/meta.json(yamabiyori-backtest の手本と同じ)
   diag:
