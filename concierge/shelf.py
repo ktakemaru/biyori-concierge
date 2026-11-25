@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 
 from collect.common import ROOT, schema_errors
-from collect.shelf import AGENT_FILES, agent_files_problems
+from collect.shelf import AGENT_FILES, agent_files_problems, file_problems
 
 from .common import dump_json, iso, parse_iso, read_json, write_text
 
@@ -134,6 +134,40 @@ def load(base):
     out["mountains"] = read_json(d / "yamabiyori" / "mountains.json")
     out["ok"] = True
     return out
+
+
+def load_stars(base):
+    """置き場の写しの星の部分を読んで検査する(星の質問のときだけ呼ぶ)。→ {ok, problem, entry, natives}。山の部分は見ない。"""
+    from collect.hoshibiyori import MODES, NATIVE_PATH
+    d = shelf_dir(base)
+    out = {"ok": False, "problem": None, "entry": None, "natives": None}
+    m = read_json(d / "manifest.json")
+    if not isinstance(m, dict) or schema_errors(m, "biyori-shelf"):
+        out["problem"] = "no_shelf"
+        return out
+    e = (m.get("agents") or {}).get("hoshibiyori")
+    out["entry"] = e
+    if not e or e.get("status") not in ("ok", "kept_previous") or not e.get("files") or not e.get("data_time"):
+        out["problem"] = "no_hoshibiyori"
+        return out
+    # 答える側が使うのは 2 つのモードの出力だけ(提案は使わないので、ここでは検査しない。取り込みのとき sync が 3 つとも検査している)
+    if any(file_problems(d / NATIVE_PATH[k], "native_hoshi") for k in MODES):
+        out["problem"] = "broken_files"
+        return out
+    natives = {k: read_json(d / NATIVE_PATH[k]) for k in MODES}
+    if not all(_native_ok(n) for n in natives.values()):
+        out["problem"] = "broken_files"
+        return out
+    out.update(ok=True, natives=natives)
+    return out
+
+
+def _native_ok(n):
+    """答える側が使う項目があるか(取得の側は、ホシビヨリのスキーマの全体で検査している)。"""
+    need = ("site_index", "requested_nights", "finals", "outlooks", "thresholds")
+    return (isinstance(n, dict) and all(k in n for k in need) and "milkyway_few_results" in n["thresholds"]
+            and all(all(k in r for k in ("night_date", "window_kind", "counts", "sites")) for r in n["requested_nights"])
+            and all(all(k in x for k in ("site_id", "label", "lat", "lon", "group", "requires_lift_access")) for x in n["site_index"]))
 
 
 def age_hours(entry, now):

@@ -46,6 +46,17 @@ concierge:
       coarse_step_km: 5
     # 山の予報で答える興味の語(schemas/biyori-vocabulary.yaml の note が yamabiyori の語)。ほかの語は「足りないもの」に入る。
     mountain_interests: [hiking, mountains, clear_sky_summit, landscape_photo]
+  stars:
+    # 夜ごとに資料へ入れる、条件を通った星の地点の数(この枠と別に、主役にできる山の近くの地点も入る)。仮置き。
+    # 並びは 主軸の地点を先 → ホシビヨリの順位(候補の夜だけにある)→ 出発地からの直線距離 → site_id(concierge/stars.py の site_key)。
+    top_per_night: 5
+    # 夜ごとに、上の枠の外で「直線 combo.near_km 以内に、同じ日に主役にできる山がある」地点を足す数。仮置き。
+    # 候補の夜でない夜はホシビヨリの順位が無く、出発地に近い順(近くに山の無い海沿い)で枠が埋まるため(2026-11-28 の実物で、5 地点とも山なし)。
+    with_mountain_per_night: 3
+    # どちらのモードの結果を使うか。仮置き。milkyway_few_results = 天の川モードの候補(finals + outlooks)が thresholds.milkyway_few_results(5)
+    # より少なければ星空・星座モード、そうでなければ天の川モード。ホシビヨリの explore_hoshibiyori.py が「候補が少ない場合は --target stars で…」と
+    # 出す決まり(commit 3860af7)と同じ。走査した 14 夜の全部で 1 つに決める(夜ごとには変えない)。
+    mode_rule: milkyway_few_results
 
 collect:
   # 取得の側(collect/)の値。

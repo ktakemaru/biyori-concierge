@@ -11,6 +11,7 @@
 import hashlib
 import json
 import math
+import sys
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
@@ -22,6 +23,7 @@ from collect.yamabiyori import GO_THRESHOLD, HAZARD_HARD, RELIABLE_UP_TO_DAYS
 
 from . import dates as D
 from . import shelf as S
+from . import stars as ST
 from .common import DATA, JST, WEEKDAY_JA, brief_schema_errors, config, dump_json, iso, md_label, parse_iso, read_json, write_text
 from .texts import coverage_counts, data_time_label, runs_text
 
@@ -431,6 +433,11 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
     org, origin_unknown = resolve_origin(origin, c)
     ints, other_ints, unknown_ints = resolve_interests(interest, c)
     sh = S.load(base)
+    star_keys = [k for k in other_ints if k in ST.INTERESTS]                  # 星の興味の語(あるときだけ星の棚を読む)
+    other_ints = [k for k in other_ints if k not in ST.INTERESTS]
+    ssh = S.load_stars(base) if star_keys else None
+    star = ST.build(ssh, target, org, now, c, sys.modules[__name__], star_keys) if ssh and ssh["ok"] else None
+    all_by_day, coords = {}, {}                                               # 日ごとの、その日の山の事実の全部(星の近くの山を探す)
     gaps, lines, facts = [], {}, []
     excluded, counts_ = [], []
     max_km = c["origin"]["max_straight_line_km"]
@@ -526,6 +533,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
             _set_ranks(above)                                                   # main_key の順に並ぶ
             ex["below_threshold"] = len(pool_) - len(above)
             mains_ = [f for f in above if f["main_ok"]]
+            all_by_day[ds] = mains_
             hard = sorted([f for f in above if "hazard_hard" in f["main_ng"]], key=skip_key)
             ex["score_only"] = len(above) - len(mains_) - len(hard)
             top, skip = mains_[:bc["top_per_day"]], hard[:bc["skip_per_day"]]
@@ -572,12 +580,38 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
     if origin_unknown:
         gap("unknown_origin", f"出発地「{origin_unknown}」の場所が分からないため、{org['name']}からの直線距離で答えます。", [org["name"]])
     gap("no_safety_info", "山の難しさ・必要な装備・積雪や凍結・ルートの状態・所要時間は、この予報からは判断できません。")
+    if star_keys and star is None:
+        gap("interest_not_mountain", "星の予報は今回使えませんでした。")
+    for t in (star or {}).get("counts") or []:
+        if t["state"] == "not_examined":
+            gap("star_not_examined", f"{t['label']}は、{ST.NOT_EXAMINED}", [t["label"]])
+    if star:
+        gap("no_star_objects", "どの星や惑星が見えるかは、この予報に含まれていません。")
     if other_ints:
         v = _vocab()["interests"]
         gap("interest_not_mountain", f"「{'・'.join(v[k]['label'] for k in other_ints)}」の情報はまだ使えないため、今回は山の予報だけで答えます。")
     for w in unknown_ints:
         gap("unknown_interest", f"「{w}」に合わせて山を選ぶ情報はありません。")
-    gap("no_stars_creatures", "星空と、花・紅葉・野鳥の情報は、まだ使えません。")
+    if star_keys:
+        gap("no_creatures", "花・紅葉・野鳥の情報は、まだ使えません。")
+    else:
+        gap("no_stars_creatures", "星空と、花・紅葉・野鳥の情報は、まだ使えません。")
+    day_plans = []
+    if star:
+        coords = {m["id"]: (m["lat"], m["lon"]) for m in (sh["mountains"] or {}).get("mountains", [])}
+        day_plans, add_m, add_s = ST.plan(star, facts, all_by_day, coords, not ints, sys.modules[__name__], c)
+        star["facts"] += add_s
+        facts = [f for ds in sorted({f["date"] for f in facts + add_m}) for f in [x for x in facts if x["date"] == ds] + [x for x in add_m if x["date"] == ds]]
+        for t in star["counts"]:                                              # 夜の案を付けられなかった山(名指しの質問では名指しの山だけ)
+            alone = [p["y"] for p in day_plans if p["date"] == t["date"] and p["kind"] == "mountain" and not p["s"] and (p["y"]["named"] or not named_specs)]
+            if t["state"] == "passed" and alone:
+                names = [f["name"] for f in alone]
+                gap("star_none_near", f"{t['label']}は、{'・'.join(names)}から直線 {c['combo']['near_km']}km 以内に、条件を通った星の地点がありません。",
+                    [t["label"], f"{c['combo']['near_km']}km"] + names)
+        for x in excluded:                                                    # 星の近くの山として資料に入れた山は、枠の外の名前から外す
+            names = {f["name"] for f in add_m if f["date"] == x["date"]}
+            x["outside_top_names"] = [n for n in x["outside_top_names"] if n not in names]
+            x["counts"]["outside_top"] -= len(names)
 
     # id を振る
     for i, f in enumerate(facts, 1):
@@ -615,18 +649,25 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
             lines_out["skips"].append(item | {"date": l_["date"], "facts": l_["facts"]})
         else:
             lines_out[l_["key"]] = item
+    star_doc = None
+    if star:
+        star_doc, star_lines, plans = ST.finish(star, day_plans, len(L) + 1, sys.modules[__name__], c)
+        lines_out |= ST.lines_out(star_lines)
     mains = sorted([f for f in facts if f["main_ok"]], key=lambda f: (f["date"], main_key(f)))
-    plans = [{"id": f"P{i}", "date": f["date"], "main": {"kind": "mountain", "fact": f["id"]}, "adds": []}
+    plans = plans if star else [{"id": f"P{i}", "date": f["date"], "main": {"kind": "mountain", "fact": f["id"]}, "adds": []}
              for i, f in enumerate(mains, 1)]
     doc = {"schema": SCHEMA, "id": None, "question": question, "now": iso(now),
            "when": {"spec": W["spec"], "rule": W["rule"], "days": W["days"], "today": W["today"]},
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
            "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
-           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []),
+           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []) + (ST.RULES if star else []),
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
                       "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}
+    if star_doc:                                                              # 星の項目は、星が関わるときだけ(山だけの資料は 1 バイトも変えない)
+        doc["stars"] = star_doc
+        doc["limits"] |= {"star_top_per_night": c["concierge"]["stars"]["top_per_night"], "near_km": c["combo"]["near_km"]}
     h = hashlib.sha256(json.dumps(doc, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()[:8]
     doc["id"] = f"b{now.astimezone(JST).strftime('%Y%m%d-%H%M%S')}-{h}"
     errs = brief_schema_errors(doc)
@@ -672,6 +713,10 @@ def render_md(b):
         out.append(f"- [{h['id']}](危険信号・{h['fact']}) {h['text']}")
     for x in L.get("skips") or []:
         out.append(f"- [{x['id']}](見送りのまとめ・{'・'.join(x['facts'])}。見送る山はこの文を写し、山ごとの危険信号の文は並べない) {x['text']}")
+    if b.get("stars"):
+        for x in ST.all_lines(b):
+            note = {f["id"]: f["name"] for f in b["stars"]["facts"]}.get(x.get("fact"))
+            out.append(f"- [{x['id']}]" + (f"(リフト要・{x['fact']})" if note else f"(星の見送り・{x['fact']})" if x.get("fact") else "(星)") + f" {x['text']}")
     out += ["", "## 候補(日ごと)", "",
             "(書き手への注: 「雲量」は、ヤマビヨリが採点に使う実効雲量(較正後)の値。答えには「雲量」とだけ書く)", ""]
     for day in b["when"]["days"]:
@@ -687,7 +732,8 @@ def render_md(b):
             out.append(f"- **[{f['id']}] {f['name']}**({f['region']}・標高 {num(f['elevation_m'])}m・{f['access']}・{f['distance_say']})"
                        f" {num(f['score'])} 点(基準 {num(f['threshold'])} 点){'・' + rank_say(f)[0] if f['rank'] else ''}"
                        f"・{f['lead_days']} 日先{'(信用してよい範囲の外)' if not f['reliable'] else ''}・{tag}"
-                       + ("・名指し" if f["named"] else "") + ("・見送りの枠" if f["selected_by"] == "skip" else ""))
+                       + ("・名指し" if f["named"] else "") + ("・見送りの枠" if f["selected_by"] == "skip" else "")
+                       + ("・星の地点の近く" if f["selected_by"] == "star" else ""))
             out.append(f"  - 危険信号: {hz}")
             for v in f["values"]:
                 if v["key"] == "cloud_pct" and f.get("cloud_clear"):
@@ -725,8 +771,11 @@ def render_md(b):
             note = "。危険信号の強風の段階は違う" if x["hazard_differs"] else ""
             out.append(f"- [{x['id']}] {x['label']}・{x['name']}({'・'.join(x['among'])}): {' / '.join(x['say'])}{note}")
         out.append("")
-    out += ["## 組み合わせ(主役になれる案)", ""]
-    out += [f"- {p['id']}: {p['date']} 主役 {p['main']['fact']}" for p in b["plans"]] or ["(なし。おすすめにできる山はありません)"]
+    if b.get("stars"):
+        out += ST.render_md(b) + ST.render_plans(b)
+    else:
+        out += ["## 組み合わせ(主役になれる案)", ""]
+        out += [f"- {p['id']}: {p['date']} 主役 {p['main']['fact']}" for p in b["plans"]] or ["(なし。おすすめにできる山はありません)"]
     out += ["", "## 知識カード", ""]
     out += [f"- [{k['id']}] {k['text']}(出典: {k['source']['name']}、{k['checked']} 確認)" for k in b["cards"]] or ["(なし)"]
     out += ["", "## 足りないもの", ""]

@@ -4,7 +4,7 @@
  "agent": {
   "id": "hoshibiyori",
   "version": "1.2.0",
-  "commit": "0c866b5ce5a7ef3e2f7265e224e8ff85e11f0c65"
+  "commit": "3860af7e7a7fb8556f73387e1fbb9e2e562d05ff"
  },
  "status": "ok",
  "generated_at": "2026-11-25T22:34:21+09:00",
@@ -10187,7 +10187,7 @@
  "diagnostics": {
   "api_calls": 0,
   "cache_hit": true,
-  "runtime_s": 1.2,
+  "runtime_s": 0.0,
   "fetch_finished_at": "2026-11-25T22:34:21+09:00",
   "warnings": [
    "確信度は出力されないため null",

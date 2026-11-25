@@ -91,6 +91,8 @@ def errors(X, text, sentences, norm):
     out, others, last_named, seen = [], [], -1, set()
     for i, s in enumerate(sentences(text)):
         t = norm(s["clean"])
+        if getattr(X, "star", None):                          # 星の地点の名前(「石割山(山中湖村)」など)の中の山の名前を読まない
+            t = X.star.mask(t)[0]
         for name in unlisted:                                 # 76 座に無い名指し(「大山(鳥取)」など)を、似た名前の山と読まない
             t = t.replace(name, " ")
         found = _mentions(t, forms)

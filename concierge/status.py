@@ -9,6 +9,23 @@ PROBLEM_JA = {"no_shelf": "手元に棚の写しがありません(`python -X ut
               "broken_files": "棚の写しの山のファイルが壊れているか、検査に通りません。"}
 
 
+def _stars(base, m, now):
+    """星の棚の状態(目次だけを見る。中身の検査は brief が星の質問のときに行う)。"""
+    e = (m.get("agents") or {}).get("hoshibiyori")
+    if not e:
+        return ["- 星: まだありません(段階 3 から)"]
+    if not e.get("data_time"):
+        return ["- 星: 棚に星の予報がありません(取得に失敗した回の可能性)。"]
+    age, stale = S.age_hours(e, now), config()["collect"]["stale_after_hours"]
+    out = [f"- 星: {data_time_label(e)} 時点({runs_text(e.get('model_runs'))})",
+           f"  - {age} 時間前" + (f"({stale} 時間以上前の古い予報)" if age is not None and age >= stale else "")
+           + f"。状態 {e.get('status')}" + (f"(前回のファイルを残した回: {e.get('kept_from')}、理由 {e.get('reason')})" if e.get("status") == "kept_previous" else ""),
+           f"  - ホシビヨリ {e.get('version')}(commit {str(e.get('commit') or '')[:7]})"]
+    for x in e.get("modes") or []:
+        out.append(f"  - {'星空・星座' if x['mode'] == 'stars' else '天の川'}モード: 通信 {x['requests']} 回・{x['runtime_s']} 秒")
+    return out
+
+
 def render(base, now):
     sh = S.load(base)
     lines = ["# 棚の写しの状態", ""]
@@ -27,7 +44,7 @@ def render(base, now):
             lines.append(f"  - ヤマビヨリ {e.get('version')}(commit {str(e.get('commit') or '')[:7]})")
         if sh["problem"]:
             lines.append(f"- 山: {PROBLEM_JA[sh['problem']]}")
-    lines.append("- 星: まだありません(段階 3 から)")
+    lines += _stars(base, m, now) if m else ["- 星: まだありません(段階 3 から)"]
     sy = sh["sync"]
     if sy:
         lines.append(f"- 最後の取り込み: {sy.get('at')} — {sy.get('message')}")

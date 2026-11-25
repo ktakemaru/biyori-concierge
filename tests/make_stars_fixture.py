@@ -89,6 +89,10 @@ def main():
         assert run["agents"]["hoshibiyori"]["status"] == "ok", run["agents"]
         real = man["agents"]["yamabiyori"]
         run["agents"]["hoshibiyori"]["commit"] = read_json(HOSHI / "stars.json")["commit"]      # 出力に入っている実物の commit
+        hp = read_json(art / "proposals" / "hoshibiyori.json")
+        hp["agent"]["commit"] = run["agents"]["hoshibiyori"]["commit"]
+        hp["diagnostics"]["runtime_s"] = 0.0
+        write_json(art / "proposals" / "hoshibiyori.json", hp)
         run["agents"]["hoshibiyori"]["runtime_s"] = 0.0                       # 偽のホシビヨリの秒(作るたびに変わるので 0 にする)
         for m in run["agents"]["hoshibiyori"]["modes"]:
             m["runtime_s"] = 0.0
