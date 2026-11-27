@@ -101,3 +101,36 @@
 - 点数が基準(70 点。`collect/yamabiyori.py` の `GO_THRESHOLD`、README「行ける」の目安)未満。
 - 危険信号が「警戒」「危険」(簡易行は「警戒以上」)。段階の語はヤマビヨリの `report_data.py` の `hazard_class()`(警戒・危険を含むと warning)と `mountain_weather_core.py` の `HAZARD_LEVELS`。
 - 「注意」の山は主役にしてよい。すすめるときは `hazards` の文を必ず入れる(照合が止める)。
+
+## 星(段階 3。`stars`・`lines.star_*`・`plans[].frames`)
+
+星の項目は、星の興味の語(`stars`・`milky_way`・`astrophotography`)を渡した質問で、星の棚が使えるときだけ入る。それ以外の資料は 1 バイトも変わらない。
+元はホシビヨリの `--json-out`(棚の `hoshibiyori/stars.json`・`milkyway.json`)。対応表は `docs/hoshibiyori-mapping.md`。
+
+| 印 | 項目 | 中身 |
+|---|---|---|
+| `[S001]`〜 | `stars.facts[]` | 地点と夜。`site_id`・書いてよい名前(`site_index` の `label`。市町村つき)・夜の表記・状態(`status`)・理由・予報の区分(`regime`)・出発地からの直線距離・`requires_lift_access`・順位 `rank`(並びにだけ使い、答えに書かない)・`near`(案で組になる山からの直線距離) |
+| `[H1]`〜 | `stars.highlights.facts[]` | 夜に見られる星や惑星(見どころ。ホシビヨリの新しい出力の `highlights` があるときだけ)。1 件は「夜と対象」。`kind` = `star_highlight`(時間帯に入っている対象。`slots[]` に時間帯ごとの時刻 `start`〜`end`・いちばん高い時刻と高度)/ `star_hidden`(今の時期は見えない対象 = `not_visible`)。名前は `members[]`・`not_visible` の名前。**座標を照らしていない対象(`coordinates_unverified: true`)は入れない**。星の地点が付く夜だけ |
+| `[M1]`〜 | `stars.highlights.showers[]` | 流星群(極大の夜が聞かれた夜で、星の地点が付くときだけ)。名前・極大の時刻・放射点が高度 20 度以上の時間帯・出現数の目安 |
+| `[T1]`〜 | `stars.counts[]` | 夜ごとの状態と件数。`state` = `passed`(250km 以内に条件を通った地点がある)/ `moon`(月の無い時間帯で調べていない = `window_kind: dark`)/ `none_passed`(調べたが無い)/ `not_examined`(調べていない) |
+
+- 資料に入れる地点は、`window_kind` が `moon_free` の夜に `status` が `passed` で、`site_id` があり、出発地から直線 250km 以内のもの。`dark` の夜の `passed`(月が出ている夜に雲と光害だけ通った地点)は使わない(仮置き)。
+- 夜ごとに `top_per_night`(5)+ 近くに山がある地点 `with_mountain_per_night`(3)+ 案で山に付く地点。並びは 主軸を先 → ホシビヨリの順位(候補の夜だけにある `rank`)→ その夜の中の順位(`night_rank`。新しい出力だけ。資料の `night_rank`。答えに書かない)→ 直線距離 → `site_id`。
+- 値(`values`): 晴れ間の時間帯(`clear_start`〜`clear_end`)・月の無い時間帯(`window_start`〜`window_end`)・晴れ間の長さ(`clear_hours`。0.1 時間の刻み。丸めたら「約」)。名前は、ホシビヨリの画面・README の「晴れ間」「月の無い時間帯」。
+- 出していない値: `mean_obstruction`(視界遮蔽雲量。山の雲量と並ぶと読み違えるため)・`alr`(日本で未較正の相対指数)・`score`・`lp_index`・`winter_milky_way`。
+- モード: 天の川モードの候補(`finals` + `outlooks`)が `thresholds.milkyway_few_results`(5)より少なければ星空・星座モード、そうでなければ天の川モード(ホシビヨリの画面の案内と同じ決まり。`config.yaml` `concierge.stars.mode_rule`。仮置き)。
+- `plans[].frames`: 朝〜日中(山)→ 日中(生き物。段階 4 まで空)→ 夜(星)。順番はコードが決める。夜(星)の枠に地点があり、その夜の見どころがあれば、`highlights`(`[H…]` の id)・`showers`(`[M…]` の id)が付く。
+- 見どころ(`stars.highlights`)の値はホシビヨリの `highlights` のまま(時刻は分より下を切り捨て、0 時を過ぎたら「翌」。高度は整数に丸めて「約」)。`objects` = 全部の夜の見どころの名前(事実に無い名前を照合で止めるため)、`unverified` = 座標を照らしていない対象の名前、`unverified_count` = 事実にしなかった件数、`null_nights` = 星の地点が付くのに見どころの無い夜。
+  `highlights` の無い出力(1.2.0)では、`stars.highlights` も、見どころの決まった文・決まりも入らない(資料は段階 3 と 1 バイトも変わらない)。
+
+| 文 | 中身 |
+|---|---|
+| `star_data_time` | 「星の予報は … 時点のものです(… の回)。」24 時間以上前なら「○ 時間前の古い予報です」。山と別の文 |
+| `star_mode` | どちらのモードの結果か。語はホシビヨリの `AGENTS.md` 5 章(「星空・星座モード。銀河中心の高度・地形を条件にしない」)と画面(「対象: 天の川銀河中心」) |
+| `star_regime` | ECMWF の夜だけ。「…は、ECMWF の予報だけの夜で、雲量は目安です。」(出力の `notes`「forecast_regime が ECMWF の夜の雲量は目安です。」・`AGENTS.md`「ECMWFだけの予報(目安)」) |
+| `star_lifts` | `requires_lift_access` の地点ごとに「…はリフト要の地点で、運行は確かめていません。」 |
+| `star_skips` | 月の夜・条件を通った地点の無い夜ごとに 1 文。理由の語は「月が出ている」「雲」「光害」「方角」だけ |
+| `star_attribution` | 星の帰属(ホシビヨリの README「データ出典と利用上の注意」) |
+| `star_attribution_plain` | 地点の出どころ(`origin`)がある出力のときだけ。`star_attribution` から「地点は © OpenStreetMap contributors(ODbL)、」を除いた文。OSM 由来の地点を使わない答え用(`config.yaml` `concierge.stars.odbl_by_origin` が true のときだけ。既定は false = いつも ODbL のある文。仮置き) |
+| `star_basis` | 見どころの事実があるときだけ。「見られる星や惑星と時刻は、{`highlights.basis.text`}です。」(基準の地点・平らな地平線の目安。地形・雲は見ていない) |
+| `star_showers` | 流星群の事実ごと。「{名前}の出現数は、{`zhr_note`}です。{`caveat`}。」 |

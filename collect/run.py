@@ -5,8 +5,11 @@
   yamabiyori/explore.json       成功したときだけ
   yamabiyori/mountains.json     成功したときだけ
   proposals/yamabiyori.json     成功したときだけ
+  hoshibiyori/stars.json        成功したときだけ(2 つのモードがそろったときだけ。段階 3)
+  hoshibiyori/milkyway.json     同上
+  proposals/hoshibiyori.json    同上
   logs/requests.json            通信の集計(ホスト別・ステータス別・失敗の種類(例外の名前)別の回数だけ)
-  raw/                          フックの記録(JSONL)と標準出力の末尾(ヤマビヨリは回ごと: yamabiyori-<回>-*)。artifact にだけ残し、棚には載せない
+  raw/                          フックの記録(JSONL)と標準出力の末尾(ヤマビヨリは回ごと: yamabiyori-<回>-*、ホシビヨリはモードごと: hoshibiyori-<モード>-*)。artifact にだけ残し、棚には載せない
 
 ビヨリの失敗(終了コード≠0・429・フックの中止・出力の形が違う)は、そのビヨリを status≠ok にするだけで、ほかのビヨリは続ける。
 429 があった回は、フックに止められず・終了コード 0・出力が正しく・全部の山がそろった(fetched = pool_size)ときだけ成功(待って取り直せた回)。
@@ -19,6 +22,7 @@ import sys
 import time
 from pathlib import Path
 
+from . import hoshibiyori as hoshi
 from . import meta as meta_mod
 from . import yamabiyori as yama
 from .common import allow_hosts, config, iso, now_jst, read_json, schema_errors, write_json
@@ -181,8 +185,107 @@ def run_yamabiyori(*, checkout, python, out_dir, limit, ref=MAIN_REF, model_runs
                 data_time=iso(fetched_at), proposal_status=prop["status"], proposals=len(prop["proposals"]), model_runs=runs)
 
 
+def _mode_failure(res, problems, has_output, native, tolerate_429):
+    """ホシビヨリの 1 つのモードの結果 → (状態, 理由, 詳しく) または None(成功)。
+    429 があったモードは、フックに止められず・終了コード 0・出力が正しく・取得の失敗が無い(fetch.status = ok)ときだけ成功(待って取り直せた)。"""
+    if res.rate_limited:
+        clean = tolerate_429 and not res.hook_aborted and not res.timed_out and res.returncode == 0 and native is not None
+        if not (clean and native["fetch"]["status"] == "ok" and not native["fetch"]["rate_limited"]):
+            return "rate_limited", "rate_limited", None
+    if res.timed_out:
+        return "failed", "timeout", None
+    if res.blocked_host:
+        return "failed", "blocked_host", res.blocked_host
+    if res.hook_aborted:
+        return "failed", "hook_aborted", res.abort
+    if res.returncode != 0:
+        return "failed", f"exit_{res.returncode}", None
+    if not has_output:
+        return "failed", "no_output", None
+    if problems:
+        return "failed", "unexpected_output", "; ".join(problems)[:500]
+    return None
+
+
+def run_hoshibiyori(*, checkout, python, out_dir, data_dir, model_runs_fn=None, cfg=None, clock=time.monotonic):
+    """ホシビヨリを 2 つのモードで実行して、成果物を out_dir に置く。→ run.json の agents.hoshibiyori
+
+    順番は hoshi.MODES(星空・星座 → 天の川)。1 つでも失敗したら、残りは実行せず、ファイルを 1 つも置かない(2 つは一緒に入れ替える)。
+    取り直しの回は作らない(ホシビヨリが中で取り直す)。上限: 通信の回数(max_requests)と時間(total_timeout_s)は 2 つの合計。
+    data_dir は HOSHIBIYORI_DATA_DIR(予報・天文計算の保存と天文暦。2 つのモードで同じ場所)。"""
+    cfg = cfg or config()["collect"]["agents"]["hoshibiyori"]
+    out_dir, raw = Path(out_dir), Path(out_dir) / "raw"
+    raw.mkdir(parents=True, exist_ok=True)
+    checkout, data_dir = Path(checkout).resolve(), Path(data_dir).resolve()
+    data_dir.mkdir(parents=True, exist_ok=True)
+    commit, version = yama.git_commit(checkout), yama.load_version(checkout)
+    base = {"ref": MAIN_REF, "commit": commit, "version": version, "limit": None}
+    try:
+        schema = hoshi.load_schema(checkout)
+    except ValueError as e:
+        return dict(_fail("schema_unreadable", detail=str(e)[:300]), **base, requests=0, runtime_s=0.0, data_time=None)
+    nights = hoshi.nights_from(now_jst().date(), cfg["nights"])
+    max_req, total_s = int(cfg["max_requests"]), float(cfg["total_timeout_s"])
+    max_429 = int(cfg.get("http_429_max_total") or 0)
+    t0 = clock()
+    modes, results, natives, fail = [], [], {}, None
+    for mode in hoshi.MODES:
+        used, elapsed = sum(len(r.records) for r in results), clock() - t0
+        if elapsed >= total_s:
+            fail = ("failed", "time_budget", f"{mode} を始める前に時間の上限")
+            break
+        json_out = raw / f"hoshibiyori-{mode}.json"
+        res = run_hooked(hoshi.command(python, checkout, mode, nights, json_out), cwd=checkout,
+                         req_log=(raw / f"hoshibiyori-{mode}-requests.jsonl").resolve(),
+                         max_requests=max(0, max_req - used), allow=allow_hosts("hoshibiyori"),
+                         timeout_s=max(1.0, min(float(cfg["timeout_s"]), total_s - elapsed)),
+                         extra_env={"HOSHIBIYORI_DATA_DIR": str(data_dir)}, max_429=max_429 or None)
+        (raw / f"hoshibiyori-{mode}-output.txt").write_text(res.stdout_tail + "\n--- stderr ---\n" + res.stderr_tail, encoding="utf-8", newline="\n")
+        results.append(res)
+        native = read_json(json_out) if res.returncode == 0 and not res.hook_aborted and not res.timed_out else None
+        probs = hoshi.output_problems(native, schema, mode, nights) if native is not None else None
+        good = native if native is not None and not probs else None
+        fail = _mode_failure(res, probs, native is not None, good, max_429 > 0)
+        m = {"mode": mode, "status": "ok" if fail is None else fail[0], "reason": None if fail is None else fail[1],
+             "requests": len(res.records), "runtime_s": res.runtime_s, "http_429": res.http_429, "http_429_kinds": res.http_429_kinds}
+        if fail is not None and fail[2]:
+            m["detail"] = str(fail[2])[:500]
+        modes.append(dict(m, **hoshi.mode_info(good)))
+        if fail is not None:
+            break
+        natives[mode] = good
+    all_recs = [x for r in results for x in r.records]
+    fetch = summarize(all_recs, results[-1].abort if results else None)
+    fetch["blocked_host"] = next((r.blocked_host for r in results if r.blocked_host), None)
+    fetch["http_429"] = sum(r.http_429 for r in results)
+    fetch["http_429_tolerated"] = sum(r.http_429_tolerated for r in results)
+    runtime = round(clock() - t0, 1)
+    entry = dict(base, requests=len(all_recs), runtime_s=runtime, data_time=None, fetch=fetch, modes=modes,
+                 http_429=fetch["http_429"], http_429_tolerated=fetch["http_429_tolerated"], http_429_kinds=fetch["http_429_kinds"])
+    if fail is not None:
+        # 止められたホストは、山と同じく detail をホストの名前だけにする。ほかは、どのモードかを添える
+        detail = fail[2] if fail[1] in ("blocked_host", "time_budget") else (f"{modes[-1]['mode']}: {fail[2]}" if fail[2] else f"{modes[-1]['mode']} で失敗")
+        return dict(entry, status=fail[0], reason=fail[1], detail=str(detail)[:500])
+    fetched_at = results[-1].finished_at
+    runs = model_runs_fn() if model_runs_fn else {}
+    try:
+        prop = hoshi.convert(natives, now=now_jst(), fetched_at=fetched_at, agent_version=version, agent_commit=commit, model_runs=runs)
+    except (KeyError, ValueError) as e:
+        return dict(entry, status="failed", reason="convert_failed", detail=f"{type(e).__name__}: {e}"[:500])
+    prop["diagnostics"].update(api_calls=len(all_recs), cache_hit=(len(all_recs) == 0), runtime_s=runtime)
+    errs = schema_errors(prop, "biyori-proposal")
+    if errs:
+        return dict(entry, status="failed", reason="schema_invalid", detail="; ".join(errs)[:500])
+    (out_dir / "hoshibiyori").mkdir(parents=True, exist_ok=True)
+    for mode in hoshi.MODES:                                                    # --json-out そのまま(artifact に同じ中身を 2 つ持たない)
+        shutil.move(str(raw / f"hoshibiyori-{mode}.json"), out_dir / hoshi.NATIVE_PATH[mode])
+    write_json(out_dir / "proposals" / "hoshibiyori.json", prop)
+    return dict(entry, status="ok", reason=None, data_time=iso(fetched_at), proposal_status=prop["status"],
+                proposals=len(prop["proposals"]), model_runs=runs)
+
+
 def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_ref=MAIN_REF, trigger="workflow_dispatch",
-            concierge_commit=None, meta_fetch=None):
+            concierge_commit=None, meta_fetch=None, hoshibiyori_data_dir=None):
     """1回の取得。meta_fetch(phase) → meta.json の dict(テストでは偽物を渡す。既定は計測フックつきの子プロセス)。"""
     out_dir = Path(out_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -215,8 +318,11 @@ def collect(*, agents, out_dir, checkouts, pythons, yama_limit=None, yamabiyori_
         elif a == "yamabiyori":
             results[a] = run_yamabiyori(checkout=checkouts["yamabiyori"], python=pythons["yamabiyori"], out_dir=out_dir,
                                         limit=yama_limit, ref=yamabiyori_ref, model_runs_fn=runs_now)
+        elif checkouts.get("hoshibiyori"):
+            results[a] = run_hoshibiyori(checkout=checkouts["hoshibiyori"], python=pythons.get("hoshibiyori") or sys.executable, out_dir=out_dir,
+                                         data_dir=hoshibiyori_data_dir or out_dir.parent / "_hoshi_data", model_runs_fn=runs_now)
         else:
-            results[a] = {"status": "skipped", "reason": "not_implemented", "requests": 0, "runtime_s": 0.0, "data_time": None}
+            results[a] = {"status": "failed", "reason": "no_checkout", "requests": 0, "runtime_s": 0.0, "data_time": None}
     model_runs = runs_now() if not rate_limited_early else meta_mod.model_runs(before, None)
     finished = now_jst()
     all_recs = []
@@ -296,9 +402,11 @@ def main_run(args):
     except ValueError as e:
         print(f"中止(通信していません): {e}", file=sys.stderr)
         return 2
-    run = collect(agents=agents, out_dir=args.out, checkouts={"yamabiyori": args.yamabiyori_checkout},
-                  pythons={"yamabiyori": args.yamabiyori_python or sys.executable}, yama_limit=limit, yamabiyori_ref=ref,
-                  trigger=args.trigger, concierge_commit=args.concierge_commit or None)
+    h_checkout, h_python, h_data = (getattr(args, f"hoshibiyori_{k}", None) for k in ("checkout", "python", "data_dir"))
+    run = collect(agents=agents, out_dir=args.out, checkouts={"yamabiyori": args.yamabiyori_checkout, "hoshibiyori": h_checkout},
+                  pythons={"yamabiyori": args.yamabiyori_python or sys.executable, "hoshibiyori": h_python or sys.executable},
+                  yama_limit=limit, yamabiyori_ref=ref, trigger=args.trigger, concierge_commit=args.concierge_commit or None,
+                  hoshibiyori_data_dir=h_data)
     if run.get("yamabiyori_ref") is not None:
         print(f"yamabiyori: ref={run['yamabiyori_ref']} commit={run['agents'].get('yamabiyori', {}).get('commit')}")
     if run.get("publish_blocked"):
@@ -314,6 +422,9 @@ def main_run(args):
             print(f"  {a} {t['n']}回目: {t['status']}" + (f" ({t['reason']})" if t.get("reason") else "")
                   + f" requests={t['requests']} fetched={t['fetched']}/{t['pool_size']} runtime_s={t['runtime_s']}"
                   + (" キャッシュが効いていない疑い" if t.get("cache_suspect") else ""))
+        for t in r.get("modes") or []:
+            print(f"  {a} {t['mode']}: {t['status']}" + (f" ({t['reason']})" if t.get("reason") else "")
+                  + f" requests={t['requests']} runtime_s={t['runtime_s']} 取得セル={t['total_cells']} 失敗セル={t['failed_cells']}")
     logs = read_json(Path(args.out) / "logs" / "requests.json") or {}
     for name, x in (("metadata", logs.get("metadata") or {}), ("total", logs.get("total") or {})):
         print(f"{name}: by_status={x.get('by_status')} by_error={x.get('by_error') or 'なし'}")

@@ -59,7 +59,21 @@ class Ctx:
         for x in brief["hazard_counts"]:
             self.ids[x["id"]] = ("N", x)
         L = brief["lines"]
+        self.star = None                         # 星の部分の索引(星の無い資料では None)
+        if brief.get("stars"):
+            from .stars_verify import Index
+            self.star = Index(brief, _norm)
+            self.num_re = _num_re(self.R["numbers"]["units"] + self.R["stars"]["units"])
+            for f in brief["stars"]["facts"]:
+                self.ids[f["id"]] = ("S", f)
+            for x in brief["stars"]["counts"]:
+                self.ids[x["id"]] = ("T", x)
+            for f in self.star.hl.values():          # 見どころ(新しい出力だけ)
+                self.ids[f["id"]] = ("M" if f["kind"] == "star_shower" else "H", f)
         self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note"), L.get("refresh")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
+        if self.star:
+            from .stars import all_lines
+            self.lines += all_lines(brief)
         for x in self.lines:
             self.ids[x["id"]] = ("L", x)
         self.target_days = [date.fromisoformat(d["date"]) for d in brief["when"]["days"]]
@@ -123,7 +137,9 @@ class Ctx:
         texts = []
         for mid in marks:
             kind, x = self.ids[mid]
-            if kind == "Y":
+            if kind in ("S", "T", "H", "M"):
+                texts += self.star.texts(mid, kind, x, {m for m in marks if m[0] == "Y"})
+            elif kind == "Y":
                 texts += x["say"]
                 a["mountains"].add(x["mountain_id"])
                 a["hazards"].update((h["label"], h["level"]) for h in x["hazards"])
@@ -142,7 +158,7 @@ class Ctx:
                 texts.append(x["text"])
                 if x is self.b["lines"]["data_time"] and self.b["shelf"].get("stale"):      # 古い予報: 「丸1日以上前」と言ってよい(実際の古さまで)
                     texts += [f"丸{n}日以上前" for n in range(1, int(self.b["shelf"]["age_hours"] // 24) + 1)]
-        if not any(self.ids[m][0] in ("Y", "C", "N") for m in marks):
+        if not any(self.ids[m][0] in ("Y", "C", "N", "S", "T", "H", "M") for m in marks):
             for d in self.target_days:
                 a["dates"].add((d.month, d.day))
             a["wds"] |= self.target_wd
@@ -368,7 +384,7 @@ def cloud_errors(X, sents, facts_of, carry=False):
         if not carry:
             mids, days = set(), (set(), set())
         facts = facts_of(s)
-        tn = _marked_names(X, _cut(_norm(s["clean"]), CL["not_cloud"]))
+        tn = _marked_names(X, _cut(_without_sites(X, _norm(s["clean"])), CL["not_cloud"]))
         tn = re.sub(r"(\x03)[、,](?=\x02)", r"\1・", tn)                 # 「A、B は」の並びを 1 つの節に
         tn = re.sub(r"(雲量?[はがも])[、,]", r"\1", tn)                   # 「雲量は、18.6 %」を 1 つの節に
         whole = set(re.findall(r"\x02(m\d{3})\x03", tn))
@@ -399,6 +415,11 @@ def cloud_errors(X, sents, facts_of, carry=False):
             if _cloud_nums(re.sub(r"\x02m\d{3}\x03", " ", rest), CL) - ok:
                 out.append((s, "cloud_number", f"雲の印の付いた山({clear[0]['name']}・{clear[0]['label']})に、雲量の数字を書いている"))
     return out
+
+
+def _without_sites(X, t):
+    """星の地点の名前を取り除く(「石割山(山中湖村)」の中の山の名前を読まない)。星の無い資料ではそのまま。"""
+    return X.star.mask(t)[0] if X.star else t
 
 
 CLOUD_FIX = {"cloud_number": "雲量の数字を書かず、「雲はほとんど無い予報です」のように言葉で書く(比べるときは、数字を書く山の名前を同じ節に書く)",
@@ -459,8 +480,9 @@ def _check_stale(X, body, errs):
     ref, tail_ok = L.get("refresh"), L["attribution"]
     if ref and ref["text"] in body:
         tail = body.split(ref["text"])[-1]
-        if tail_ok:
-            tail = tail.replace(tail_ok["text"], "")
+        for x in [tail_ok, L.get("star_attribution"), L.get("star_attribution_plain")]:      # 帰属の文(星の質問では、星の帰属の文も)
+            if x:
+                tail = tail.replace(x["text"], "")
         if mre.sub("", tail).strip(" \t　" + NL):
             errs.append(_err("stale_refresh_last", None, "新しくする方法の文のあとに、ほかの文がある(あとに書けるのは帰属の文だけ)", f"[{ref['id']}] の文を最後に置く"))
     elif ref:
@@ -719,6 +741,10 @@ def check(draft, brief):
             errs.append(_err("unknown_mark", s, f"資料にない印 {', '.join(bad)}", "資料にある事実の印だけを付ける"))
             ids = [i for i in ids if i in X.ids]
         t = _norm(clean)
+        if X.star:                               # 星の地点の名前を先に置き換える(山の名前・天気の語と重なるため)
+            from .stars_verify import sentence_errors
+            t, sites = X.star.mask(t)
+            sentence_errors(X, s, t, sites, ids, lambda code, detail, fix, s=s: errs.append(_err(code, s, detail, fix)))
         tm, mentioned = X.mask_names(t)
         tk = X.tokens(tm)
         exempt = bool(exempt_re.search(t))
@@ -800,7 +826,10 @@ def check(draft, brief):
         # おすすめの語と、宣言したおすすめ
         if picks is not None and _has_any(_cut(t, W["recommend_ok"]), W["recommend"]) and not _has_any(t, W["recommend_not"]):
             ys = [i for i in ids if X.ids[i][0] == "Y"]
-            if ys and not set(ys) & set(picks):
+            stars_ = [i for i in ids if X.ids[i][0] == "S"]
+            if stars_ and not set(ys + stars_) & set(picks):
+                errs.append(_err("pick_undeclared", s, f"すすめている星の地点({', '.join(stars_)})が [おすすめ] にない", "[おすすめ] の行にその事実の id を書く"))
+            elif ys and not set(ys) & set(picks):
                 errs.append(_err("pick_undeclared", s, f"すすめている山({', '.join(ys)})が [おすすめ] にない", "[おすすめ] の行にその事実の id を書く"))
         # ビヨリをまたいで点を比べる
         if re.search(r"\d\s*点|点数", t) and _has_any(t, W["other_biyori"]):
@@ -825,6 +854,8 @@ def check(draft, brief):
         picks_ = picks
     for pid in picks_:
         x = X.ids.get(pid)
+        if x and x[0] == "S":                    # 星のおすすめは whole_errors で見る
+            continue
         if not x or x[0] != "Y":
             errs.append(_err("pick_unknown", None, f"[おすすめ] の {pid} が山の事実にない", "山の事実の id を書く"))
             continue
@@ -832,7 +863,7 @@ def check(draft, brief):
         if not f["main_ok"]:
             errs.append(_err("pick_not_allowed", None, f"{f['name']}({f['label']})は主役にできない山", "主役にできる山だけをすすめる(見送りとして書く)"))
             continue
-        if pid not in plan_main:
+        if pid not in plan_main and not (X.star and any(a["fact"] == pid for p in brief["plans"] for a in p["adds"])):
             errs.append(_err("pick_not_in_plans", None, f"{pid} が組み合わせの案にない", "資料の組み合わせにある主役だけをすすめる"))
         for h in L["hazards"]:
             if h["fact"] == pid and h["id"] not in present:
@@ -841,10 +872,16 @@ def check(draft, brief):
         if not f["reliable"] and not (L["lead_time"] and L["lead_time"]["id"] in present):
             errs.append(_err("lead_time_missing", None, f"{f['label']}は信用してよい範囲の外なのに、先の予報である旨の文がない",
                              f"[{(L['lead_time'] or {}).get('id', 'L…')}] の文をそのまま写す"))
+    if X.star:
+        from .stars_verify import whole_errors
+        whole_errors(X, body, sents, present, picks_, mre, lambda s, code, detail, fix: errs.append(_err(code, s, detail, fix)), R["stale"]["assert"])
     final = strip_marks(place_note(body, X, mre, exempt_re), mre)
     plain = final
     for x in X.lines:
         plain = plain.replace(x["text"], " ")
+    if X.star:                                   # 地点の名前(英字・「印」などを含むもの)を、内部の言葉・英語の検査に掛けない
+        for x in brief["stars"]["index"]:
+            plain = plain.replace(x["label"], "　")
     plain_n = exempt_re.sub(" ", _norm(plain))
     for line in plain_n.split(NL):
         for rx in W["internal"]:

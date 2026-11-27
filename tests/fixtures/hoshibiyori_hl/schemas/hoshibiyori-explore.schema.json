@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "hoshibiyori-explore/1",
+  "title": "hoshibiyori 探索結果(explore_hoshibiyori.py --json-out)",
+  "description": "時刻は ISO 8601・オフセットつき。欠損は null。数値は丸めていない。スコアは finals と outlooks で式が違い、絶対値を比べられない(score_kind で区別する)。",
+  "type": "object",
+  "required": ["schema", "generated_at", "version", "commit", "dirty", "target", "astro_grid", "thresholds",
+               "reference_site", "sites", "site_index", "nights", "scanned_nights", "finals", "outlooks", "highlights",
+               "fetch", "notes"],
+  "properties": {
+    "schema": {"const": "hoshibiyori-explore/1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "version": {"type": ["string", "null"]},
+    "commit": {"type": ["string", "null"]},
+    "dirty": {"type": ["boolean", "null"], "description": "追跡しているファイルに commit していない変更があるか(追跡していないファイルは数えない)"},
+    "target": {"enum": ["milkyway", "stars"]},
+    "astro_grid": {"enum": ["ecmwf", "site"]},
+    "thresholds": {
+      "type": "object",
+      "required": ["cloud_obstruction_threshold_pct", "min_clear_window_hours", "lp_alr_threshold", "lp_index_limit",
+                   "moon_phase_negligible_deg", "num_nights_to_scan", "num_candidate_nights", "milkyway_few_results",
+                   "failed_cell_rate_abort"],
+      "properties": {
+        "cloud_obstruction_threshold_pct": {"type": "number"},
+        "min_clear_window_hours": {"type": "number"},
+        "lp_alr_threshold": {"type": ["number", "null"]},
+        "lp_index_limit": {"type": "number"},
+        "moon_phase_negligible_deg": {"type": "number"},
+        "num_nights_to_scan": {"type": "integer"},
+        "num_candidate_nights": {"type": "integer"},
+        "milkyway_few_results": {"type": "integer"},
+        "failed_cell_rate_abort": {"type": "number"}
+      }
+    },
+    "reference_site": {
+      "type": ["object", "null"],
+      "required": ["name", "lat", "lon"],
+      "properties": {
+        "name": {"type": "string"},
+        "lat": {"type": "number"},
+        "lon": {"type": "number"}
+      }
+    },
+    "sites": {
+      "type": "object",
+      "required": ["primary", "reference", "total", "with_horizon"],
+      "properties": {
+        "primary": {"type": "integer"},
+        "reference": {"type": "integer"},
+        "total": {"type": "integer"},
+        "with_horizon": {"type": "integer"}
+      }
+    },
+    "site_index": {"type": "array", "items": {"$ref": "#/$defs/site"},
+                   "description": "探索した全地点の一覧(候補に入らなかった地点も入る)。2026-11-24 追加"},
+    "requested_nights": {"type": "array", "items": {"$ref": "#/$defs/requested_night"},
+                         "description": "--nights で指定した夜(日付順)。指定しないときはこの項目が無い。2026-11-24 追加"},
+    "nights": {"type": "array", "items": {"$ref": "#/$defs/night"}},
+    "scanned_nights": {"type": "array", "items": {"$ref": "#/$defs/scanned_night"},
+                       "description": "走査した全部の夜(日付順)。必須(2026-11-16 追加。これより前の出力には無く、このスキーマの検査を通らない)"},
+    "finals": {"type": "array", "items": {"$ref": "#/$defs/final"}},
+    "outlooks": {"type": "array", "items": {"$ref": "#/$defs/outlook"}},
+    "highlights": {
+      "anyOf": [{"type": "null"}, {"$ref": "#/$defs/highlights"}],
+      "type": ["object", "null"],
+      "description": "夜ごとの見どころ(レポートの「この時期の見どころ」と同じ値、sky_highlights.build)。--json-out のときに計算する。探索・順位・スコアには使わない。2026-11-27 追加"
+    },
+    "fetch": {
+      "type": "object",
+      "required": ["status", "total_cells", "failed_cells", "failed_rate", "cache_hits", "api_calls", "rate_limited",
+                   "retries", "failure_reasons"],
+      "properties": {
+        "status": {"enum": ["ok", "partial"], "description": "abort(終了コード2)のときは JSON を書かない"},
+        "total_cells": {"type": "integer"},
+        "failed_cells": {"type": "integer"},
+        "failed_rate": {"type": "number"},
+        "cache_hits": {"type": "integer"},
+        "api_calls": {"type": "integer"},
+        "rate_limited": {"type": "boolean"},
+        "retries": {"type": "integer"},
+        "failure_reasons": {"type": "object", "additionalProperties": {"type": "integer"},
+                            "description": "失敗の理由の種類ごとの件数(座標は入れない)"}
+      }
+    },
+    "notes": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "datetime_or_null": {"type": ["string", "null"], "format": "date-time"},
+    "night": {
+      "type": "object",
+      "required": ["night_date", "sunset", "sunrise", "dark_start", "dark_end", "window_start", "window_end",
+                   "moon_free_hours", "regime"],
+      "properties": {
+        "night_date": {"type": "string", "format": "date"},
+        "sunset": {"$ref": "#/$defs/datetime_or_null"},
+        "sunrise": {"$ref": "#/$defs/datetime_or_null"},
+        "dark_start": {"$ref": "#/$defs/datetime_or_null"},
+        "dark_end": {"$ref": "#/$defs/datetime_or_null"},
+        "window_start": {"$ref": "#/$defs/datetime_or_null"},
+        "window_end": {"$ref": "#/$defs/datetime_or_null"},
+        "moon_free_hours": {"type": ["number", "null"]},
+        "regime": {"enum": ["MSM", "ECMWF"]}
+      }
+    },
+    "scanned_night": {
+      "type": "object",
+      "required": ["night_date", "sunset", "sunrise", "dark_start", "dark_end", "window_start", "window_end",
+                   "moon_free_hours", "selected", "regime", "not_selected_reason"],
+      "properties": {
+        "night_date": {"type": "string", "format": "date"},
+        "sunset": {"$ref": "#/$defs/datetime_or_null"},
+        "sunrise": {"$ref": "#/$defs/datetime_or_null"},
+        "dark_start": {"$ref": "#/$defs/datetime_or_null"},
+        "dark_end": {"$ref": "#/$defs/datetime_or_null"},
+        "window_start": {"$ref": "#/$defs/datetime_or_null"},
+        "window_end": {"$ref": "#/$defs/datetime_or_null"},
+        "moon_free_hours": {"type": ["number", "null"]},
+        "selected": {"type": "boolean", "description": "候補の夜(nights)に選ばれたか"},
+        "regime": {"enum": ["MSM", "ECMWF", null], "description": "選ばれた夜だけ MSM / ECMWF。選ばれていない夜は null"},
+        "not_selected_reason": {"enum": ["no_sunset_or_sunrise", "no_astronomical_darkness", "no_moon_free_window",
+                                         "not_in_top_n", null],
+                                "description": "選ばれなかった理由のコード。選ばれた夜は null"},
+        "winter_milky_way": {
+          "type": ["object", "null"],
+          "description": "冬の天の川の帯(銀経120〜220°・銀緯0°を10°ごと)。基準地点・平らな地平線の目安で、候補の選び方には使っていない。暗い時間帯が無い夜は null。2026-11-24 追加",
+          "required": ["high_start", "high_end", "peak_time", "peak_point_alt_deg", "peak_point_az_deg", "peak_mean_alt_deg",
+                       "moon_up_intervals"],
+          "properties": {
+            "high_start": {"$ref": "#/$defs/datetime_or_null"},
+            "high_end": {"$ref": "#/$defs/datetime_or_null"},
+            "peak_time": {"$ref": "#/$defs/datetime_or_null"},
+            "peak_point_alt_deg": {"type": ["number", "null"], "description": "帯の平均の高度が最大の時刻の、帯のいちばん高い点の高度"},
+            "peak_point_az_deg": {"type": ["number", "null"]},
+            "peak_mean_alt_deg": {"type": ["number", "null"]},
+            "moon_up_intervals": {"type": "array", "items": {"type": "object", "required": ["start", "end"], "properties": {
+              "start": {"$ref": "#/$defs/datetime_or_null"}, "end": {"$ref": "#/$defs/datetime_or_null"}}}}
+          }
+        }
+      }
+    },
+    "highlights": {
+      "type": "object",
+      "required": ["basis", "computed_at", "showers", "by_night"],
+      "properties": {
+        "basis": {
+          "type": "object",
+          "required": ["text", "reference_site", "flat_horizon", "terrain", "clouds", "min_alt_deg", "max_items_per_slot"],
+          "properties": {
+            "text": {"type": "string", "description": "何を基準にした目安か(文にそのまま使える短い語)"},
+            "reference_site": {"type": "object", "required": ["name", "lat", "lon"],
+                               "properties": {"name": {"type": "string"}, "lat": {"type": "number"}, "lon": {"type": "number"}}},
+            "flat_horizon": {"const": true},
+            "terrain": {"const": false, "description": "地形(稜線)は見ていない"},
+            "clouds": {"const": false, "description": "雲は見ていない"},
+            "min_alt_deg": {"type": "number", "description": "この高度以上を「見える」とする"},
+            "max_items_per_slot": {"type": "integer", "description": "時間帯ごとの件数の上限(レポートと同じ。超えた対象と、見える時間が30分より短い対象は入らない)"}
+          }
+        },
+        "computed_at": {"type": "string", "format": "date-time", "description": "流星群の「これから30日以内」の起点"},
+        "showers": {"type": "array", "items": {"$ref": "#/$defs/highlight_shower"},
+                    "description": "これから30日以内に極大がある流星群(夜によらないので1回だけ)"},
+        "by_night": {"type": "object", "additionalProperties": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/highlight_night"}],
+                                                                "type": ["object", "null"]},
+                     "description": "夜の始まりの日付(YYYY-MM-DD) → その夜の見どころ。scanned_nights[]・requested_nights[] の night_date で引く。暗い時間帯が無い夜は null。走査した夜の外の夜(requested_nights の none_reason が out_of_scanned_range)はキーが無い"}
+      }
+    },
+    "highlight_night": {
+      "type": "object",
+      "required": ["night_date", "slots", "not_visible"],
+      "properties": {
+        "night_date": {"type": "string", "format": "date"},
+        "slots": {"type": "array", "items": {"$ref": "#/$defs/highlight_slot"}},
+        "not_visible": {"type": "array", "items": {"$ref": "#/$defs/highlight_hidden"},
+                        "description": "その夜は一度も高度 min_alt_deg 以上に出ない対象(組は全部が見えないときだけ組の名前で1つ)"}
+      }
+    },
+    "highlight_slot": {
+      "type": "object",
+      "required": ["key", "label", "start", "end", "moonlit", "moon_up_intervals", "items"],
+      "properties": {
+        "key": {"enum": ["evening", "midnight", "dawn"]},
+        "label": {"enum": ["宵", "夜半", "明け方"]},
+        "start": {"$ref": "#/$defs/datetime_or_null"},
+        "end": {"$ref": "#/$defs/datetime_or_null"},
+        "moonlit": {"type": "boolean", "description": "この時間帯に、新月に近くない月が地平線の上にある時刻がある"},
+        "moon_up_intervals": {"type": "array", "items": {"type": "object", "required": ["start", "end"], "properties": {
+          "start": {"$ref": "#/$defs/datetime_or_null"}, "end": {"$ref": "#/$defs/datetime_or_null"}}}},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/highlight_item"}}
+      }
+    },
+    "highlight_item": {
+      "type": "object",
+      "required": ["type", "name", "in_season", "has_first_magnitude", "members"],
+      "properties": {
+        "type": {"enum": ["planets", "target"]},
+        "name": {"type": "string", "description": "planets は「惑星」、target は組(星座・星の並び)または対象の名前"},
+        "in_season": {"type": ["boolean", "null"], "description": "その時間帯の中で南中する(惑星は null)"},
+        "has_first_magnitude": {"type": "boolean"},
+        "members": {"type": "array", "items": {"$ref": "#/$defs/highlight_member"}}
+      }
+    },
+    "highlight_member": {
+      "type": "object",
+      "required": ["id", "name", "kind", "faint_in_moonlight", "coordinates_unverified", "start", "end", "peak_time",
+                   "peak_az", "peak_alt"],
+      "properties": {
+        "id": {"type": "string", "description": "targets.json の id(惑星は venus / mars / jupiter / saturn)"},
+        "name": {"type": "string"},
+        "kind": {"type": ["string", "null"], "description": "惑星 / 星 / 星団 / 星雲 / 銀河 / 星の並び / 天の川 など。targets.json に種類を書いていない従来からの対象は null"},
+        "faint_in_moonlight": {"type": "boolean"},
+        "coordinates_unverified": {"type": "boolean", "description": "true は座標を星表と照らしていない対象(targets.json の source に「未照合」と書いた、2026-11-24 に足した19件)。false は惑星(de421)と従来からの対象(照合の記録は無い。照合済みという意味ではない)"},
+        "start": {"$ref": "#/$defs/datetime_or_null", "description": "その時間帯で高度 min_alt_deg 以上の最初の時刻"},
+        "end": {"$ref": "#/$defs/datetime_or_null"},
+        "peak_time": {"$ref": "#/$defs/datetime_or_null", "description": "その時間帯でいちばん高い時刻"},
+        "peak_az": {"type": "number"},
+        "peak_alt": {"type": "number"}
+      }
+    },
+    "highlight_hidden": {
+      "type": "object",
+      "required": ["name", "next_month", "ids", "kinds", "coordinates_unverified"],
+      "properties": {
+        "name": {"type": "string"},
+        "next_month": {"type": ["integer", "null"], "description": "次に見える月(各月15日の暗い時間帯で調べた目安。12か月で見つからなければ null)"},
+        "ids": {"type": "array", "items": {"type": "string"}},
+        "kinds": {"type": "array", "items": {"type": ["string", "null"]}},
+        "coordinates_unverified": {"type": "boolean"}
+      }
+    },
+    "highlight_shower": {
+      "type": "object",
+      "required": ["id", "name", "kind", "peak_time", "zhr", "zhr_note", "caveat", "source", "night_date",
+                   "radiant_min_alt_deg", "radiant_start", "radiant_end", "moon_up_intervals", "moon_illuminated_fraction"],
+      "properties": {
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "kind": {"const": "流星群"},
+        "peak_time": {"$ref": "#/$defs/datetime_or_null", "description": "極大の時刻(太陽の黄経から求めた目安。二分法の刻みのため、実行するたびに30秒以内で動く。レポートは30分単位に丸めて表示)"},
+        "zhr": {"type": ["number", "null"]},
+        "zhr_note": {"type": "string", "description": "出現数(zhr)は例年の目安であること"},
+        "caveat": {"type": "string", "description": "出現数に必ず添える注意(理想の条件での目安・突発的な増減は予測できない)"},
+        "source": {"type": "string"},
+        "night_date": {"type": ["string", "null"], "format": "date", "description": "極大の夜(放射点が高く出る時間帯が極大の時刻にいちばん近い夜)"},
+        "radiant_min_alt_deg": {"type": "number"},
+        "radiant_start": {"$ref": "#/$defs/datetime_or_null", "description": "極大の夜に放射点が radiant_min_alt_deg 以上の最初の時刻(出なければ null)"},
+        "radiant_end": {"$ref": "#/$defs/datetime_or_null"},
+        "moon_up_intervals": {"type": "array"},
+        "moon_illuminated_fraction": {"type": ["number", "null"]}
+      }
+    },
+    "site": {
+      "type": "object",
+      "required": ["site_id", "name", "label", "municipality", "lat", "lon", "is_primary", "group", "requires_lift_access",
+                   "origin"],
+      "properties": {
+        "site_id": {"type": ["string", "null"]},
+        "name": {"type": "string", "description": "同じ名前の地点がある。見分けるには site_id か label を使う"},
+        "label": {"type": "string", "description": "名前(市町村)。それでも重なる地点は ID を添える"},
+        "municipality": {"type": "string"},
+        "lat": {"type": "number"},
+        "lon": {"type": "number"},
+        "is_primary": {"type": "boolean"},
+        "group": {"enum": ["primary", "reference"]},
+        "requires_lift_access": {"type": "boolean"},
+        "origin": {"enum": ["curated", "curated+test_site", "curated+viewpoint", "curated_external", "viewpoint", "test_site"],
+                   "description": "地点の出どころ(候補の origin と同じ値)。curated・curated+test_site・curated+viewpoint・curated_external が主軸、viewpoint・test_site が参考。viewpoint は OpenStreetMap の展望データ(ODbL)由来、curated+viewpoint は OSM の地点と統合した主軸の地点(座標は curated 側)。2026-11-27 追加"}
+      }
+    },
+    "requested_night": {
+      "type": "object",
+      "required": ["night_date", "scanned", "sunset", "sunrise", "dark_start", "dark_end", "window_start", "window_end",
+                   "moon_free_hours", "selected", "regime", "not_selected_reason", "window_kind", "none_reason",
+                   "forecast_regime", "moon", "counts", "sites"],
+      "properties": {
+        "night_date": {"type": "string", "format": "date"},
+        "scanned": {"type": "boolean", "description": "走査した14夜に入っていたか"},
+        "sunset": {"$ref": "#/$defs/datetime_or_null"},
+        "sunrise": {"$ref": "#/$defs/datetime_or_null"},
+        "dark_start": {"$ref": "#/$defs/datetime_or_null"},
+        "dark_end": {"$ref": "#/$defs/datetime_or_null"},
+        "window_start": {"$ref": "#/$defs/datetime_or_null"},
+        "window_end": {"$ref": "#/$defs/datetime_or_null"},
+        "moon_free_hours": {"type": ["number", "null"]},
+        "selected": {"type": "boolean", "description": "候補の夜(上位の夜)に入っていたか"},
+        "regime": {"enum": ["MSM", "ECMWF", null], "description": "scanned_nights と同じ(候補の夜だけ)"},
+        "not_selected_reason": {"enum": ["no_sunset_or_sunrise", "no_astronomical_darkness", "no_moon_free_window",
+                                         "not_in_top_n", null]},
+        "window_kind": {"enum": ["moon_free", "dark", "none"],
+                        "description": "moon_free=月の無い暗い時間帯 / dark=月の無い時間帯が無い(または最小の晴れ間より短い)ので暗い時間帯ぜんぶ / none=調べていない"},
+        "none_reason": {"enum": ["out_of_scanned_range", "out_of_forecast_range", "reference_forecast_not_fetched",
+                                 "no_sunset_or_sunrise", "no_astronomical_darkness", null]},
+        "forecast_regime": {"enum": ["MSM", "ECMWF", null], "description": "その夜の予報の区分(候補の夜でなくても入る)"},
+        "moon": {
+          "type": ["object", "null"],
+          "required": ["up_hours", "up_intervals", "illuminated_fraction", "phase_angle_deg"],
+          "properties": {
+            "up_hours": {"type": "number", "description": "基準地点の暗い時間帯のうち月が出ている時間"},
+            "up_intervals": {"type": "array", "items": {"type": "object", "required": ["start", "end"], "properties": {
+              "start": {"$ref": "#/$defs/datetime_or_null"}, "end": {"$ref": "#/$defs/datetime_or_null"}}}},
+            "illuminated_fraction": {"type": "number", "description": "輝面比(0〜1)。暗い時間帯の真ん中の時刻"},
+            "phase_angle_deg": {"type": "number"}
+          }
+        },
+        "counts": {
+          "type": ["object", "null"],
+          "required": ["all", "primary", "reference"],
+          "properties": {
+            "all": {"$ref": "#/$defs/requested_counts"},
+            "primary": {"$ref": "#/$defs/requested_counts"},
+            "reference": {"$ref": "#/$defs/requested_counts"}
+          }
+        },
+        "sites": {"type": "array", "items": {"$ref": "#/$defs/requested_site"},
+                  "description": "条件を通った地点は全部、それ以外は主軸の地点だけ(残りは counts の件数)"}
+      }
+    },
+    "requested_counts": {
+      "type": "object",
+      "required": ["total", "passed", "failed", "not_examined", "cloud_examined", "clear", "failed_reasons",
+                   "not_examined_reasons"],
+      "properties": {
+        "total": {"type": "integer"},
+        "passed": {"type": "integer"},
+        "failed": {"type": "integer"},
+        "not_examined": {"type": "integer"},
+        "cloud_examined": {"type": "integer", "description": "雲量を調べた地点"},
+        "clear": {"type": "integer", "description": "1時間以上の晴れ間がある地点(光害・方角で落ちた地点も数える)"},
+        "failed_reasons": {"type": "object", "additionalProperties": {"type": "integer"}, "description": "理由ごとの件数(重なりあり)"},
+        "not_examined_reasons": {"type": "object", "additionalProperties": {"type": "integer"}}
+      }
+    },
+    "requested_site": {
+      "type": "object",
+      "required": ["site_id", "site_name", "municipality", "is_primary", "group", "status", "reasons",
+                   "not_examined_reason", "window_start", "window_end", "clear_start", "clear_end", "clear_hours",
+                   "mean_obstruction", "mean_obstruction_window", "alr", "alr_rank_pct", "score", "night_rank"],
+      "properties": {
+        "site_id": {"type": ["string", "null"]},
+        "site_name": {"type": "string"},
+        "municipality": {"type": "string"},
+        "is_primary": {"type": "boolean"},
+        "group": {"enum": ["primary", "reference"]},
+        "status": {"enum": ["passed", "failed", "not_examined"],
+                   "description": "passed=雲・光害(天の川モードは方角も)の条件を通った / failed=通らなかった(reasons) / not_examined=調べていない。window_kind が dark の夜の passed は、月を条件にしていない(2026-11-27)"},
+        "reasons": {"type": "array", "items": {"enum": ["cloud_filter", "light_pollution_filter", "direction_filter"]}},
+        "not_examined_reason": {"enum": ["no_window_at_site", "cell_not_fetched", "fetch_failed", "no_forecast", null],
+                                "description": "雲量を調べていない理由(光害・方角で落ちた地点にも入る)"},
+        "window_start": {"$ref": "#/$defs/datetime_or_null"},
+        "window_end": {"$ref": "#/$defs/datetime_or_null"},
+        "clear_start": {"$ref": "#/$defs/datetime_or_null"},
+        "clear_end": {"$ref": "#/$defs/datetime_or_null"},
+        "clear_hours": {"type": ["number", "null"], "description": "最長の晴れ間の時間。1時間以上の晴れ間が無ければ 0、雲量を調べていなければ null"},
+        "mean_obstruction": {"type": ["number", "null"], "description": "晴れ間の平均の視界遮蔽雲量(finals と同じ意味)"},
+        "mean_obstruction_window": {"type": ["number", "null"], "description": "調べた時間帯ぜんぶの平均の視界遮蔽雲量"},
+        "alr": {"type": ["number", "null"]},
+        "alr_rank_pct": {"type": ["number", "null"]},
+        "score": {"type": "null", "description": "指定した夜ではスコアを出さない"},
+        "night_rank": {"type": ["integer", "null"], "minimum": 1,
+                       "description": "その夜の中の順位(group ごとに1から)。status が passed の地点だけ、ほかは null。星空・星座モードはどの夜も outlooks と同じ「ALR が小さい→月の影響が小さい時間が長い順」(予報が MSM の夜の finals[晴れ時間が先]とは並びが違うことがある)。天の川モードはスコア順で、予報が MSM の夜(候補の夜は regime、それ以外は forecast_regime)は finals、ECMWF の夜は outlooks のスコアの式と並び。天の川モードでスコアが求まらない地点はグループの最後。2026-11-27 追加"}
+      }
+    },
+    "candidate_common": {
+      "type": "object",
+      "required": ["night_date", "site_name", "municipality", "origin", "site_lat", "site_lon", "requires_lift_access",
+                   "target_az", "target_alt", "horizon_alt", "terrain_available", "lp_index", "moon_free_hours",
+                   "score", "alr", "alr_rank_pct", "site_id", "sky_openness", "score_kind", "is_primary", "group", "rank"],
+      "properties": {
+        "site_id": {"type": ["string", "null"], "description": "地点の変わらない ID(site_index の site_id と同じ)"},
+        "night_date": {"type": "string", "format": "date"},
+        "site_name": {"type": "string"},
+        "municipality": {"type": "string"},
+        "origin": {"type": "string"},
+        "site_lat": {"type": "number"},
+        "site_lon": {"type": "number"},
+        "requires_lift_access": {"type": "boolean"},
+        "target_az": {"type": ["number", "null"], "description": "stars モードでは null(銀河中心を評価しない)"},
+        "target_alt": {"type": ["number", "null"]},
+        "horizon_alt": {"type": ["number", "null"]},
+        "terrain_available": {"type": "boolean"},
+        "lp_index": {"type": ["number", "null"], "description": "光害の内部値(表示用ではない)"},
+        "moon_free_hours": {"type": ["number", "null"]},
+        "score": {"type": ["number", "null"], "description": "stars モードでは null(このモードは score を順位に使わない。順位は rank)。milkyway モードでは数値"},
+        "alr": {"type": ["number", "null"], "description": "光害 ALR(日本で未較正の相対指数)"},
+        "alr_rank_pct": {"type": ["number", "null"]},
+        "sky_openness": {
+          "type": ["object", "null"],
+          "description": "空の開け具合(地形の地平線のデータがある地点だけ)。順位・足切りには使っていない。2026-11-24 追加",
+          "required": ["ridge_mean_deg", "ridge_max_deg", "open_fraction", "open_alt_deg"],
+          "properties": {
+            "ridge_mean_deg": {"type": "number", "description": "全方位の稜線の高度の平均"},
+            "ridge_max_deg": {"type": "number", "description": "全方位の稜線の高度の最大"},
+            "open_fraction": {"type": "number", "description": "稜線が open_alt_deg 以下の方位の割合(0〜1)"},
+            "open_alt_deg": {"type": "number", "description": "20°(仮の値)"}
+          }
+        },
+        "is_primary": {"type": "boolean"},
+        "group": {"enum": ["primary", "reference"]},
+        "rank": {"type": "integer", "minimum": 1, "description": "group の中での順位(画面の「[N位]」と同じ)"}
+      }
+    },
+    "final": {
+      "allOf": [{"$ref": "#/$defs/candidate_common"}],
+      "type": "object",
+      "required": ["window_start", "window_end", "best_time", "mean_obstruction", "clear_hours"],
+      "properties": {
+        "score_kind": {"const": "final"},
+        "window_start": {"$ref": "#/$defs/datetime_or_null"},
+        "window_end": {"$ref": "#/$defs/datetime_or_null"},
+        "best_time": {"$ref": "#/$defs/datetime_or_null"},
+        "mean_obstruction": {"type": ["number", "null"]},
+        "clear_hours": {"type": ["number", "null"]}
+      }
+    },
+    "outlook": {
+      "allOf": [{"$ref": "#/$defs/candidate_common"}],
+      "type": "object",
+      "required": ["visible_start", "visible_end", "clear_sky_pct"],
+      "properties": {
+        "score_kind": {"const": "outlook"},
+        "visible_start": {"$ref": "#/$defs/datetime_or_null"},
+        "visible_end": {"$ref": "#/$defs/datetime_or_null"},
+        "clear_sky_pct": {"type": ["number", "null"], "description": "参考値。スコアには使っていない"}
+      }
+    }
+  }
+}

@@ -139,9 +139,9 @@ class Failures(unittest.TestCase):
         self.assertEqual(r["agents"]["yamabiyori"]["requests"], 1)                  # 1回だけ(再試行しない)
         self.assertEqual(read_json(out / "logs/requests.json")["total"]["by_status"], {"429": 1})
 
-    def test_hoshibiyori_is_not_run_yet(self):
+    def test_hoshibiyori_without_a_checkout_fails_alone(self):      # 段階 3 で星の取得を実際に動く形にした(前は skipped)。取り出しが無ければ failed
         r, _ = run(self, agents=("yamabiyori", "hoshibiyori"))
-        self.assertEqual(r["agents"]["hoshibiyori"]["status"], "skipped")
+        self.assertEqual((r["agents"]["hoshibiyori"]["status"], r["agents"]["hoshibiyori"]["reason"]), ("failed", "no_checkout"))
         self.assertEqual(r["agents"]["yamabiyori"]["status"], "ok")                 # 片方が動かなくても、もう片方は進む
 
 

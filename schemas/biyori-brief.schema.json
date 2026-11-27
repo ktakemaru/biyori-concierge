@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "biyori-brief/1",
   "title": "biyori-brief/1(答える側の資料)",
-  "description": "concierge brief が質問ごとに作る資料。答えに書いてよい事実(id つき)・決まった文・組み合わせ・知識カード・足りないもの・書くときの決まり。互換性規則: 項目の追加のみ。削除・意味の変更は版を上げる(例外: 2026-11-24 の rank・rank_ties は、利用者の決定で版を /1 のままにした。前の形の資料は verify が「作り直す」と言って止まる)。段階 2 は山だけ(段階 3・4 で星・生き物を足す)。",
+  "description": "concierge brief が質問ごとに作る資料。答えに書いてよい事実(id つき)・決まった文・組み合わせ・知識カード・足りないもの・書くときの決まり。互換性規則: 項目の追加のみ。削除・意味の変更は版を上げる(例外: 2026-11-24 の rank・rank_ties は、利用者の決定で版を /1 のままにした。前の形の資料は verify が「作り直す」と言って止まる)。星の項目(stars・lines.star_*・plans[].frames)は、星の興味の語を渡した質問で星の棚が使えるときだけ入る(段階 3)。生き物は段階 4。",
   "type": "object",
   "required": ["schema", "id", "question", "now", "when", "origin", "filters", "shelf", "facts", "candidates", "lines", "plans", "cards", "gaps", "rules", "limits"],
   "properties": {
@@ -114,6 +114,12 @@
         "hazard_note": {"$ref": "#/$defs/line_or_null", "description": "危険信号の注記(危険信号つきの山が 1 つでもあれば入る)。2026-11-23 に追加"},
         "refresh": {"$ref": "#/$defs/line_or_null", "description": "予報が古いとき(shelf.stale)だけ入る、新しくする方法の文。2026-11-25 に追加"},
         "hazards": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["fact"]}]}},
+        "star_data_time": {"$ref": "#/$defs/line_or_null", "description": "星の予報の時点。星の質問のときだけ。2026-11-25 に追加"},
+        "star_mode": {"$ref": "#/$defs/line_or_null", "description": "どちらのモードの結果か。星の質問のときだけ。2026-11-25 に追加"},
+        "star_regime": {"$ref": "#/$defs/line_or_null", "description": "ECMWF の夜があるときだけ。星の質問のときだけ。2026-11-25 に追加"},
+        "star_attribution": {"$ref": "#/$defs/line_or_null", "description": "星の帰属。星の質問のときだけ。2026-11-25 に追加"},
+        "star_lifts": {"type": "array", "description": "リフト要の地点の文(地点の事実ごと)。星の質問のときだけ。2026-11-25 に追加", "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["fact"]}]}},
+        "star_skips": {"type": "array", "description": "星の見送りの文(夜ごと。月・条件を通った地点なし)。星の質問のときだけ。2026-11-25 に追加", "items": {"allOf": [{"$ref": "#/$defs/line"}, {"required": ["fact"]}]}},
         "skips": {
           "type": "array",
           "description": "見送りのまとめの文(見送りの枠の山がある日ごとに 1 つ)。date = その日、facts = まとめた山の事実の id(枠の並び)。2026-11-24 に追加",
@@ -130,10 +136,12 @@
         "properties": {
           "id": {"type": "string", "pattern": "^P\\d+$"},
           "main": {"type": "object", "required": ["kind", "fact"], "properties": {"kind": {"enum": ["mountain", "stars", "nature"]}, "fact": {"type": "string"}}},
-          "adds": {"type": "array", "description": "添えるもの(段階 3・4 で足す。段階 2 は空)"}
+          "adds": {"type": "array", "description": "添えるもの。山が起点なら同じ日の夜の星の地点、星が起点なら同じ日の山(直線 combo.near_km 以内の 1 つ。others = ほかの近い候補の数)。山だけの質問では空"},
+          "frames": {"type": "array", "description": "一日の流れの枠(時刻の順: 朝〜日中の山 → 日中の生き物 → 夜の星)。星の質問のときだけ。生き物の枠は段階 4 まで空。2026-11-25 に追加", "items": {"type": "object", "required": ["slot", "label", "kind", "fact"], "properties": {"slot": {"enum": ["day_mountain", "day_nature", "night_stars"]}, "kind": {"enum": ["mountain", "nature", "stars"]}, "fact": {"type": ["string", "null"]}}}}
         }
       }
     },
+    "stars": {"$ref": "#/$defs/stars", "description": "星の部分(星の興味の語を渡した質問で、星の棚が使えるときだけ)。2026-11-25 に追加"},
     "cards": {
       "type": "array",
       "items": {
@@ -174,6 +182,9 @@
       "required": ["total", "warning", "danger"],
       "properties": {"total": {"type": "integer", "minimum": 0}, "warning": {"type": "integer", "minimum": 0}, "danger": {"type": "integer", "minimum": 0}}
     },
+    "stars": {"type": "object", "required": ["mode", "data_time", "age_hours", "stale", "facts", "counts", "index"], "properties": {"mode": {"enum": ["stars", "milkyway"]}, "stale": {"type": "boolean"}, "facts": {"type": "array", "items": {"$ref": "#/$defs/star_night"}}, "counts": {"type": "array", "items": {"$ref": "#/$defs/star_count"}}, "index": {"type": "array", "description": "全部の地点の名前(候補に入っていない地点の名前を見分ける)", "items": {"type": "object", "required": ["id", "label", "name"]}}, "highlights": {"type": "object", "required": ["basis", "facts", "showers", "objects", "unverified", "unverified_count", "null_nights"], "description": "夜に見られる星や惑星(見どころ)。ホシビヨリの出力に highlights があるときだけ入る。2026-11-28 に追加", "properties": {"facts": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "date", "label", "name", "slots", "say"], "properties": {"id": {"type": "string", "pattern": "^H\\d+$"}, "kind": {"enum": ["star_highlight", "star_hidden"]}}}}, "showers": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "date", "label", "name", "say"], "properties": {"id": {"type": "string", "pattern": "^M\\d+$"}, "kind": {"const": "star_shower"}}}}, "objects": {"type": "array", "items": {"type": "string"}, "description": "全部の夜の見どころの名前(事実に無い名前を照合で止める)"}, "unverified": {"type": "array", "items": {"type": "string"}, "description": "座標を照らしていない対象の名前(事実にしない)"}}}}},
+    "star_night": {"type": "object", "required": ["id", "kind", "site_id", "name", "group", "date", "weekday", "label", "status", "reasons", "regime", "rank", "requires_lift_access", "distance_km", "distance_say", "main_ok", "main_ng", "selected_by", "values", "near", "say"], "properties": {"id": {"type": "string", "pattern": "^S\\d{3}$"}, "kind": {"const": "star_night"}, "site_id": {"type": "string", "minLength": 1}, "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}, "label": {"type": "string", "pattern": "の夜$"}, "status": {"enum": ["passed", "failed", "not_examined"]}, "regime": {"enum": ["MSM", "ECMWF"]}, "rank": {"type": ["integer", "null"], "description": "ホシビヨリの順位(候補の夜だけ)。並びにだけ使い、答えに書かない"}, "night_rank": {"type": ["integer", "null"], "minimum": 1, "description": "その夜の中の順位(ホシビヨリの requested_nights[].sites[].night_rank)。出力にあるときだけ入る。rank が無い地点の並びにだけ使い、答えに書かない。2026-11-28 に追加"}, "origin": {"type": "string", "description": "地点の出どころ(ホシビヨリの site_index[].origin)。出力にあるときだけ入る。ODbL の表示を決めるのに使う。2026-11-28 に追加"}, "main_ok": {"type": "boolean"}, "main_ng": {"type": "array", "items": {"enum": ["moon", "not_passed", "not_examined"]}}, "selected_by": {"enum": ["top", "top_with_mountain", "near"], "description": "top=夜ごとの枠 / top_with_mountain=枠の外で、近くに主役にできる山がある地点 / near=主役にできる山の近く"}, "near": {"type": "array", "description": "案で組になる山からの直線距離", "items": {"type": "object", "required": ["fact", "mountain_id", "distance_km", "say"]}}, "values": {"type": "array", "items": {"type": "object", "required": ["key", "name", "value", "unit", "say"], "properties": {"key": {"enum": ["clear_window", "moon_free_window", "clear_hours"]}}}}, "say": {"type": "array", "items": {"type": "string"}}}},
+    "star_count": {"type": "object", "required": ["id", "kind", "date", "label", "state", "regime", "in_range", "passed", "total", "line", "say"], "properties": {"id": {"type": "string", "pattern": "^T\\d+$"}, "kind": {"const": "star_count"}, "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}, "state": {"enum": ["passed", "moon", "none_passed", "not_examined"], "description": "passed=250km 以内に条件を通った地点がある / moon=月の無い時間帯で調べていない / none_passed=調べたが無い / not_examined=調べていない"}, "in_range": {"type": ["integer", "null"], "minimum": 0, "description": "出発地から直線 250km 以内で条件を通った地点の数"}, "passed": {"type": ["integer", "null"]}, "total": {"type": ["integer", "null"], "description": "調べた地点の数(全国)"}, "line": {"type": ["string", "null"]}, "say": {"type": "array", "items": {"type": "string"}}}},
     "line_or_null": {"anyOf": [{"$ref": "#/$defs/line"}, {"type": "null"}]},
     "mountain_day": {
       "type": "object",
@@ -196,7 +207,7 @@
         "hazard_level": {"enum": ["注意", "警戒", "危険", null]},
         "main_ok": {"type": "boolean"},
         "main_ng": {"type": "array", "items": {"enum": ["below_threshold", "hazard_hard", "score_only"]}},
-        "selected_by": {"enum": ["top", "skip", "named", "main_fill"], "description": "top=主役の枠(2026-11-23 から主役にできる山だけ) / skip=見送りの枠(2026-11-23 に追加) / named=名指し / main_fill=2026-11-23 にやめた(それより前の資料だけにある)"},
+        "selected_by": {"enum": ["top", "skip", "named", "main_fill", "star"], "description": "top=主役の枠(2026-11-23 から主役にできる山だけ) / skip=見送りの枠(2026-11-23 に追加) / named=名指し / main_fill=2026-11-23 にやめた(それより前の資料だけにある) / star=星の地点の近くの、主役にできる山(2026-11-25 に追加)"},
         "cloud_clear": {"type": "boolean", "description": "雲の印。生の雲量(予報そのまま)がちょうど 0 % の山。真なら、答えに雲量の数字を書かず言葉で書く(書いてよい表記に数字を入れない)。生の値そのものは入れない。2026-11-25 に追加"},
         "values": {
           "type": "array",

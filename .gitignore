@@ -8,4 +8,5 @@ __pycache__/
 /_venvs/
 /_artifact/
 /_data/
+/_hoshi_data/
 /.venv/

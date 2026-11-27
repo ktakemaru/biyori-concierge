@@ -118,6 +118,8 @@ def build_manifest(run, previous, outcome):
         if how == "new":
             e = {"status": r["status"], **{k: r.get(k) for k in ENTRY_KEYS}, **this_run, "kept_from": None,
                  "files": sorted(AGENT_FILES[agent])}
+            if r.get("modes"):                          # ホシビヨリのモードごとの記録(棚にあるファイルのもの)
+                e["modes"] = r["modes"]
             if r["status"] == "incomplete":
                 e["reason"] = r.get("reason") or "partial_fetch"
         elif how == "kept":
@@ -126,6 +128,8 @@ def build_manifest(run, previous, outcome):
             e = {"status": "kept_previous", **{k: p.get(k) for k in ENTRY_KEYS}, **this_run, "kept_from": kept_from,
                  "reason": (r or {}).get("reason") or ((r or {}).get("status") if r else "not_requested"),
                  "files": sorted(AGENT_FILES[agent])}
+            if p.get("modes"):
+                e["modes"] = p["modes"]
         else:
             e = {"status": "failed", "commit": (r or {}).get("commit"), "version": (r or {}).get("version"), "data_time": None,
                  **this_run, "kept_from": None, "reason": (r or {}).get("reason") or "failed", "files": []}
@@ -168,7 +172,8 @@ def rate_limit_text(run):
             parts.append((f"{a} {n} 回({kind}{r.get('reason')}。取り直しの回は始めず、棚は前回のまま)" if n
                           else f"{a}({kind}{r.get('reason')}。棚は前回のまま)") + after)
         elif n:
-            parts.append((f"{a} {n} 回({kind}待って取り直し、全座そろった)" if st == "ok" else f"{a} {n} 回({kind}{st})") + after)
+            done = "全座そろった" if a == "yamabiyori" else "最後まで取れた"
+            parts.append((f"{a} {n} 回({kind}待って取り直し、{done})" if st == "ok" else f"{a} {n} 回({kind}{st})") + after)
     return "、".join(parts) if parts else "なし"
 
 
@@ -260,6 +265,13 @@ def render_summary(artifact):
                 lines.append(f"| {t['n']} | {t['status']} | {t['requests']} | {got} | {t['runtime_s']} | {note} |")
             if r.get("retry_stop"):
                 lines.append(f"\n- 取り直しをやめた理由: {r['retry_stop']}")
+    for a, r in (run.get("agents") or {}).items():
+        if r.get("modes"):
+            lines += ["", f"{a} のモード(通信は計測フックの数。2 つ目のモードは、1 つ目の保存を使うので通信が増えないはず)", "",
+                      "| モード | 状態 | 通信 | 取得セル | 失敗セル | 所要(秒) | 備考 |", "|---|---|---|---|---|---|---|"]
+            for t in r["modes"]:
+                note = " ".join(x for x in (t.get("reason") or "", t.get("detail") or "") if x)
+                lines.append(f"| {t['mode']} | {t['status']} | {t['requests']} | {t['total_cells']} | {t['failed_cells']} | {t['runtime_s']} | {note} |")
     lines += ["", "| モデル | 初期時刻 | 公開 | 前後で同じ |", "|---|---|---|---|"]
     for m, r in (run.get("model_runs") or {}).items():
         lines.append(f"| {m} | {r.get('init') or 'なし'} | {r.get('available') or 'なし'} | {r.get('same_before_after')} |")

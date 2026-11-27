@@ -1,0 +1,37 @@
+{
+ "schema": "biyori-request-log/1",
+ "started_at": "2026-11-27T09:06:17+09:00",
+ "finished_at": "2026-11-27T09:06:17+09:00",
+ "estimated_calls_note": "estimated_calls は推定(Open-Meteo の公式の換算式は未確認。config.yaml の estimated_calls)",
+ "total": {
+  "requests": 0,
+  "by_host": {},
+  "by_status": {},
+  "by_error": {},
+  "http_429_kinds": {},
+  "estimated_calls": 0
+ },
+ "agents": {
+  "hoshibiyori": {
+   "requests": 0,
+   "by_host": {},
+   "by_status": {},
+   "by_error": {},
+   "estimated_calls": 0,
+   "aborted": null,
+   "blocked_host": null,
+   "http_429": 0,
+   "http_429_tolerated": 0,
+   "http_429_kinds": {}
+  }
+ },
+ "metadata": {
+  "requests": 0,
+  "by_host": {},
+  "by_status": {},
+  "by_error": {},
+  "http_429_kinds": {},
+  "estimated_calls": 0,
+  "aborted": null
+ }
+}
