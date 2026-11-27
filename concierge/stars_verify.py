@@ -156,6 +156,15 @@ def sentence_errors(X, s, t, sites, ids, mk):
             mk("highlight_not_visible", f"見どころにある「{seen[0]['name']}」を、見えないと書いている", "「見えない」と書けるのは「今の時期は見えない」の事実だけ")
         if hidden and not says_nv:
             mk("highlight_hidden", f"「{hidden[0]['name']}」は今の時期は見えない対象", "「今の時期は見えない」と書く")
+        # 時間帯(宵・夜半・明け方): 書いた時間帯は、印の対象のどれかの時間帯で、印の対象はどれも、書いた時間帯のどれかに入っている
+        slots = [ja for _, ja in ST.SLOTS if ja in to]
+        if slots and seen:
+            have = {sl["label"] for x in seen for sl in x["slots"]}
+            bad = [ja for ja in slots if ja not in have]
+            off = [x["name"] for x in seen if not {sl["label"] for sl in x["slots"]} & set(slots)]
+            if bad or off:
+                mk("highlight_slot", f"時間帯「{(bad or slots)[0]}」が、印の見どころの事実の時間帯と合わない" + (f"(「{off[0]}」)" if off else ""),
+                   "事実の時間帯(宵・夜半・明け方)に入っている対象だけを、その時間帯に書く")
     elif I.objects and re.search(R["not_visible_re"], to) and not exempt and (_has(to, R["topic"]) or re.search(R["object_re"], to)):
         mk("highlight_not_visible", "見どころの事実の印が無い文で、見えないと書いている", "「見えない」と書けるのは「今の時期は見えない」の事実 [H…] だけ")
 

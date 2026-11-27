@@ -170,11 +170,12 @@ Stop フックも同じ判定で止める(`concierge/stop_hook.py` の `named`)�
 | `star_object` | 星・星座・惑星・流星群などの名前。天の川モードでないのに「天の川」。**見どころの事実がある資料では、同じ文の印の見どころの事実 `[H…]`・`[M…]` にある名前だけ通す**(名前は、見どころの名前の一覧 `stars.highlights.objects` と語の一覧 `object_re` で見つける。座標を照らしていない対象・組の名前・事実に無い名前は止める) | 書かない / 見どころの事実にある名前を、その印を付けて書く(「含まれていません」と言う文はよい) |
 | `highlight_mixed` | 見どころの文(`[H…]`・`[M…]`)に、月・雲・晴れ間の語(`stars.highlight_mixed`) | 文を分ける(月・雲・晴れ間は星の地点の文 `[S…]` に、事実の値で書く) |
 | `highlight_not_visible` | 見どころにある対象(時間帯に入っている対象)を「見えない」と書いている。見どころの事実の印の無い文で「見えない」と書いている(見どころの事実がある資料だけ。語の一覧は `stars.not_visible_re`) | 「見えない」と書けるのは「今の時期は見えない」の事実だけ |
+| `highlight_slot` | 見どころの文に書いた時間帯(宵・夜半・明け方)が、印の見どころの事実のどれの時間帯でもない。印の対象のどれかが、書いた時間帯のどれにも入っていない。**時間帯と対象の組み合わせまでは見ない**(「宵に土星、明け方に木星」の、どの対象がどの時間帯かは照らさない) | 事実の時間帯に入っている対象だけを、その時間帯に書く |
 | `highlight_hidden` | 「今の時期は見えない」の事実の対象を、見えないと書かずに書いている | 「今の時期は見えない」と書く |
 | `highlight_without_site` | 星の地点が付かない夜の見どころを書いている(資料にはふつう入らない。念のため) | 星の地点が付く夜の見どころだけを書く |
 | `flow_order` | 夜の星を、組になる朝〜日中の山より先に書いている(最初の行の結論を除く) | 時刻の順に書く |
 | `star_gap_missing` | 聞かれた夜の雲の予報が調べられていないのに、その文がない | `[G…]` の文をそのまま写す |
-| `line_missing` | `star_data_time`・`star_mode`・`star_attribution`、ECMWF の夜の `star_regime`、リフト要の地点の `star_lifts`、対象の日が 2 日までのときの `star_skips` がない。**地点の出どころがある資料では、OSM 由来の地点(`viewpoint`・`curated+viewpoint`・出どころの無い地点)の `[S…]` を書いた・すすめたのに、ODbL のある `star_attribution` がない(OSM 由来の地点を使わない答えは、ODbL の無い `star_attribution_plain` でもよい)。** **見どころ `[H…]`・`[M…]` を書いたのに基準の文 `star_basis` がない。流星群 `[M…]` を書いたのに、その流星群の文 `star_showers`(出現数の目安と注意)がない** | 資料の文をそのまま写す |
+| `line_missing` | `star_data_time`・`star_mode`・`star_attribution`、ECMWF の夜の `star_regime`、リフト要の地点の `star_lifts`、対象の日が 2 日までのときの `star_skips` がない。**ODbL の無い帰属の文 `star_attribution_plain` がある資料(`config.yaml` の `concierge.stars.odbl_by_origin` が true で、地点の出どころがあるとき。既定は false)では、OSM 由来の地点(`viewpoint`・`curated+viewpoint`・出どころの無い地点)の `[S…]` を書いた・すすめたのに、ODbL のある `star_attribution` がない(OSM 由来の地点を使わない答えは、ODbL の無い `star_attribution_plain` でもよい)。** **見どころ `[H…]`・`[M…]` を書いたのに基準の文 `star_basis` がない。流星群 `[M…]` を書いたのに、その流星群の文 `star_showers`(出現数の目安と注意)がない** | 資料の文をそのまま写す |
 | `pick_not_allowed`・`pick_not_in_plans`・`pick_undeclared` | 星のおすすめが、条件を通った地点でない・案にない・`[おすすめ]` に書いていない | 案にある地点だけをすすめる |
 | `stale_assertion` | 星の予報が古いのに言い切っている | 「古い予報では、○○が候補です」の形で書く |
 

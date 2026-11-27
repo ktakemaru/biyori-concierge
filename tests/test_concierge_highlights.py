@@ -3,8 +3,10 @@
 見本の棚は tests/fixtures/shelf_hl/(作り方は tests/make_highlights_fixture.py)。星はホシビヨリ main の実物(2026-11-27 09:06、主軸 146 地点)を
 16 地点に減らしたもの、山は段階 3 の見本(2026-11-23 の実物)。古い形(1.2.0。新しい項目が無い)の確かめは段階 3 の見本 tests/fixtures/shelf_day/。
 実物に無い種類(見どころが null の夜・流星群の夜・origin が viewpoint の地点・MSM の候補の夜)は、テストの中で作り物を足す(作り物と書く)。"""
+import copy
 import shutil
 import unittest
+from unittest import mock
 
 from concierge_helpers import build, edit_json
 from helpers import FIX, tmpdir
@@ -179,7 +181,7 @@ class Highlights(unittest.TestCase):
                 self.assertNotIn("highlights", doc["stars"])
                 self.assertIn("no_star_objects", {g["kind"] for g in doc["gaps"]})
                 self.assertNotIn("star_basis", doc["lines"])
-                self.assertEqual(doc["rules"][-len(ST.RULES) - 1:], ST.RULES + [ST.ODBL_RULE])      # 出どころはあるので、ODbL の決まりだけ足される
+                self.assertEqual(doc["rules"][-len(ST.RULES):], ST.RULES)
                 self.assertTrue(all("highlights" not in fr for p in doc["plans"] for fr in p["frames"]))
 
     def test_null_or_missing_night_keeps_the_old_sentence(self):
@@ -195,6 +197,8 @@ class Highlights(unittest.TestCase):
 
     def test_weekend_with_one_null_night_says_which_night(self):
         doc = make(self, when="今週末", interest=BOTH, edit=hl_edit(lambda d: d["highlights"]["by_night"].update({"2026-11-28": None})))
+        r = V.check(F.draft(doc), doc)
+        self.assertTrue(r["ok"], r["errors"])
         g = next(g for g in doc["gaps"] if g["kind"] == "no_star_objects")
         self.assertEqual(g["text"], "11月28日(土)の夜は、どの星や惑星が見えるかが、この予報に含まれていません。")
         self.assertTrue(doc["stars"]["highlights"]["facts"])
@@ -281,6 +285,12 @@ class HighlightVerify(unittest.TestCase):
         self.assertIn("highlight_mixed", codes(self.check_body(f"28日(土)の夜は、晴れていれば宵に土星が見られます。[{f['id']}]")))
         self.assertIn("highlight_mixed", codes(self.check_body(f"28日(土)の夜は、月の無い時間帯に土星が見られます。[{f['id']}]")))
 
+    def test_slot_must_be_a_slot_of_the_marked_object(self):
+        sat, sub = self.h("土星"), self.h("すばる")
+        self.assertIn("highlight_slot", codes(self.check_body(f"28日(土)の夜の明け方に土星が見られます。[{sat['id']}]")))      # 土星は宵・夜半だけ
+        self.assertIn("highlight_slot", codes(self.check_body(f"28日(土)の夜は、宵に土星とすばるが見られます。[{sat['id']}][{sub['id']}]")))
+        self.assertTrue(self.check_body(f"28日(土)の夜は、宵に土星、夜半にすばるが見られます。[{sat['id']}][{sub['id']}]")["ok"])
+
     def test_slot_written_as_date_and_midnight_is_stopped(self):
         f = self.h("木星")
         self.assertIn("night_label", codes(self.check_body(f"28日(土)の夜半に木星が見られます。[{f['id']}]")))
@@ -331,8 +341,34 @@ class HighlightVerify(unittest.TestCase):
 
 
 
+def odbl_on(test):
+    """config.yaml の concierge.stars.odbl_by_origin を、このテストのあいだだけ true にする(既定は false。決めてほしいこと 5)。"""
+    from concierge import brief as B
+    from concierge.common import config
+    c = copy.deepcopy(config())
+    c["concierge"]["stars"]["odbl_by_origin"] = True
+    p = mock.patch.object(B, "config", return_value=c)
+    p.start()
+    test.addCleanup(p.stop)
+
+
+class OdblDefault(unittest.TestCase):
+    def test_default_keeps_odbl_always(self):
+        from concierge.common import config
+        self.assertIs(config()["concierge"]["stars"]["odbl_by_origin"], False)
+        doc = make(self)
+        self.assertNotIn("star_attribution_plain", doc["lines"])
+        self.assertNotIn(ST.ODBL_RULE, doc["rules"])
+        good = F.draft(doc)
+        self.assertIn(doc["lines"]["star_attribution"]["text"], good)
+        self.assertTrue(V.check(good, doc)["ok"])
+
+
 class Odbl(unittest.TestCase):
-    """第 4 部: ODbL の表示は、OSM 由来の地点を答えに使ったときだけ。"""
+    """第 4 部: ODbL の表示は、OSM 由来の地点を答えに使ったときだけ(odbl_by_origin を true にしたとき)。"""
+
+    def setUp(self):
+        odbl_on(self)
 
     def test_plain_line_only_with_origin(self):
         new = make(self)

@@ -137,7 +137,7 @@
 ## 6. 地点の出どころと ODbL(段階 3 見どころ)
 
 - 答えの星の帰属の文(`star_attribution`)の「地点は © OpenStreetMap contributors(ODbL)」は、**`origin` が無い出力では今までどおりいつも付ける**(安全側)。
-- `origin` がある出力では、ODbL の無い帰属の文(`star_attribution_plain`)も資料に入れ、**答えに使った星の地点(印を付けた地点とおすすめの地点)に OSM 由来(`viewpoint`・`curated+viewpoint`)が 1 つでもあれば ODbL のある文、無ければどちらか**を写させる(`verify` が照らす)。`origin` の無い地点(新しい出力でも)は OSM 由来とみなす。
+- `origin` がある出力で、`config.yaml` の `concierge.stars.odbl_by_origin` が true のとき(**既定は false = 今までどおりいつも付ける**。curated の地点の市町村名も OSM(Nominatim)由来かもしれないため。`docs/stage3-highlights-report.md` 決めてほしいこと 5)は、ODbL の無い帰属の文(`star_attribution_plain`)も資料に入れ、**答えに使った星の地点(印を付けた地点とおすすめの地点)に OSM 由来(`viewpoint`・`curated+viewpoint`)が 1 つでもあれば ODbL のある文、無ければどちらか**を写させる(`verify` が照らす)。`origin` の無い地点(新しい出力でも)は OSM 由来とみなす。
 - 棚の `ATTRIBUTION.md` は棚のファイル全部の帰属で、今までどおり ODbL を書く(棚には OSM 由来の地点を含む全部の地点が入るため)。
 
 ## 7. 通信先

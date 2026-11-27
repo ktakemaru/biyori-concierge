@@ -60,8 +60,10 @@ concierge:
     mode_rule: milkyway_few_results
     # 星の帰属の文の ODbL(「地点は © OpenStreetMap contributors(ODbL)」)を、OSM 由来の地点(origin が viewpoint・curated+viewpoint。
     # origin の無い地点も OSM 由来とみなす)を答えに使ったときだけにするか(段階 3 見どころ 第 4 部)。false なら、今までどおりいつも付ける。
-    # origin の無い出力(1.2.0)では、この値によらず、いつも付ける。仮置き(docs/stage3-highlights-report.md「決めてほしいこと」)。
-    odbl_by_origin: true
+    # origin の無い出力(1.2.0)では、この値によらず、いつも付ける。
+    # 既定は false(いつも付ける)。curated の地点の市町村名も OSM(Nominatim)由来かもしれず、確かめるまで「やらない側」にした
+    # (docs/stage3-highlights-report.md「決めてほしいこと 5」)。true にすると、OSM 由来の地点を使わない答えは ODbL の無い帰属の文でもよくなる。
+    odbl_by_origin: false
 
 collect:
   # 取得の側(collect/)の値。

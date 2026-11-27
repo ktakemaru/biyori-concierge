@@ -4,11 +4,11 @@
 
 ## まとめ
 
-- ホシビヨリの新しい 3 項目に合わせた: 星の地点を**その夜の中の順位(`night_rank`)**で並べる・**夜に見られる星や惑星(`highlights`)**を事実 `[H…]`・`[M…]` として答えに書ける・**ODbL**は OSM 由来の地点を使った答えだけ。
-- 書いてよい名前と時刻は、ホシビヨリの `highlights` にあるものだけ。座標を照らしていない対象(実物の 11/28 は 31 件のうち 19 件 + さそり座)は書かせない。照合が、事実に無い名前・時刻・基準の文の抜け・流星群の添える文の抜け・「見えない」の書き違いを止める。
+- ホシビヨリの新しい 3 項目に合わせた: 星の地点を**その夜の中の順位(`night_rank`)**で並べる・**夜に見られる星や惑星(`highlights`)**を事実 `[H…]`・`[M…]` として答えに書ける・**ODbL**を OSM 由来の地点を使った答えだけにする仕組み(**既定は切り = 今までどおりいつも付ける**。決めてほしいこと 5)。
+- 書いてよい名前と時刻は、ホシビヨリの `highlights` にあるものだけ。座標を照らしていない対象(実物の 11/28 は 31 件のうち 19 件 + さそり座)は書かせない。照合が、事実に無い名前・時刻・時間帯・基準の文の抜け・流星群の添える文の抜け・「見えない」の書き違いを止める。
 - 山だけの質問は 240 ファイル(段階 3 の 144 ファイルを含む)が 1 バイトも変わらない。古い版の星の棚(段階 3 の見本)の通しの試し 6 問の送る文も、段階 3 の報告書と 1 バイトも変わらない。
-- 通しの試し 3 問は 1 回目で合格。わざと間違えた下書き 14 種類は全部止まった。**見どころが null の夜・流星群の夜・`viewpoint` の地点・MSM の候補の夜は実物に無く、テストの作り物だけで確かめた。**
-- テスト 482 → **516 件、全部合格**(最後は 397.6 秒)。既存のテストの期待値は 1 つも変えていない。
+- 通しの試し 3 問は 1 回目で合格。わざと間違えた下書き 15 種類は全部止まった。**見どころが null の夜・流星群の夜・`viewpoint` の地点・MSM の候補の夜は実物に無く、テストの作り物だけで確かめた。**
+- テスト 482 → **518 件、全部合格**(最後は 430.2 秒)。既存のテストの期待値は 1 つも変えていない。
 
 | 部 | 最後の commit | テスト |
 |---|---|---|
@@ -18,7 +18,8 @@
 | 第 2 部(`night_rank`) | `055cef1` | 491 件 OK(413.4 秒) |
 | 第 3 部(見どころ) | `542d9ca` | 512 件 OK(410.6 秒) |
 | 第 4 部(`origin`・ODbL) | `c220aba` | 516 件 OK(397.6 秒) |
-| 第 5 部(通しの試し・この報告書) | このあとの commit | 516 件 OK |
+| 第 5 部(通しの試し・この報告書) | `d21f3c8` | 516 件 OK |
+| 見直しの直し(ODbL の既定を切りに・時間帯の検査・報告書) | このあとの commit | 518 件 OK(430.2 秒) |
 
 ## 1. 始める前の確かめ(第 0 部)
 
@@ -95,7 +96,7 @@
 - 照合(`concierge/stars_verify.py`。一覧は `docs/answer-checks.md`「星の答え」):
   - `star_object`: 見どころの事実がある資料では、**同じ文の印の `[H…]`・`[M…]` にある名前だけ**通す。名前は、見どころの名前の一覧(全部の夜の `members`・組の名前・`not_visible`・流星群。資料の `stars.highlights.objects`)と今の語の一覧 `object_re` で見つける。座標を照らしていない対象は理由を分けて出す。
   - 時刻・高度・出現数は今の `time_mismatch`・`number_mismatch`、夜の表記・「翌」は今の `night_label`・`night_time` で照らす(見どころの事実にも広げた)。
-  - 新しい検査: `highlight_mixed`(見どころの文に月・雲・晴れ間)・`highlight_not_visible`(時間帯にある対象・印の無い文を「見えない」)・`highlight_hidden`(見えない対象を見えると書く)・`highlight_without_site`、`line_missing` に `star_basis`・`star_showers`。
+  - 新しい検査: `highlight_slot`(書いた時間帯が、印の対象の時間帯と合わない)・`highlight_mixed`(見どころの文に月・雲・晴れ間)・`highlight_not_visible`(時間帯にある対象・印の無い文を「見えない」)・`highlight_hidden`(見えない対象を見えると書く)・`highlight_without_site`、`line_missing` に `star_basis`・`star_showers`。
   - 見どころの事実の無い資料(古い版)では、今までどおり `object_re` だけ(段階 3 と同じ)。
 - 控えの文(`fallback`): 夜の枠の文のあとに「28日(土)の夜に見られる星や惑星の目安は、宵は…、夜半は…、明け方は…です。」(名前だけ。ホシビヨリの並び)と基準の文。流星群は「…は、…の極大の夜です。」と添える文。
   2,000 字を超えるときは、**1 つの時間帯あたり 2 つまで**に絞る(`fallback.HL_PER_SLOT_SHORT`。仮置き。ホシビヨリの並びの上から)。
@@ -103,18 +104,19 @@
 
 ### 第 4 部: 地点の出どころ(`origin`)
 
-- 出力に `origin` があるとき、資料に ODbL の無い帰属の文 `star_attribution_plain` も入れ、**答えに使った星の地点(印を付けた地点・おすすめの地点)に OSM 由来が 1 つでもあれば ODbL のある `star_attribution`** を求める。OSM 由来 = `viewpoint`・`curated+viewpoint`(ホシビヨリの報告書・スキーマの説明)と、`origin` の無い地点(安全側)。
+- **既定(`config.yaml` の `concierge.stars.odbl_by_origin: false`)では、今までどおりいつも ODbL のある帰属の文を写す**(見直しで切りにした。決めてほしいこと 5)。
+  切り替えを true にすると、出力に `origin` があるとき、資料に ODbL の無い帰属の文 `star_attribution_plain` も入れ、**答えに使った星の地点(印を付けた地点・おすすめの地点)に OSM 由来が 1 つでもあれば ODbL のある `star_attribution`** を求める。OSM 由来 = `viewpoint`・`curated+viewpoint`(ホシビヨリの報告書・スキーマの説明)と、`origin` の無い地点(安全側)。
 - `origin` の無い出力(1.2.0)では、今までどおりいつも ODbL を付ける(資料・答えは段階 3 と同じ)。
-- 資料の Markdown の地点に「OSM 由来の地点(帰属は ODbL のある文)」と書き、決まりに 1 行足した。`config.yaml` の `concierge.stars.odbl_by_origin`(仮置き。`false` なら今までどおりいつも付ける)。
-- `collect/ATTRIBUTION.md`(棚の帰属。全部の地点が入るので、今までどおり ODbL を書く)に、答えでの扱いを 3 行足した。見本の棚の写しも作り直した(差はその 3 行だけ)。
+- 資料の Markdown の地点に「OSM 由来の地点(帰属は ODbL のある文)」と書き、決まりに 1 行足した(どちらも切り替えが true のときだけ)。テストは、切り替えを true にした作り物の設定で確かめ、既定(false)のテストも 1 つ置いた。
+- `collect/ATTRIBUTION.md`(棚の帰属。全部の地点が入るので、今までどおり ODbL を書く)に、答えでの扱い(切り替えと既定)を 3 行足した。見本の棚の写しも作り直した(差はその 3 行だけ)。
 
 ## 3. 確かめ(第 5 部)
 
-- **山だけの質問が 1 バイトも変わらない**: 変更前のコード(`git archive c6e277d`)と今のコードで、山の問い 12 問(`docs/qa.md` の 10 問 + 名指し 1 座 + 紅葉)× 棚 5 通り(手元の実物を 11/25 と 11/23 の時刻で・山の見本・段階 3 の星の見本・新しい星の見本。星の語なし)× 4 ファイル(資料の JSON・Markdown・控えの文・短い控えの文)= **240 ファイルが全部同じ**(段階 3 の 144 ファイルの組を含む。各部の commit の前に毎回確かめた)。
+- **山だけの質問が 1 バイトも変わらない**: 変更前のコード(`git archive c6e277d`)と今のコードで、山の問い 12 問(`docs/qa.md` の 10 問 + 名指し 1 座 + 紅葉)× 棚 5 通り(手元の実物を 11/25 と 11/23 の時刻で・山の見本・段階 3 の星の見本・新しい星の見本。星の語なし)× 4 ファイル(資料の JSON・Markdown・控えの文・短い控えの文)= **240 ファイルが全部同じ**。段階 3 の確かめのスクリプトは commit されていなかったので、同じ組(手元の実物 2 通り + 山の見本 = 144 ファイル)を含む形で作り直した(リポジトリの外。第 2〜4 部の commit の前と、見直しの直しのあとに確かめた)。
 - **古い版の星の棚で段階 3 と 1 バイトも変わらない**: 段階 3 の見本の棚・`--now 2026-11-25T23:00:00+09:00` で、段階 3 の通しの試しの 6 問(問い 1「土曜の夜に星を見たい…」・問い 3「今週末、山に登って夜は星を見たい」を含む)の資料・控えの文が変更前のコードと同じ、
   commit 済みの下書き(`docs/stage3-trial/q*-draft.txt`)を今の `verify` に通した送る文が `docs/stage3-trial/q*-sent.txt` と 1 バイトも同じ。問い 1 の資料の Markdown も `q1-brief.md` と同じ。
-- 全テスト 516 件 OK(ソケット禁止のまま)。
-- 触っていないもの: `collect/measure/`・`collect/run.py`・`collect/runner.py`・`collect/hosts.yaml`・`collect/common.py`・`.github/`・`concierge/stop_hook.py`・`.claude/hooks/`・`.claude/settings.json`(`git diff c6e277d` で差なし)。`config.yaml` の変更はキー `odbl_by_origin` の追加とコメントだけ(上限 870 回・1500 秒・2300 秒は変えていない)。
+- 全テスト 518 件 OK(ソケット禁止のまま)。
+- 触っていないもの: `collect/measure/`・`collect/run.py`・`collect/runner.py`・`collect/hosts.yaml`・`collect/common.py`・`.github/`・`concierge/stop_hook.py`・`.claude/hooks/`・`.claude/settings.json`(`git diff c6e277d` で差なし)。`config.yaml` の変更はキー `odbl_by_origin: false` の追加とコメントだけ(上限 870 回・1500 秒・2300 秒は変えていない)。
 
 ### 通しの試し(新しい見本の棚。通信なし。`--now 2026-11-27T10:00:00+09:00`)
 
@@ -122,7 +124,7 @@
 
 #### 問い 1: 土曜の夜に星を見たい。昼は何をするといい?
 
-引数: `--when 2026-11-28 --interest 星空` / 資料: `q1-brief.md` / `verify` 1 回目で合格・送る文 1,144 字。書いた星の地点は丹沢湖(`curated`)だけなので、ODbL の無い帰属の文。
+引数: `--when 2026-11-28 --interest 星空` / 資料: `q1-brief.md` / `verify` 1 回目で合格・送る文 1,183 字。
 
 ```
 山の予報は 11月23日(月) 16:53 時点のもので、89 時間前の古い予報です(気象庁 MSM は 11月23日(月) 12時の回、ECMWF は 11月23日(月) 3時の回)。
@@ -148,12 +150,12 @@
 新しい予報にするには、GitHub の Actions → collect → Run workflow を実行してください(入力の書き方は docs/manual-collect.md にあります)。
 
 気象データ: Weather data by Open-Meteo.com(CC BY 4.0)。元の予報は気象庁 MSM と ECMWF IFS で、ヤマビヨリ 1.10.1 が山頂の標高に合わせて計算した値です。
-星の気象データ: Weather data by Open-Meteo.com(CC BY 4.0)。雲量はホシビヨリ 1.2.0 が加工した値です。地形は国土地理院 地理院タイル(標高タイル)を加工して作成、光害は NASA Black Marble VNP46A4、天体位置は JPL DE421 暦(Skyfield経由)です。
+星の気象データ: Weather data by Open-Meteo.com(CC BY 4.0)。雲量はホシビヨリ 1.2.0 が加工した値です。地形は国土地理院 地理院タイル(標高タイル)を加工して作成、光害は NASA Black Marble VNP46A4、地点は © OpenStreetMap contributors(ODbL)、天体位置は JPL DE421 暦(Skyfield経由)です。
 ```
 
 #### 問い 2: 今週末、山に登って夜は星を見たい
 
-引数: `--when 今週末 --interest 登山・ハイキング --interest 星空` / 資料: `q2-brief.md` / `verify` 1 回目で合格・送る文 1,454 字。奥多摩湖ダムサイトパーキングが `curated+viewpoint` なので ODbL のある帰属の文。
+引数: `--when 今週末 --interest 登山・ハイキング --interest 星空` / 資料: `q2-brief.md` / `verify` 1 回目で合格・送る文 1,454 字。
 
 ```
 山の予報は 11月23日(月) 16:53 時点のもので、89 時間前の古い予報です(気象庁 MSM は 11月23日(月) 12時の回、ECMWF は 11月23日(月) 3時の回)。
@@ -245,15 +247,17 @@
 | 事実と違う時刻(土星 18:30〜) | 止まった | `time_mismatch` |
 | 基準の文なしで見どころ | 止まった | `line_missing` |
 | 添える文なしの流星群の数字(実物。極大の夜の外) | 止まった | `number_unmarked`・`star_object` |
-| `slots` に無い対象を「見えない」(金星) | 止まった | `highlight_not_visible`・`number_unmarked`・`star_object` |
-| 見どころにある対象を「見えない」(明け方の土星) | 止まった | `highlight_not_visible` |
+| slots に無い対象を「見えない」(金星) | 止まった | `highlight_not_visible`・`number_unmarked`・`star_object` |
+| 見どころにある対象を「見えない」(明け方の土星) | 止まった | `highlight_not_visible`・`highlight_slot` |
 | 座標を照らしていない対象(リゲル) | 止まった | `star_object` |
 | 時間帯を日付に付けた夜の書き方(28日(土)の夜半) | 止まった | `night_label` |
 | 見どころに月・雲を混ぜる(晴れていれば) | 止まった | `highlight_mixed` |
 | 「翌」なしの時刻(0:15) | 止まった | `night_time` |
-| OSM 由来の地点を書いたのに ODbL の無い帰属の文 | 止まった | `line_missing` |
+| 時間帯が対象と合わない(明け方の土星) | 止まった | `highlight_slot` |
+| (odbl_by_origin を true にした資料の控えの文。比べる元) | 合格 | — |
+| OSM 由来の地点を書いたのに ODbL の無い帰属の文(odbl_by_origin を true にした資料) | 止まった | `flow_order`・`line_missing` |
 | (12/4 の控えの文。比べる元) | 合格 | — |
-| 星の地点が無い夜に星の名前(12/4 の土星。12/4 は条件を通った地点が 0 の実物の夜) | 止まった | `date_unmarked`・`star_object` |
+| 星の地点が無い夜に星の名前(12/4 の土星) | 止まった | `date_unmarked`・`star_object` |
 | (作り物の流星群の夜の控えの文。比べる元) | 合格 | — |
 | 添える文なしの流星群の数字(作り物の流星群の夜) | 止まった | `line_missing` |
 
@@ -269,10 +273,12 @@
 | 高度の表記: 整数に丸めて「約」 | `stars._alt_say` | 好み(資料の表記の決まりに合わせた) |
 | 見どころの文に混ぜない語・「見えない」の言い方 | `verify.yaml` `stars.highlight_mixed`・`stars.not_visible_re` | 好み(通しの試しで決めた) |
 | OSM 由来の出どころ: `viewpoint`・`curated+viewpoint`(出どころの無い地点も含む) | `stars.OSM_ORIGINS`・`is_osm` | ホシビヨリの報告書・スキーマの説明 |
-| ODbL を出どころで決めるか | `config.yaml` `concierge.stars.odbl_by_origin: true` | 指示書 7 章(下の決めてほしいこと 5) |
+| ODbL を出どころで決めるか | `config.yaml` `concierge.stars.odbl_by_origin: false`(既定は切り = いつも付ける) | 指示書 7 章。迷ったので「やらない側」(決めてほしいこと 5) |
+| 時間帯の照らし方: 書いた時間帯が印の対象のどれかの時間帯で、印の対象がどれも書いた時間帯のどれかに入っていること(どの対象がどの時間帯かの組み合わせまでは見ない) | `stars_verify.py`(`highlight_slot`) | 分かっている限界として `docs/answer-checks.md` に書いた |
 | 一部の夜だけ見どころが無いときの文 | `concierge/brief.py`(`no_star_objects` の夜を書いた形) | 好み |
 
-変えた既存のテスト: **なし**(既存のテストの期待値は 1 つも変えていない)。足したテストは `tests/test_concierge_highlights.py` の 34 件。
+変えた既存のテスト: **なし**(既存のテストの期待値は 1 つも変えていない)。足したテストは `tests/test_concierge_highlights.py` の 36 件。
+`docs/qa.md` の問い 11 の「見る点」(「どの星が見えるかを足さないか」)は、見どころを書けるようになったので「資料の見どころにある名前と時刻だけで書けるか」に直した(問いの文は変えていない)。
 
 ## 5. 確かめられていないこと
 
@@ -287,20 +293,24 @@
 1. (この Claude Code のウィンドウ)`! git push -u origin feature/stage3-collect-stars`(まだなら)
 2. (同じウィンドウ)`! git push -u origin feature/stage3-day-flow`(まだなら)
 3. (同じウィンドウ)`! git push -u origin feature/stage3-highlights`
-4. (ブラウザの GitHub)PR を順に作ってマージする: `feature/stage3-collect-stars` → `main`、次に `feature/stage3-day-flow` → `main`、次に `feature/stage3-highlights` → `main`(どれも前のマージのあと。Actions の tests が緑なら)。
-5. (ホシビヨリのウィンドウ。`C:/hoshibiyori` の報告書の「利用者がやること」1〜3)ホシビヨリの 3 本のブランチが main に入っていることを確かめる(取得は main を取り出すので、新しい項目が棚に入るのはそのあと)。
-6. (ブラウザの GitHub)Actions → collect → Run workflow。`confirm`: `yes-run-live`、`agents`: `both`、`yama_limit`: `all`、`yamabiyori_ref`: `main`、`publish`: チェックあり。バックテストの収集(UTC の 3 時間ごと・20 分)の前後 30 分を避ける。
-7. (ブラウザの GitHub。6 の Summary)星の状態が `ok` か、2 つのモードの秒と通信の回数を見る(上限 870 回・1500 秒・2300 秒は仮置きのまま)。
-8. (新しく開いた Claude Code。作業フォルダ `C:/biyori-concierge`。main にしてから)「土曜の夜に星を見たい。昼は何をするといい?」と 1 問聞く。昼 → 夜 → その夜の見どころの順か、「見られる星や惑星と時刻は、基準の地点…」の文があるか、星の名前がホシビヨリの見どころにあるものだけかを見る。
+4. (ブラウザの GitHub)`feature/stage3-collect-stars` → `main` の PR を作り、Actions の tests が緑ならマージする。
+5. (ブラウザの GitHub)`feature/stage3-day-flow` → `main` の PR を作り、緑ならマージする(4 のあと)。
+6. (ブラウザの GitHub)`feature/stage3-highlights` → `main` の PR を作り、緑ならマージする(5 のあと)。
+7. (ホシビヨリのウィンドウ。`C:/hoshibiyori`)ホシビヨリの 3 本のブランチ(`fix/milkyway-speed`・`feature/concierge-interface-2`・`feature/json-highlights`)が main に入っていることを確かめる(取得は main を取り出すので、新しい項目が棚に入るのはそのあと)。
+8. (ブラウザの GitHub)Actions → collect → Run workflow。`confirm`: `yes-run-live`、`agents`: `both`、`yama_limit`: `all`、`yamabiyori_ref`: `main`、`publish`: チェックあり。バックテストの収集(UTC の 3 時間ごと・20 分)の前後 30 分を避ける。
+9. (ブラウザの GitHub。8 の Summary)星の状態が `ok` か、2 つのモードの秒と通信の回数を見る(上限 870 回・1500 秒・2300 秒は仮置きのまま)。
+10. (この Claude Code のウィンドウ)`! python -X utf8 -m concierge sync` で新しい棚を取り込む。
+11. (新しく開いた Claude Code。作業フォルダ `C:/biyori-concierge`。main にしてから)「土曜の夜に星を見たい。昼は何をするといい?」と 1 問聞き、昼 → 夜 → その夜の見どころの順か・基準の文があるか・星の名前がホシビヨリの見どころにあるものだけかを見る。
 
 ## 7. 決めてほしいこと
 
-1. **座標を照らしていない対象(`coordinates_unverified: true`)を答えに書くか。** 今は書かない(事実にせず、書いたら止める)。実物の 11/28 は 31 件のうち 19 件(1 等星は全部)とさそり座。案: 「目安」と分かる書き方(例「ベガ(位置は目安)」)で書けるようにする。決まるまで書かない。
+1. **座標を照らしていない対象(`coordinates_unverified: true`)を答えに書くか。** 今は書かない(事実にせず、書いたら止める)。実物の 11/28 は 31 件のうち 19 件(`kind` が「星」の対象は全部)とさそり座。案: 「目安」と分かる書き方(例「ベガ(位置は目安)」)で書けるようにする。決まるまで書かない。
 2. **星の地点が付かない夜にも見どころを書くか。** 見どころは地点によらない目安だが、今は地点が付く夜だけ(地点が無いのに星の名前だけ書かない)。
 3. **MSM の夜の順位はどちらを使うか。** 今は、候補の夜で `rank` がある地点は `rank`(ホシビヨリの画面と同じ)、無い地点は `night_rank`。星空・星座モードの MSM の候補の夜は 2 つの並びが違いうる(ホシビヨリの「決めてほしいこと 1」。実物では起きていない)。
 4. **見どころを絞る数。** 控えの文は、2,000 字を超えるときだけ 1 つの時間帯あたり 2 つ(仮置き)。書き手(エージェント)の答えは絞っていない(字数の検査だけ)。
-5. **ODbL を出どころで決めてよいか。** 指示書のとおり、OSM 由来(`viewpoint`・`curated+viewpoint`)の地点を使った答えだけにした。ただ、棚の `ATTRIBUTION.md` には「地点(名前・市町村・座標): © OpenStreetMap contributors(Overpass API・Nominatim)」とあり、
-   ホシビヨリの `AGENTS.md` にも Nominatim(`reverse_geocode.py`)が出てくる。**`curated` の地点の市町村名(答えに書く「(山北町)」など)が Nominatim(OSM)由来なら、全部の地点に ODbL が要るかもしれない**(こちらでは確かめていない)。
-   確かめるまで今までどおりいつも付けるなら、`config.yaml` の `concierge.stars.odbl_by_origin` を `false` にする(1 行。資料・答えは段階 3 と同じ帰属の文になる)。
+5. **ODbL を出どころで決めてよいか。** 指示書は「OSM 由来(`viewpoint`・`curated+viewpoint`)の地点を使った答えだけ」。仕組みは作ったが、**既定は切り(`config.yaml` の `concierge.stars.odbl_by_origin: false` = 今までどおりいつも付ける)にした。**
+   棚の `ATTRIBUTION.md` には「地点(名前・市町村・座標): © OpenStreetMap contributors(Overpass API・Nominatim)」とあり、ホシビヨリの `AGENTS.md` にも Nominatim(`reverse_geocode.py`)が出てくるが、どの地点に使ったかは読める範囲の文書では分からなかった。
+   **`curated` の地点の市町村名(答えに書く「(山北町)」など)が Nominatim(OSM)由来なら、全部の地点に ODbL が要る**ので、迷って「やらない側」にした。ホシビヨリ側で確かめて、`curated` の市町村名が OSM 由来でないと分かれば、`true` にする(1 行)。
 6. **流星群を極大の夜のほかの夜にも書くか。** 今は極大の夜(`night_date`)だけ。実物の流星群(ふたご座流星群 12/14)は聞かれた 14 夜の外で、答えに出たことはまだ無い。
-7. 見どころの時刻は、時間帯で切られた時刻(出・入りの時刻ではない)。「宵の18:03〜22:00に土星」のように書けるが、22:00 は時間帯の終わりで、土星が沈む時刻ではない。読み違えを避けるため、時刻を書かせない(名前と時間帯だけ)ほうがよいか。
+7. 時間帯の照らし方は「書いた時間帯が印の対象のどれかの時間帯」まで(「宵に土星、明け方に木星」の、どの対象がどの時間帯かの組み合わせは照らさない)。文を時間帯ごとに分けさせる決まりにするか。
+8. 見どころの時刻は、時間帯で切られた時刻(出・入りの時刻ではない)。「宵の18:03〜22:00に土星」のように書けるが、22:00 は時間帯の終わりで、土星が沈む時刻ではない。読み違えを避けるため、時刻を書かせない(名前と時間帯だけ)ほうがよいか。
