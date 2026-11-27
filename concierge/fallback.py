@@ -2,7 +2,11 @@
 印つきの下書きとして組み立て、verify と同じ検査に通してから出す(テストで必ず通ることを確かめる)。
 並びは指示書 6.5 の答えの形: 結論 → いつ時点(data_time・coverage)→ おすすめ 3 つまで(日ごとの上位。主役にできる山だけ)と事実
 → 注意(危険信号・先の予報)→ 見送り(名指しの山と、見送りの枠のまとめの文・件数)→ 危険信号の注記 → 足りないもの → 出典(attribution)。"""
+import re
+from datetime import date
+
 from . import named as N
+from . import stars as ST
 from .brief import CLOUD_CLEAR_SAY, LEVEL_RANK, main_key, skip_key
 from .common import NL
 
@@ -10,6 +14,7 @@ MAX_PICKS = 3
 MAX_SKIP_DAYS = 2      # 見送りのまとめの文を書く日の数の上限。仮置き
 MAX_NAMED_BLOCKS = 6    # 山を名指しした答えで書く、山と日の組の数の目安(超える日は省き、そのことを書く)。仮置き
 MAX_NAMED_SKIP = 4      # 名指しの山の見送りの文の数の上限(長い範囲で名指しが多いとき)。仮置き
+HL_PER_SLOT_SHORT = 2   # 字数の上限を超えるときの、見どころの 1 つの時間帯あたりの件数(段階 3 見どころの指示書 6 章。仮置き)
 
 
 def picks(brief):
@@ -197,7 +202,7 @@ def _draft_named(brief, compact):
     if L["attribution"]:
         out += ["", f"{L['attribution']['text']}[{L['attribution']['id']}]"]
     if brief.get("stars"):
-        out.append(_ln(L["star_attribution"]))
+        out.append(_ln(_star_attr(brief, star_used)))
     out += ["", "[おすすめ] " + (", ".join(f["id"] for f in picks_ + star_used) or "なし")]
     return NL.join(out) + NL
 
@@ -223,6 +228,46 @@ def _star_sentences(s, y=None):
     if moon and moon["say"][0] != vals["clear_window"]["say"][0]:
         out += f"{s['label']}の月の無い時間帯は{moon['say'][0]}です。[{s['id']}]"
     return out
+
+
+def _hl_sentence(brief, ds, per_slot=None):
+    """その夜の見どころの文(段階 3 見どころ)。名前だけ・時間帯ごと・ホシビヨリの並びの上から per_slot 件まで。→ (文, 書いた事実の id)。"""
+    h = brief["stars"].get("highlights")
+    if not h:
+        return "", []
+    fs = [f for f in h["facts"] if f["date"] == ds and f["kind"] == "star_highlight"]
+    parts, ids = [], []
+    for key, ja in ST.SLOTS:
+        row = sorted([(sl["order"], f) for f in fs for sl in f["slots"] if sl["key"] == key], key=lambda x: x[0])[:per_slot]
+        if row:
+            parts.append(f"{ja}は{'・'.join(f['name'] for _, f in row)}")
+            ids += [f["id"] for _, f in row]
+    out = ""
+    if parts:
+        lab = ST.night_says(date.fromisoformat(ds))[1]
+        ids = list(dict.fromkeys(ids))
+        out = f"{lab}に見られる星や惑星の目安は、{'、'.join(parts)}です。" + "".join(f"[{i}]" for i in ids)
+    for f in [f for f in h["showers"] if f["date"] == ds]:
+        out += f"{f['label']}は、{f['name']}の極大の夜です。[{f['id']}]"
+        ids.append(f["id"])
+    return out, ids
+
+
+def _hl_lines(brief, ids):
+    """見どころを書いたときの決まった文(基準・流星群の出現数の目安と注意)。"""
+    L = brief["lines"]
+    if not ids:
+        return []
+    out = [_ln(L["star_basis"])] if L.get("star_basis") else []
+    return out + [_ln(x) for x in L.get("star_showers") or [] if x["fact"] in ids]
+
+
+def _star_attr(brief, shown):
+    """星の帰属の文。地点の出どころがある資料で、書いた地点に OSM 由来が無ければ ODbL の無い文(段階 3 見どころ)。"""
+    L = brief["lines"]
+    if L.get("star_attribution_plain") and not any(ST.is_osm(s) for s in shown):
+        return L["star_attribution_plain"]
+    return L["star_attribution"]
 
 
 def _star_notes(brief, shown):
@@ -272,7 +317,15 @@ def day_picks(brief, compact=False):
 
 
 def _draft_day(brief, compact):
-    """星の質問の控えの文(段階 3): 一日の流れの順(朝〜日中の山 → 夜の星)で、事実だけの骨組み。"""
+    """星の質問の控えの文(段階 3): 一日の流れの順(朝〜日中の山 → 夜の星)で、事実だけの骨組み。
+    字数の上限を超えるときは、見どころを 1 つの時間帯あたり HL_PER_SLOT_SHORT 件までに絞る(仮置き。ホシビヨリの並びの上から)。"""
+    text = _draft_day_hl(brief, compact, None)
+    if brief["stars"].get("highlights") and len(re.sub(r"\[[A-Z]\d{1,3}\]", "", text)) > brief["limits"]["max_chars"]:
+        text = _draft_day_hl(brief, compact, HL_PER_SLOT_SHORT)
+    return text
+
+
+def _draft_day_hl(brief, compact, per_slot):
     L = brief["lines"]
     ys, ss = {f["id"]: f for f in brief["facts"]}, {f["id"]: f for f in brief["stars"]["facts"]}
     hz = {h["fact"]: h for h in L["hazards"]}
@@ -305,6 +358,7 @@ def _draft_day(brief, compact):
     if L["coverage"]:
         out.append(_ln(L["coverage"]))
     out += _star_head(brief) + [""]
+    hl_days, hl_ids = set(), []
     for i, (p, y, s) in enumerate(pairs, 1):
         num_ = f"{i}. " if len(pairs) > 1 else ""
         if y:
@@ -312,9 +366,13 @@ def _draft_day(brief, compact):
             if y["id"] in hz:
                 out.append(_ln(hz[y["id"]]))
         if s:
-            out.append(("" if y else num_) + "夜(星): " + _star_sentences(s, y))
+            hl, ids = ("", []) if s["date"] in hl_days else _hl_sentence(brief, s["date"], per_slot)
+            hl_days.add(s["date"])
+            hl_ids += ids
+            out.append(("" if y else num_) + "夜(星): " + _star_sentences(s, y) + hl)
     if L["lead_time"] and any(y and not y["reliable"] for _, y, _ in pairs):
         out.append(_ln(L["lead_time"]))
+    out += _hl_lines(brief, hl_ids)
     out += _star_notes(brief, [s for _, _, s in pairs if s])
     days = [] if compact or not any(y for _, y, _ in pairs) else _skip_days(brief)[:1]
     if skips or days:
@@ -333,7 +391,7 @@ def _draft_day(brief, compact):
     if L.get("refresh"):
         out += ["", _ln(L["refresh"])]
     out.append("")
-    out += [_ln(L[k]) for k in ("attribution", "star_attribution") if L[k]]
+    out += [_ln(x) for x in (L["attribution"], _star_attr(brief, [s for _, _, s in pairs if s])) if x]
     ids = [f["id"] for _, y, s in pairs for f in (y, s) if f]
     out += ["", "[おすすめ] " + (", ".join(dict.fromkeys(ids)) or "なし")]
     return NL.join(_dedup(out)) + NL

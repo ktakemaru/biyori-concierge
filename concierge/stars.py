@@ -3,8 +3,11 @@
 星の項目は「星の興味の語を渡された質問」で「星の棚が使える」ときだけ資料に入る(stars_wanted・load)。それ以外の資料は 1 バイトも変わらない。
 - 星の事実 [S…] = 「地点と夜」。星の件数 [T…] = 夜ごとの状態と件数。山の印([Y…]・[N…]・[C…])とは別の字。
 - 夜の日付は、夜の始まりの日(ホシビヨリの night_date)。「11月28日(土)の夜」と書く(利用者の決定 2026-11-25)。
-- 夜の枠に書いてよいのは、晴れ間の時間帯・月の無い時間帯・どちらのモードか。どの星が見えるかは資料に無いので書かせない。"""
-from datetime import datetime
+- 夜の枠に書いてよいのは、晴れ間の時間帯・月の無い時間帯・どちらのモードか。
+- どの星が見えるか(段階 3 見どころ): ホシビヨリの出力に highlights があるとき(新しい出力)だけ、見どころの事実 [H…](夜と対象)と
+  流星群の事実 [M…] を作る。星の地点が付く夜だけ(地点が無いのに名前だけ書かない。仮置き)。座標を照らしていない対象は事実にしない。
+  highlights の無い出力(1.2.0)の資料は、段階 3 と 1 バイトも変わらない(新しい項目は、あるときだけ入れる)。"""
+from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from collect.hoshibiyori import ranks
@@ -19,6 +22,13 @@ REASON_JA = {"cloud_filter": "雲", "light_pollution_filter": "光害", "directi
 NOT_EXAMINED = "その夜の雲の予報は今回調べられていません。"
 FRAMES = (("day_mountain", "朝〜日中(山)", "mountain"), ("day_nature", "日中(生き物)", "nature"), ("night_stars", "夜(星)", "stars"))
 LINE_KEYS = ("star_data_time", "star_mode", "star_regime", "star_attribution")      # 決まった文の並び(山の文の番号のあとに続ける)
+NEW_LINE_KEYS = ("star_attribution_plain", "star_basis")      # 新しい出力のときだけ入る決まった文(無い資料には、キーも入れない)
+# OSM 由来の地点の出どころ(ホシビヨリのスキーマ site_index[].origin の説明: viewpoint は OpenStreetMap の展望データ(ODbL)由来、
+# curated+viewpoint は OSM の地点と統合した主軸の地点)。origin の無い地点は OSM 由来とみなす(安全側)
+OSM_ORIGINS = ("viewpoint", "curated+viewpoint")
+ATTR_OSM = "地点は © OpenStreetMap contributors(ODbL)、"
+SLOTS = (("evening", "宵"), ("midnight", "夜半"), ("dawn", "明け方"))      # ホシビヨリの highlights の時間帯(スキーマの enum)
+NOT_VISIBLE_SAY = "今の時期は見えない"
 MODE_FEW = "天の川モードの候補が少ないため、"      # 天の川を聞かれたのに、星空・星座モードの結果で答えるとき
 MODE_TEXT = {"stars": "星は、星空・星座モード(銀河中心の高度・地形を条件にしない)で調べた結果です。",
              "milkyway": "星は、天の川モード(対象は天の川銀河中心)で調べた結果です。"}
@@ -50,6 +60,12 @@ def hours_say(h):
     r = d.quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
     s = format(r.normalize(), "f")
     return f"{s} 時間" if r == d else f"約{s} 時間"
+
+
+def _alt_say(a):
+    """最大高度(度)→ 書いてよい表記(整数に丸めて「約」を付ける)。"""
+    r = Decimal(str(a)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    return [f"高度約{r}度", f"約{r}度"]
 
 
 def _hours_screen(h):
@@ -133,6 +149,115 @@ def _night_fact(d, night, in_range, max_km, origin_name, min_hours, B):
     return dict(out, state="none_passed", say=say)
 
 
+def is_osm(f):
+    """星の地点の事実が OSM 由来か(ODbL の表示が要るか)。origin の無い地点は OSM 由来とみなす。"""
+    return f.get("origin") is None or f["origin"] in OSM_ORIGINS
+
+
+def objects_index(hl):
+    """見どころの全部の夜の名前(見える対象・組の名前・見えない対象・流星群)→ (名前の一覧, 座標を照らしていない対象の名前)。
+    事実にない名前を書いた答えを止めるため。名前はホシビヨリの出力にあるものだけ(自分の知識で足さない)。"""
+    names, unver, ok = set(), set(), set()
+    for bn in (hl.get("by_night") or {}).values():
+        for slot in (bn or {}).get("slots") or []:
+            for it in slot["items"]:
+                if it["type"] != "planets":
+                    names.add(it["name"])
+                for m in it["members"]:
+                    names.add(m["name"])
+                    (unver if m["coordinates_unverified"] else ok).add(m["name"])
+        for x in (bn or {}).get("not_visible") or []:
+            names.add(x["name"])
+            (unver if x["coordinates_unverified"] else ok).add(x["name"])
+    for sh in hl.get("showers") or []:
+        names.add(sh["name"])
+    return sorted(names, key=lambda n: (-len(n), n)), sorted(unver - ok)
+
+
+def highlight_facts(hl, d):
+    """その夜の見どころ → (見える対象・見えない対象の事実, 流星群の事実, 座標を照らしていない対象の数)。夜の by_night が null・無いときは None。
+    1 件は「夜と対象」(members[] の 1 つ。2 つ以上の時間帯に出る対象は 1 件にまとめ、時間帯ごとの時刻を持つ。並びはホシビヨリの並び)。
+    時刻は時間帯の中で高度 min_alt_deg 以上の最初と最後(時間帯で切られている。出・入りの時刻ではない)。"""
+    ds = d.isoformat()
+    bn = (hl.get("by_night") or {}).get(ds)
+    if not bn:
+        return None
+    base = {"id": None, "date": ds, "weekday": WEEKDAY_JA[d.weekday()], "label": night_label(d)}
+    vis, unver = {}, 0
+    for slot in bn["slots"]:
+        n = 0
+        for it in slot["items"]:
+            for m in it["members"]:
+                if m["coordinates_unverified"]:
+                    unver += 1
+                    continue
+                if not (m["start"] and m["end"]):
+                    continue
+                f = vis.setdefault(m["id"], dict(base, kind="star_highlight", object_id=m["id"], name=m["name"], object_kind=m["kind"], slots=[]))
+                say = [f"{clock(m['start'], d)}〜{clock(m['end'], d)}", clock(m["start"], d), clock(m["end"], d)]
+                if m["peak_time"]:
+                    say.append(clock(m["peak_time"], d))
+                if m.get("peak_alt") is not None:
+                    say += _alt_say(m["peak_alt"])
+                f["slots"].append({"key": slot["key"], "label": slot["label"], "order": n, "start": m["start"], "end": m["end"],
+                                   "peak_time": m["peak_time"], "peak_alt": m.get("peak_alt"), "say": say})
+                n += 1
+    facts = list(vis.values())
+    for x in bn.get("not_visible") or []:
+        if x["coordinates_unverified"]:
+            unver += 1
+            continue
+        facts.append(dict(base, kind="star_hidden", object_id=(x.get("ids") or [None])[0], name=x["name"], object_kind=None, slots=[]))
+    for f in facts:
+        say = [f["name"], *night_says(d), f["label"]] + ([sl["label"] for sl in f["slots"]] if f["kind"] == "star_highlight" else [NOT_VISIBLE_SAY])
+        f["say"] = list(dict.fromkeys(say + [y for sl in f["slots"] for y in sl["say"]]))
+    showers = []
+    for sh in hl.get("showers") or []:
+        if sh.get("night_date") != ds:
+            continue
+        say = [sh["name"], *night_says(d), night_label(d)]
+        if sh.get("peak_time"):
+            pt = datetime.fromisoformat(sh["peak_time"]).astimezone(JST)
+            say += [f"{md_label(pt.date())}", f"{md_label(pt.date())} {clock(sh['peak_time'], pt.date())}"]
+        if sh.get("radiant_start") and sh.get("radiant_end"):
+            say += [f"{clock(sh['radiant_start'], d)}〜{clock(sh['radiant_end'], d)}", clock(sh["radiant_start"], d), clock(sh["radiant_end"], d)]
+        if sh.get("radiant_min_alt_deg") is not None:
+            say.append(f"高度{B_num(sh['radiant_min_alt_deg'])}度")
+        if sh.get("zhr") is not None:
+            say += [f"1時間あたり{B_num(sh['zhr'])}", B_num(sh["zhr"])]
+        showers.append(dict(base, kind="star_shower", object_id=sh["id"], name=sh["name"], zhr=sh.get("zhr"), peak_time=sh.get("peak_time"),
+                            radiant_start=sh.get("radiant_start"), radiant_end=sh.get("radiant_end"),
+                            line_text=f"{sh['name']}の出現数は、{sh['zhr_note']}です。{sh['caveat'].rstrip('。')}。", say=list(dict.fromkeys(say))))
+    return facts, showers, unver
+
+
+def B_num(v):
+    """数 → 表記(整数なら小数点なし)。"""
+    d = Decimal(str(v))
+    return format(d.normalize(), "f") if d != d.to_integral() else str(int(d))
+
+
+def _highlights(n, target, pool):
+    """出力の highlights から、星の地点が付く夜の見どころの事実を作る。highlights の無い出力(1.2.0)なら None。"""
+    hl = n.get("highlights")
+    if not isinstance(hl, dict):
+        return None
+    names, unver = objects_index(hl)
+    out = {"basis": (hl.get("basis") or {}).get("text"), "facts": [], "showers": [], "objects": names, "unverified": unver,
+           "unverified_count": 0, "null_nights": []}
+    for d in target:
+        if not pool.get(d.isoformat()):                  # 星の地点が付かない夜には、見どころを作らない(仮置き)
+            continue
+        r = highlight_facts(hl, d)
+        if r is None:
+            out["null_nights"].append(night_label(d))
+            continue
+        out["facts"] += r[0]
+        out["showers"] += r[1]
+        out["unverified_count"] += r[2]
+    return out
+
+
 def build(sh, target, origin, now, c, B, interests=()):
     """星の部分 → dict(id はまだ無い)。sh は shelf.load_stars の結果(ok)。地点の候補は night_pool に全部、資料に入れるのは facts。"""
     sc = c["concierge"]["stars"]
@@ -159,6 +284,7 @@ def build(sh, target, origin, now, c, B, interests=()):
             f["selected_by"] = "top"
         facts += cands[:sc["top_per_night"]]
         counts.append(_night_fact(d, night, len(cands), max_km, origin["name"], n["thresholds"]["min_clear_window_hours"], B))
+    hl = _highlights(n, target, pool)
     e = sh["entry"]
     age = S.age_hours(e, now)
     stale = age is not None and age >= c["collect"]["stale_after_hours"]
@@ -171,7 +297,10 @@ def build(sh, target, origin, now, c, B, interests=()):
     ec = [x["label"] for x in counts if x["regime"] == "ECMWF" and x["state"] != "not_examined"]
     if ec:
         lines["star_regime"] = f"{'・'.join(ec)}は、ECMWF の予報だけの夜で、雲量は目安です。"
-    return {"mode": mode, "mode_reason": why, "data_time": e.get("data_time"), "age_hours": age, "stale": stale, "version": e.get("version"),
+    if hl and (hl["facts"] or hl["showers"]) and hl["basis"]:
+        lines["star_basis"] = f"見られる星や惑星と時刻は、{hl['basis']}です。"
+    extra = {"hl": hl} if hl is not None else {}
+    return extra | {"mode": mode, "mode_reason": why, "data_time": e.get("data_time"), "age_hours": age, "stale": stale, "version": e.get("version"),
             "status": e.get("status"), "facts": facts, "counts": counts, "lines": lines, "pool": pool,
             "index": [{"id": x["site_id"], "label": x["label"], "name": x["name"]} for x in n["site_index"] if x["site_id"] is not None]}
 
@@ -258,6 +387,12 @@ def finish(stars, plans, start_line, B, c):
         f["id"] = f"S{i:03d}"
     for i, t in enumerate(stars["counts"], 1):
         t["id"] = f"T{i}"
+    hl = stars.get("hl")
+    if hl:
+        for i, f in enumerate(hl["facts"], 1):
+            f["id"] = f"H{i}"
+        for i, f in enumerate(hl["showers"], 1):
+            f["id"] = f"M{i}"
     out = []
     for i, p in enumerate(plans, 1):
         y, s = p["y"], p["s"]
@@ -267,17 +402,27 @@ def finish(stars, plans, start_line, B, c):
         adds = []
         if add:
             adds = [{"kind": "stars" if add is s else "mountain", "fact": add["id"], "distance_km": round(p["km"], 1), "others": p["others"]}]
-        out.append({"id": f"P{i}", "date": p["date"], "main": {"kind": p["kind"], "fact": main["id"]}, "adds": adds,
-                    "frames": _frames(y["id"] if y else None, s["id"] if s else None)})
-    L = [{"key": k, "text": stars["lines"][k]} for k in LINE_KEYS if k in stars["lines"]]
+        frames = _frames(y["id"] if y else None, s["id"] if s else None)
+        if hl and s:                                       # 夜の枠に、その夜の見どころを結ぶ(星の地点が付いた枠だけ)
+            hs = [f["id"] for f in hl["facts"] if f["date"] == s["date"]]
+            ms = [f["id"] for f in hl["showers"] if f["date"] == s["date"]]
+            if hs or ms:
+                frames[-1] |= {"highlights": hs, "showers": ms}
+        out.append({"id": f"P{i}", "date": p["date"], "main": {"kind": p["kind"], "fact": main["id"]}, "adds": adds, "frames": frames})
+    L = [{"key": k, "text": stars["lines"][k]} for k in LINE_KEYS + NEW_LINE_KEYS if k in stars["lines"]]
     L += [{"key": "star_lifts", "text": f"{f['label']}の{f['name']}はリフト要の地点で、運行は確かめていません。", "fact": f["id"]}
           for f in facts if f["requires_lift_access"]]
     L += [{"key": "star_skips", "text": t["line"], "fact": t["id"], "date": t["date"]} for t in stars["counts"] if t["line"]]
+    L += [{"key": "star_showers", "text": f["line_text"], "fact": f["id"]} for f in (hl or {}).get("showers") or []]
     for i, x in enumerate(L, start_line):
         x["id"] = f"L{i}"
     doc = {"mode": stars["mode"], "mode_reason": stars["mode_reason"], "data_time": stars["data_time"], "age_hours": stars["age_hours"],
            "stale": stars["stale"], "status": stars["status"], "version": stars["version"], "facts": facts, "counts": stars["counts"],
            "index": stars["index"]}
+    if hl is not None:
+        doc["highlights"] = {"basis": hl["basis"], "facts": hl["facts"], "showers": [{k: v for k, v in f.items() if k != "line_text"} for f in hl["showers"]],
+                             "objects": hl["objects"], "unverified": hl["unverified"], "unverified_count": hl["unverified_count"],
+                             "null_nights": hl["null_nights"]}
     return doc, L, out
 
 
@@ -285,8 +430,8 @@ def lines_out(L):
     out = {k: None for k in LINE_KEYS} | {"star_lifts": [], "star_skips": []}
     for x in L:
         item = {"id": x["id"], "text": x["text"]} | ({"fact": x["fact"]} if x.get("fact") else {})
-        if x["key"] in ("star_lifts", "star_skips"):
-            out[x["key"]].append(item)
+        if x["key"] in ("star_lifts", "star_skips", "star_showers"):
+            out.setdefault(x["key"], []).append(item)
         else:
             out[x["key"]] = item
     return out
@@ -295,7 +440,8 @@ def lines_out(L):
 def all_lines(brief):
     """資料の星の決まった文の全部(星の無い資料なら空)。"""
     L = brief["lines"]
-    return [L[k] for k in LINE_KEYS if L.get(k)] + list(L.get("star_lifts") or []) + list(L.get("star_skips") or [])
+    return ([L[k] for k in LINE_KEYS + NEW_LINE_KEYS if L.get(k)] + list(L.get("star_lifts") or []) + list(L.get("star_skips") or [])
+            + list(L.get("star_showers") or []))
 
 
 RULES = [
@@ -311,6 +457,26 @@ RULES = [
     "聞かれた夜の雲の予報が調べられていないとき(足りないもの [G…])は、その文を必ず写す。ECMWF の夜・リフト要の地点を書いたら、その決まった文を必ず写す。",
     "[おすすめ] の行には、すすめた山 [Y…] と星 [S…] の id を書く。",
 ]
+
+
+# 見どころの事実があるときの決まり(RULES の 5 つ目と入れ替え、最後に足す)
+OBJECT_RULE_OLD = RULES[4]
+OBJECT_RULE = ("夜に書けるのは、晴れ間の時間帯・晴れ間の長さ・月の無い時間帯・地点・距離・どちらのモードか、と、見どころの事実 [H…]・流星群の事実 [M…] に"
+               "ある名前と時刻だけ。事実に無い星・星座・惑星・流星群の名前は書かない(組の名前・座標を照らしていない対象も書かない)。")
+HL_RULES = [
+    "見どころ [H…]・流星群 [M…] を書いた答えには、見どころの基準の決まった文 [L…](star_basis)を必ず 1 回、そのまま写す。流星群を書いたら、その流星群の決まった文(出現数の目安と注意)も必ず写す。出現数の数字は、その文なしで書かない。",
+    "見どころの文には、夜の表記(「28日(土)の夜」)と、時間帯(宵・夜半・明け方)を書き、印 [H…] を付ける。「28日(土)の夜半」「28日(土)の明け方」とは書かない(「28日(土)の夜の明け方」「28日(土)の夜は、明け方に」と書く)。時刻は事実の時刻だけ(0 時を過ぎたら「翌」)。時刻は時間帯の中の目安で、出・入りの時刻ではない。",
+    "見どころの文に、月・雲・晴れ間のことを混ぜない(それは星の地点の文 [S…] に、事実の値で書く)。",
+    "「見えない」と書けるのは、「今の時期は見えない」の事実 [H…] の対象だけ。見どころに無い対象を「見えない」と書かない(時間帯ごとの上限と、短い時間しか見えない対象は入っていない)。",
+]
+
+
+def rules(b_stars):
+    """資料の星の決まり。見どころの事実が無ければ RULES のまま(段階 3 と同じ)。"""
+    h = b_stars.get("highlights")
+    if not h or not (h["facts"] or h["showers"]):
+        return list(RULES)
+    return [OBJECT_RULE if r == OBJECT_RULE_OLD else r for r in RULES] + HL_RULES
 
 
 def render_md(b):
@@ -332,6 +498,38 @@ def render_md(b):
             for x in f["near"]:
                 out.append(f"  - {x['name']}({x['fact']})から{x['say'][0]}")
             out.append(f"  - 書いてよい表記: {' / '.join(f['say'])}")
+        out.append("")
+    h = st.get("highlights")
+    if h is not None:
+        out += render_highlights(h)
+    return out
+
+
+def render_highlights(h):
+    out = ["## 夜に見られる星や惑星(見どころ。星の地点が付く夜だけ)", ""]
+    if h["basis"]:
+        out.append(f"- 基準: {h['basis']}(答えには、決まった文 star_basis をそのまま写す)")
+    if h["unverified_count"]:
+        out.append(f"- 座標を照らしていない対象 {h['unverified_count']} 件は、事実にしていない(書かない): {'・'.join(h['unverified'])}")
+    if h["null_nights"]:
+        out.append(f"- 見どころの無い夜(暗い時間帯が無い・調べていない): {'・'.join(h['null_nights'])}")
+    out.append("- 「見えない」と書けるのは「今の時期は見えない」の事実だけ。見どころに無い対象を見えないと書かない")
+    out.append("")
+    for ds in sorted({f["date"] for f in h["facts"] + h["showers"]}):
+        fs = [f for f in h["facts"] if f["date"] == ds]
+        lab = (fs or [f for f in h["showers"] if f["date"] == ds])[0]["label"]
+        out += [f"### {lab}", ""]
+        for key, ja in SLOTS:
+            row = sorted([(sl["order"], f, sl) for f in fs for sl in f["slots"] if sl["key"] == key], key=lambda x: x[0])
+            if row:
+                out.append(f"- {ja}: " + "、".join(f"[{f['id']}] {f['name']}({sl['say'][0]}"
+                                                   + (f"・最も高いのは {clock(sl['peak_time'], date.fromisoformat(ds))}・{sl['say'][-2]}" if sl["peak_time"] and sl["peak_alt"] is not None else "")
+                                                   + ")" for _, f, sl in row))
+        hid = [f for f in fs if f["kind"] == "star_hidden"]
+        if hid:
+            out.append("- 今の時期は見えない: " + "、".join(f"[{f['id']}] {f['name']}" for f in hid))
+        for f in [f for f in h["showers"] if f["date"] == ds]:
+            out.append(f"- 流星群 [{f['id']}] {f['name']}: 書いてよい表記: {' / '.join(f['say'])}(決まった文の出現数の目安と注意を必ず写す)")
         out.append("")
     return out
 

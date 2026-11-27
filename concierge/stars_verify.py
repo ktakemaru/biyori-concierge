@@ -6,6 +6,7 @@ from datetime import date
 from . import stars as ST
 
 SITE = "\ue003"             # 星の地点の名前の置き換え(山の名前の置き換えとは別の字)
+OBJ = "\ue004"              # 書いてよい見どころの名前の置き換え
 TIME = re.compile(r"(翌)?\s*(?<![\d.])(\d{1,2}):(\d{2})(?!\d)")
 
 
@@ -20,6 +21,11 @@ class Index:
         self.labels = sorted(((norm(x["label"]), x["id"]) for x in st["index"]), key=lambda x: -len(x[0]))
         self.names = sorted({norm(x["name"]) for x in st["index"]}, key=lambda x: -len(x))
         self.in_brief = {f["site_id"] for f in st["facts"]}
+        h = st.get("highlights")                 # 見どころ(新しい出力だけ。無い資料では、今までどおり語の一覧だけで見る)
+        self.hl = {f["id"]: f for f in (h["facts"] + h["showers"])} if h else {}
+        self.objects = list(h["objects"]) if h else []
+        self.unverified = set(h["unverified"]) if h else set()
+        self.osm = {f["id"] for f in st["facts"] if ST.is_osm(f)}
 
     def mask(self, t):
         """地点の名前(市町村つき)を置き換える。→ (置き換えた文, 出てきた site_id の集合)。"""
@@ -34,7 +40,7 @@ class Index:
         """印の事実の、書いてよい表記(allowed に足す)。山からの距離は、その山の印もあるときだけ。"""
         if kind == "S":
             return x["say"] + [s for n in x["near"] if n["fact"] in marked_y for s in n["say"]]
-        return x["say"] + ST.night_says(date.fromisoformat(x["date"])) + [x["label"]]
+        return x["say"] + ST.night_says(date.fromisoformat(x["date"])) + [x["label"]]      # T・H・M
 
 
 def _has(t, words):
@@ -42,7 +48,7 @@ def _has(t, words):
 
 
 def is_star_sentence(t, ids, R):
-    return any(i[0] in "ST" for i in ids) or bool(_has(t, R["topic"]))
+    return any(i[0] in "STHM" for i in ids) or bool(_has(t, R["topic"]))
 
 
 def sentence_errors(X, s, t, sites, ids, mk):
@@ -50,6 +56,7 @@ def sentence_errors(X, s, t, sites, ids, mk):
     I, R = X.star, X.R["stars"]
     ss = [I.facts[i] for i in ids if i in I.facts]
     ts = [I.counts[i] for i in ids if i in I.counts]
+    hs = [I.hl[i] for i in ids if i in I.hl]
     others = [X.ids[i] for i in ids if i in X.ids and X.ids[i][0] in "GL"]
     exempt = any(w in t for w in R["object_exempt"])
     # 地点の名前
@@ -70,7 +77,7 @@ def sentence_errors(X, s, t, sites, ids, mk):
             if w not in R["place_common"] and w not in X.question:
                 mk("unknown_site", f"資料にない場所の名前らしい語「{w}」", "資料にある地点だけを書く")
     # 夜の表記
-    for f in ss + ts:
+    for f in ss + ts + hs:
         if not any(n in t for n in ST.night_says(date.fromisoformat(f["date"]))):
             mk("night_label", f"星の夜の書き方「{ST.night_says(date.fromisoformat(f['date']))[1]}」がない",
                f"「{f['label']}」か「{ST.night_says(date.fromisoformat(f['date']))[1]}」と書く")
@@ -79,12 +86,12 @@ def sentence_errors(X, s, t, sites, ids, mk):
         for rx in R["bad_night"]:
             m = re.search(rx, t)
             if m:
-                right = (ss + ts)[0]["label"] if ss + ts else "28日(土)の夜"
+                right = (ss + ts + hs)[0]["label"] if ss + ts + hs else "28日(土)の夜"
                 mk("night_label", f"星の夜を「{m.group(0)}」と書いている", f"夜の始まりの日で「{right}」と書く")
                 break
     # 時刻と「翌」
-    if ss:
-        ok = {(bool(m.group(1)), int(m.group(2)), int(m.group(3))) for f in ss for x in f["say"] for m in TIME.finditer(x)}
+    if ss or hs:
+        ok = {(bool(m.group(1)), int(m.group(2)), int(m.group(3))) for f in ss + hs for x in f["say"] for m in TIME.finditer(x)}
         for m in TIME.finditer(t):
             k = (bool(m.group(1)), int(m.group(2)), int(m.group(3)))
             if k not in ok and (not k[0], k[1], k[2]) in ok:
@@ -122,13 +129,35 @@ def sentence_errors(X, s, t, sites, ids, mk):
         good = {I.norm(x).replace(" ", "").replace("直線で", "") for f in ss for n in f["near"] if n["mountain_id"] == m.group(1) for x in n["say"]}
         if ss and m.group(2).replace(" ", "") not in good:
             mk("star_distance", "山から星の地点までの距離が、案の組の距離と合わない", "星の事実にある「○○から直線で約○km」だけを書く")
-    # 見えるもの
+    # 見えるもの: 書いてよいのは、印の見どころの事実 [H…]・[M…] にある名前だけ(同じ文に印があるとき)
+    to = t
+    for n in sorted({x["name"] for x in hs}, key=len, reverse=True):
+        to = to.replace(I.norm(n), OBJ)
     if not exempt:
-        m = re.search(R["object_re"], t)
-        if m:
-            mk("star_object", f"資料にない星・天体の名前「{m.group(0)}」", "どの星や惑星が見えるかは書かない")
-        elif "天の川" in t and not (I.doc["mode"] == "milkyway" and (ss or ts)):
+        fix = "見どころの事実 [H…]・[M…] にある名前だけを、その印を付けて書く" if I.hl else "どの星や惑星が見えるかは書かない"
+        hit = next((n for n in I.objects if I.norm(n) in to), None)
+        m = re.search(R["object_re"], to)
+        if hit in I.unverified:
+            mk("star_object", f"座標を照らしていない対象「{hit}」を書いている", "座標を照らしていない対象は、今回は書かない")
+        elif hit:
+            mk("star_object", f"印の見どころの事実にない名前「{hit}」", fix)
+        elif m:
+            mk("star_object", f"資料にない星・天体の名前「{m.group(0)}」", fix)
+        elif "天の川" in to and not (I.doc["mode"] == "milkyway" and (ss or ts)):
             mk("star_object", "天の川のことを書いている(今回の星の結果は天の川モードではない、または星の印がない)", "天の川のことは書かない")
+    if hs:
+        mixed = _has(to, R["highlight_mixed"])
+        if mixed:
+            mk("highlight_mixed", f"見どころの文に、月・雲・晴れ間の話「{mixed[0]}」を混ぜている", "見どころの文と、星の地点の文 [S…] を分ける")
+        says_nv = bool(re.search(R["not_visible_re"], to))
+        seen = [x for x in hs if x["kind"] == "star_highlight"]
+        hidden = [x for x in hs if x["kind"] == "star_hidden"]
+        if says_nv and seen:
+            mk("highlight_not_visible", f"見どころにある「{seen[0]['name']}」を、見えないと書いている", "「見えない」と書けるのは「今の時期は見えない」の事実だけ")
+        if hidden and not says_nv:
+            mk("highlight_hidden", f"「{hidden[0]['name']}」は今の時期は見えない対象", "「今の時期は見えない」と書く")
+    elif I.objects and re.search(R["not_visible_re"], to) and not exempt and (_has(to, R["topic"]) or re.search(R["object_re"], to)):
+        mk("highlight_not_visible", "見どころの事実の印が無い文で、見えないと書いている", "「見えない」と書けるのは「今の時期は見えない」の事実 [H…] だけ")
 
 
 def _cut(s, words):
@@ -144,6 +173,14 @@ def whole_errors(X, body, sents, present, picks, mre, mk, assert_words):
     for key in ("star_data_time", "star_mode", "star_attribution"):
         if L[key] and L[key]["id"] not in present:
             mk(None, "line_missing", f"決まった文 {key}([{L[key]['id']}])がない", f"[{L[key]['id']}] の文をそのまま写す")
+    hl_used = [I.hl[i] for i in used if i in I.hl]
+    if hl_used and L.get("star_basis") and L["star_basis"]["id"] not in present:
+        mk(None, "line_missing", f"見どころを書いているのに、基準の文([{L['star_basis']['id']}])がない", f"[{L['star_basis']['id']}] の文をそのまま写す")
+    for x in L.get("star_showers") or []:
+        if x["fact"] in used and x["id"] not in present:
+            mk(None, "line_missing", f"流星群を書いているのに、出現数の目安と注意の文([{x['id']}])がない", f"[{x['id']}] の文をそのまま写す")
+    if any(f["date"] not in {p["date"] for p in X.b["plans"] for fr in p["frames"] if fr["kind"] == "stars" and fr["fact"]} for f in hl_used):
+        mk(None, "highlight_without_site", "星の地点が付かない夜の見どころを書いている", "星の地点が付く夜の見どころだけを書く")
     ec = [x for i, x in list(I.facts.items()) + list(I.counts.items()) if i in used | set(picks) and x["regime"] == "ECMWF"]
     if ec and L["star_regime"] and L["star_regime"]["id"] not in present:
         mk(None, "line_missing", f"ECMWF の夜({ec[0]['label']})を書いているのに、確かさの文([{L['star_regime']['id']}])がない", f"[{L['star_regime']['id']}] の文をそのまま写す")

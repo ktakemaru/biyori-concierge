@@ -585,8 +585,12 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
     for t in (star or {}).get("counts") or []:
         if t["state"] == "not_examined":
             gap("star_not_examined", f"{t['label']}は、{ST.NOT_EXAMINED}", [t["label"]])
-    if star:
-        gap("no_star_objects", "どの星や惑星が見えるかは、この予報に含まれていません。")
+    if star:                                                                 # 見どころの事実が無いとき(古い版の出力・その夜が null)だけ
+        hl = star.get("hl")
+        if not hl or not (hl["facts"] or hl["showers"]):
+            gap("no_star_objects", "どの星や惑星が見えるかは、この予報に含まれていません。")
+        elif hl["null_nights"]:
+            gap("no_star_objects", f"{'・'.join(hl['null_nights'])}は、どの星や惑星が見えるかが、この予報に含まれていません。", hl["null_nights"])
     if other_ints:
         v = _vocab()["interests"]
         gap("interest_not_mountain", f"「{'・'.join(v[k]['label'] for k in other_ints)}」の情報はまだ使えないため、今回は山の予報だけで答えます。")
@@ -661,7 +665,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
            "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
-           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []) + (ST.RULES if star else []),
+           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []) + (ST.rules(star_doc) if star else []),
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
                       "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}

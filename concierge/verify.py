@@ -68,6 +68,8 @@ class Ctx:
                 self.ids[f["id"]] = ("S", f)
             for x in brief["stars"]["counts"]:
                 self.ids[x["id"]] = ("T", x)
+            for f in self.star.hl.values():          # 見どころ(新しい出力だけ)
+                self.ids[f["id"]] = ("M" if f["kind"] == "star_shower" else "H", f)
         self.lines = [x for x in (L["data_time"], L["coverage"], L["lead_time"], L["attribution"], L.get("hazard_note"), L.get("refresh")) if x] + list(L["hazards"]) + list(L.get("skips") or [])
         if self.star:
             from .stars import all_lines
@@ -135,7 +137,7 @@ class Ctx:
         texts = []
         for mid in marks:
             kind, x = self.ids[mid]
-            if kind in ("S", "T"):
+            if kind in ("S", "T", "H", "M"):
                 texts += self.star.texts(mid, kind, x, {m for m in marks if m[0] == "Y"})
             elif kind == "Y":
                 texts += x["say"]
@@ -156,7 +158,7 @@ class Ctx:
                 texts.append(x["text"])
                 if x is self.b["lines"]["data_time"] and self.b["shelf"].get("stale"):      # 古い予報: 「丸1日以上前」と言ってよい(実際の古さまで)
                     texts += [f"丸{n}日以上前" for n in range(1, int(self.b["shelf"]["age_hours"] // 24) + 1)]
-        if not any(self.ids[m][0] in ("Y", "C", "N", "S", "T") for m in marks):
+        if not any(self.ids[m][0] in ("Y", "C", "N", "S", "T", "H", "M") for m in marks):
             for d in self.target_days:
                 a["dates"].add((d.month, d.day))
             a["wds"] |= self.target_wd
