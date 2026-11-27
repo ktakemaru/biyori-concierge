@@ -101,7 +101,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 32,
      "unit": null,
      "valid_time": "2026-11-27",
      "source": "hoshibiyori (Open-Meteo)",
@@ -133,7 +133,7 @@
     "night_date": "2026-11-27",
     "site_id": "curated:001",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-27T17:54:46.403485+09:00",
     "window_end": "2026-11-27T19:09:46.403485+09:00"
    }
@@ -210,7 +210,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 55,
      "unit": null,
      "valid_time": "2026-11-27",
      "source": "hoshibiyori (Open-Meteo)",
@@ -242,7 +242,7 @@
     "night_date": "2026-11-27",
     "site_id": "curated:028",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-27T18:01:21.884100+09:00",
     "window_end": "2026-11-27T19:16:21.884100+09:00"
    }
@@ -319,7 +319,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 64,
      "unit": null,
      "valid_time": "2026-11-27",
      "source": "hoshibiyori (Open-Meteo)",
@@ -351,7 +351,7 @@
     "night_date": "2026-11-27",
     "site_id": "curated:056",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-27T18:04:04.101366+09:00",
     "window_end": "2026-11-27T19:19:04.101366+09:00"
    }
@@ -428,7 +428,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 31,
      "unit": null,
      "valid_time": "2026-11-27",
      "source": "hoshibiyori (Open-Meteo)",
@@ -460,7 +460,7 @@
     "night_date": "2026-11-27",
     "site_id": "curated:062",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-27T18:01:10.818982+09:00",
     "window_end": "2026-11-27T19:16:10.818982+09:00"
    }
@@ -537,7 +537,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 11,
      "unit": null,
      "valid_time": "2026-11-27",
      "source": "hoshibiyori (Open-Meteo)",
@@ -575,7 +575,7 @@
     "night_date": "2026-11-27",
     "site_id": "curated_ext:007",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-27T18:06:21.849884+09:00",
     "window_end": "2026-11-27T19:21:21.849884+09:00"
    }
@@ -652,7 +652,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 12,
      "unit": null,
      "valid_time": "2026-11-27",
      "source": "hoshibiyori (Open-Meteo)",
@@ -690,7 +690,7 @@
     "night_date": "2026-11-27",
     "site_id": "curated_ext:015",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-27T17:58:10.842208+09:00",
     "window_end": "2026-11-27T19:13:10.842208+09:00"
    }
@@ -767,7 +767,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 58,
      "unit": null,
      "valid_time": "2026-11-27",
      "source": "hoshibiyori (Open-Meteo)",
@@ -799,7 +799,7 @@
     "night_date": "2026-11-27",
     "site_id": "curated_ext:032",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-27T18:02:57.399173+09:00",
     "window_end": "2026-11-27T19:17:57.399173+09:00"
    }
@@ -876,7 +876,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 5,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -909,7 +909,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated:024",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T17:58:07.126597+09:00",
     "window_end": "2026-11-28T20:28:07.126597+09:00"
    }
@@ -986,7 +986,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 25,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1019,7 +1019,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated:035",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T17:58:49.061996+09:00",
     "window_end": "2026-11-28T20:28:49.061996+09:00"
    }
@@ -1096,7 +1096,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 29,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1129,7 +1129,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated:036",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T18:01:30.985479+09:00",
     "window_end": "2026-11-28T20:31:30.985479+09:00"
    }
@@ -1206,7 +1206,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 19,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1239,7 +1239,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated:042",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T18:01:30.985479+09:00",
     "window_end": "2026-11-28T20:31:30.985479+09:00"
    }
@@ -1316,7 +1316,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 2,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1355,7 +1355,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated_ext:015",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T17:58:00.652402+09:00",
     "window_end": "2026-11-28T20:28:00.652402+09:00"
    }
@@ -1432,7 +1432,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 26,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1465,7 +1465,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated_ext:027",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T17:59:49.056923+09:00",
     "window_end": "2026-11-28T20:29:49.056923+09:00"
    }
@@ -1542,7 +1542,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 12,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1575,7 +1575,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated_ext:032",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T18:02:49.041302+09:00",
     "window_end": "2026-11-28T20:32:49.041302+09:00"
    }
@@ -1652,7 +1652,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 4,
      "unit": null,
      "valid_time": "2026-11-28",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1685,7 +1685,7 @@
     "night_date": "2026-11-28",
     "site_id": "curated_ext:047",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-28T18:03:25.161927+09:00",
     "window_end": "2026-11-28T20:33:25.161927+09:00"
    }
@@ -1762,7 +1762,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 76,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1795,7 +1795,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:001",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T17:54:29.067390+09:00",
     "window_end": "2026-11-29T21:39:29.067390+09:00"
    }
@@ -1872,7 +1872,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 38,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -1905,7 +1905,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:024",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T17:58:00.827215+09:00",
     "window_end": "2026-11-29T21:43:00.827215+09:00"
    }
@@ -1982,7 +1982,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 84,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2015,7 +2015,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:028",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:01:05.759907+09:00",
     "window_end": "2026-11-29T21:46:05.759907+09:00"
    }
@@ -2092,7 +2092,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 1,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2125,7 +2125,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:034",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:01:09.248965+09:00",
     "window_end": "2026-11-29T21:46:09.248965+09:00"
    }
@@ -2202,7 +2202,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 91,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2235,7 +2235,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:035",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T17:58:42.476114+09:00",
     "window_end": "2026-11-29T21:43:42.476114+09:00"
    }
@@ -2312,7 +2312,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 96,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2345,7 +2345,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:036",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:01:24.113620+09:00",
     "window_end": "2026-11-29T21:46:24.113620+09:00"
    }
@@ -2422,7 +2422,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 75,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2455,7 +2455,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:042",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:01:24.113620+09:00",
     "window_end": "2026-11-29T21:46:24.113620+09:00"
    }
@@ -2532,7 +2532,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 31,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2565,7 +2565,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:044",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:02:47.392790+09:00",
     "window_end": "2026-11-29T21:47:47.392790+09:00"
    }
@@ -2642,7 +2642,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 27,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2675,7 +2675,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:056",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:03:47.388119+09:00",
     "window_end": "2026-11-29T21:48:47.388119+09:00"
    }
@@ -2752,7 +2752,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 3,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2785,7 +2785,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated:093",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:03:37.500343+09:00",
     "window_end": "2026-11-29T21:48:37.500343+09:00"
    }
@@ -2862,7 +2862,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 17,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -2901,7 +2901,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated_ext:007",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:06:05.738042+09:00",
     "window_end": "2026-11-29T21:51:05.738042+09:00"
    }
@@ -2978,7 +2978,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 18,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3017,7 +3017,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated_ext:015",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T17:57:52.305314+09:00",
     "window_end": "2026-11-29T21:42:52.305314+09:00"
    }
@@ -3094,7 +3094,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 93,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3127,7 +3127,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated_ext:027",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T17:59:42.472127+09:00",
     "window_end": "2026-11-29T21:44:42.472127+09:00"
    }
@@ -3204,7 +3204,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 65,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3237,7 +3237,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated_ext:032",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:02:42.460207+09:00",
     "window_end": "2026-11-29T21:47:42.460207+09:00"
    }
@@ -3314,7 +3314,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 29,
      "unit": null,
      "valid_time": "2026-11-29",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3347,7 +3347,7 @@
     "night_date": "2026-11-29",
     "site_id": "curated_ext:047",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-29T18:03:19.154838+09:00",
     "window_end": "2026-11-29T21:48:19.154838+09:00"
    }
@@ -3424,7 +3424,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 110,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3457,7 +3457,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:001",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T17:54:23.129462+09:00",
     "window_end": "2026-11-30T22:39:23.129462+09:00"
    }
@@ -3534,7 +3534,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 66,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3567,7 +3567,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:024",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T17:57:56.292498+09:00",
     "window_end": "2026-11-30T22:42:56.292498+09:00"
    }
@@ -3644,7 +3644,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 118,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3677,7 +3677,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:028",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:01:00.394537+09:00",
     "window_end": "2026-11-30T22:46:00.394537+09:00"
    }
@@ -3754,7 +3754,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 1,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3787,7 +3787,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:034",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:01:06.612206+09:00",
     "window_end": "2026-11-30T22:46:06.612206+09:00"
    }
@@ -3864,7 +3864,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 125,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -3897,7 +3897,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:035",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T17:58:37.665599+09:00",
     "window_end": "2026-11-30T22:43:37.665599+09:00"
    }
@@ -3974,7 +3974,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 131,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4007,7 +4007,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:036",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:01:19.028473+09:00",
     "window_end": "2026-11-30T22:46:19.028473+09:00"
    }
@@ -4084,7 +4084,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 109,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4117,7 +4117,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:042",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:01:19.028473+09:00",
     "window_end": "2026-11-30T22:46:19.028473+09:00"
    }
@@ -4194,7 +4194,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 58,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4227,7 +4227,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:044",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:02:41.748242+09:00",
     "window_end": "2026-11-30T22:47:41.748242+09:00"
    }
@@ -4304,7 +4304,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 51,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4337,7 +4337,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:056",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:03:41.744859+09:00",
     "window_end": "2026-11-30T22:48:41.744859+09:00"
    }
@@ -4414,7 +4414,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 29,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4447,7 +4447,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:062",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:00:45.789064+09:00",
     "window_end": "2026-11-30T22:45:45.789064+09:00"
    }
@@ -4524,7 +4524,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 4,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4557,7 +4557,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated:093",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:03:33.520964+09:00",
     "window_end": "2026-11-30T22:48:33.520964+09:00"
    }
@@ -4634,7 +4634,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 30,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4673,7 +4673,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated_ext:007",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:06:00.378989+09:00",
     "window_end": "2026-11-30T22:51:00.378989+09:00"
    }
@@ -4750,7 +4750,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 33,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4789,7 +4789,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated_ext:015",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T17:57:45.800702+09:00",
     "window_end": "2026-11-30T22:42:45.800702+09:00"
    }
@@ -4866,7 +4866,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 127,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -4899,7 +4899,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated_ext:027",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T17:59:37.662859+09:00",
     "window_end": "2026-11-30T22:44:37.662859+09:00"
    }
@@ -4976,7 +4976,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 97,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5009,7 +5009,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated_ext:032",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:02:37.654802+09:00",
     "window_end": "2026-11-30T22:47:37.654802+09:00"
    }
@@ -5086,7 +5086,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 53,
      "unit": null,
      "valid_time": "2026-11-30",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5119,7 +5119,7 @@
     "night_date": "2026-11-30",
     "site_id": "curated_ext:047",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-11-30T18:03:14.901592+09:00",
     "window_end": "2026-11-30T22:48:14.901592+09:00"
    }
@@ -5196,7 +5196,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 97,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5229,7 +5229,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:001",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T17:54:19.007979+09:00",
     "window_end": "2026-12-01T23:54:19.007979+09:00"
    }
@@ -5306,7 +5306,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 55,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5339,7 +5339,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:024",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T17:57:53.518101+09:00",
     "window_end": "2026-12-01T23:57:53.518101+09:00"
    }
@@ -5416,7 +5416,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 105,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5449,7 +5449,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:028",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:00:56.822961+09:00",
     "window_end": "2026-12-02T00:00:56.822961+09:00"
    }
@@ -5526,7 +5526,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 1,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5559,7 +5559,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:034",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:01:05.659566+09:00",
     "window_end": "2026-12-02T00:01:05.659566+09:00"
    }
@@ -5636,7 +5636,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 112,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5669,7 +5669,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:035",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T17:58:34.626508+09:00",
     "window_end": "2026-12-01T23:58:34.626508+09:00"
    }
@@ -5746,7 +5746,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 118,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5779,7 +5779,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:036",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:01:15.725815+09:00",
     "window_end": "2026-12-02T00:01:15.725815+09:00"
    }
@@ -5856,7 +5856,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 96,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5889,7 +5889,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:042",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:01:15.725815+09:00",
     "window_end": "2026-12-02T00:01:15.725815+09:00"
    }
@@ -5966,7 +5966,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 47,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -5999,7 +5999,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:044",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:02:37.908713+09:00",
     "window_end": "2026-12-02T00:02:37.908713+09:00"
    }
@@ -6076,7 +6076,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 41,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6109,7 +6109,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:056",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:03:37.906778+09:00",
     "window_end": "2026-12-02T00:03:37.906778+09:00"
    }
@@ -6186,7 +6186,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 23,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6219,7 +6219,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:062",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:00:41.127612+09:00",
     "window_end": "2026-12-02T00:00:41.127612+09:00"
    }
@@ -6296,7 +6296,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 9,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6329,7 +6329,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated:093",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:03:31.279777+09:00",
     "window_end": "2026-12-02T00:03:31.279777+09:00"
    }
@@ -6406,7 +6406,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 24,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6445,7 +6445,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated_ext:007",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:05:56.813609+09:00",
     "window_end": "2026-12-02T00:05:56.813609+09:00"
    }
@@ -6522,7 +6522,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 26,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6561,7 +6561,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated_ext:015",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T17:57:41.135428+09:00",
     "window_end": "2026-12-01T23:57:41.135428+09:00"
    }
@@ -6638,7 +6638,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 114,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6671,7 +6671,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated_ext:027",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T17:59:34.625056+09:00",
     "window_end": "2026-12-01T23:59:34.625056+09:00"
    }
@@ -6748,7 +6748,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 84,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6781,7 +6781,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated_ext:032",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:02:34.620539+09:00",
     "window_end": "2026-12-02T00:02:34.620539+09:00"
    }
@@ -6858,7 +6858,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 43,
      "unit": null,
      "valid_time": "2026-12-01",
      "source": "hoshibiyori (Open-Meteo)",
@@ -6891,7 +6891,7 @@
     "night_date": "2026-12-01",
     "site_id": "curated_ext:047",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-01T18:03:12.397603+09:00",
     "window_end": "2026-12-02T00:03:12.397603+09:00"
    }
@@ -6968,7 +6968,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 41,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7001,7 +7001,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:024",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T17:57:52.496743+09:00",
     "window_end": "2026-12-03T00:57:52.496743+09:00"
    }
@@ -7078,7 +7078,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 84,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7111,7 +7111,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:028",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:00:55.038702+09:00",
     "window_end": "2026-12-03T01:00:55.038702+09:00"
    }
@@ -7188,7 +7188,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 1,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7221,7 +7221,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:034",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:01:06.382716+09:00",
     "window_end": "2026-12-03T01:01:06.382716+09:00"
    }
@@ -7298,7 +7298,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 91,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7331,7 +7331,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:035",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T17:58:33.352003+09:00",
     "window_end": "2026-12-03T00:58:33.352003+09:00"
    }
@@ -7408,7 +7408,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 97,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7441,7 +7441,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:036",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:01:14.198847+09:00",
     "window_end": "2026-12-03T01:01:14.198847+09:00"
    }
@@ -7518,7 +7518,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 77,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7551,7 +7551,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:042",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:01:14.198847+09:00",
     "window_end": "2026-12-03T01:01:14.198847+09:00"
    }
@@ -7628,7 +7628,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 33,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7661,7 +7661,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:044",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:02:35.868008+09:00",
     "window_end": "2026-12-03T01:02:35.868008+09:00"
    }
@@ -7738,7 +7738,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 28,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7771,7 +7771,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:056",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:03:35.867280+09:00",
     "window_end": "2026-12-03T01:03:35.867280+09:00"
    }
@@ -7848,7 +7848,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 15,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7881,7 +7881,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:062",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:00:38.299746+09:00",
     "window_end": "2026-12-03T01:00:38.299746+09:00"
    }
@@ -7958,7 +7958,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 3,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -7991,7 +7991,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated:093",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:03:30.769219+09:00",
     "window_end": "2026-12-03T01:03:30.769219+09:00"
    }
@@ -8068,7 +8068,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 16,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8107,7 +8107,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated_ext:007",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:05:55.035626+09:00",
     "window_end": "2026-12-03T01:05:55.035626+09:00"
    }
@@ -8184,7 +8184,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 93,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8217,7 +8217,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated_ext:027",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T17:59:33.351678+09:00",
     "window_end": "2026-12-03T00:59:33.351678+09:00"
    }
@@ -8294,7 +8294,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 67,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8327,7 +8327,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated_ext:032",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:02:33.350862+09:00",
     "window_end": "2026-12-03T01:02:33.350862+09:00"
    }
@@ -8404,7 +8404,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 30,
      "unit": null,
      "valid_time": "2026-12-02",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8437,7 +8437,7 @@
     "night_date": "2026-12-02",
     "site_id": "curated_ext:047",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-02T18:03:11.635346+09:00",
     "window_end": "2026-12-03T01:03:11.635346+09:00"
    }
@@ -8514,7 +8514,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 72,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8547,7 +8547,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:001",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T17:54:16.187234+09:00",
     "window_end": "2026-12-04T01:54:16.187234+09:00"
    }
@@ -8624,7 +8624,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 41,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8657,7 +8657,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:024",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T17:57:53.218968+09:00",
     "window_end": "2026-12-04T01:57:53.218968+09:00"
    }
@@ -8734,7 +8734,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 80,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8767,7 +8767,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:028",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:00:55.032466+09:00",
     "window_end": "2026-12-04T02:00:55.032466+09:00"
    }
@@ -8844,7 +8844,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 1,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8877,7 +8877,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:034",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:01:08.770593+09:00",
     "window_end": "2026-12-04T02:01:08.770593+09:00"
    }
@@ -8954,7 +8954,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 87,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -8987,7 +8987,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:035",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T17:58:33.832346+09:00",
     "window_end": "2026-12-04T01:58:33.832346+09:00"
    }
@@ -9064,7 +9064,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 92,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9097,7 +9097,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:036",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:01:14.438436+09:00",
     "window_end": "2026-12-04T02:01:14.438436+09:00"
    }
@@ -9174,7 +9174,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 71,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9207,7 +9207,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:042",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:01:14.438436+09:00",
     "window_end": "2026-12-04T02:01:14.438436+09:00"
    }
@@ -9284,7 +9284,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 34,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9317,7 +9317,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:044",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:02:35.617154+09:00",
     "window_end": "2026-12-04T02:02:35.617154+09:00"
    }
@@ -9394,7 +9394,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 30,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9427,7 +9427,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated:056",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:03:35.617634+09:00",
     "window_end": "2026-12-04T02:03:35.617634+09:00"
    }
@@ -9504,7 +9504,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 18,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9543,7 +9543,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated_ext:007",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:05:55.035465+09:00",
     "window_end": "2026-12-04T02:05:55.035465+09:00"
    }
@@ -9620,7 +9620,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 19,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9659,7 +9659,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated_ext:015",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T17:57:37.297348+09:00",
     "window_end": "2026-12-04T01:57:37.297348+09:00"
    }
@@ -9736,7 +9736,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 89,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9769,7 +9769,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated_ext:027",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T17:59:33.833188+09:00",
     "window_end": "2026-12-04T01:59:33.833188+09:00"
    }
@@ -9846,7 +9846,7 @@
     },
     {
      "metric": "rank",
-     "value": null,
+     "value": 62,
      "unit": null,
      "valid_time": "2026-12-03",
      "source": "hoshibiyori (Open-Meteo)",
@@ -9879,7 +9879,7 @@
     "night_date": "2026-12-03",
     "site_id": "curated_ext:032",
     "group": "primary",
-    "rank_kind": null,
+    "rank_kind": "night",
     "window_start": "2026-12-03T18:02:33.835993+09:00",
     "window_end": "2026-12-04T02:02:33.835993+09:00"
    }

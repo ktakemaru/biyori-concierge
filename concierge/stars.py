@@ -84,16 +84,24 @@ def _site_fact(s, night, site, d, rank, origin, B, c):
     say = [site["label"], *night_says(d), *B.day_says(d), dist, dist.replace("直線で", "")]
     for v in values:
         say += v["say"]
-    return {"id": None, "kind": "star_night", "site_id": site["site_id"], "name": site["label"], "group": site["group"], "date": d.isoformat(),
-            "weekday": WEEKDAY_JA[d.weekday()], "label": night_label(d), "status": s["status"], "reasons": [REASON_JA[r] for r in s["reasons"]],
-            "regime": night["forecast_regime"], "rank": rank, "requires_lift_access": site["requires_lift_access"],
-            "lat": site["lat"], "lon": site["lon"], "distance_km": round(km, 1), "distance_say": dist, "main_ok": not ng, "main_ng": ng,
-            "selected_by": None, "values": values, "near": [], "say": list(dict.fromkeys(say))}
+    out = {"id": None, "kind": "star_night", "site_id": site["site_id"], "name": site["label"], "group": site["group"], "date": d.isoformat(),
+           "weekday": WEEKDAY_JA[d.weekday()], "label": night_label(d), "status": s["status"], "reasons": [REASON_JA[r] for r in s["reasons"]],
+           "regime": night["forecast_regime"], "rank": rank, "requires_lift_access": site["requires_lift_access"],
+           "lat": site["lat"], "lon": site["lon"], "distance_km": round(km, 1), "distance_say": dist, "main_ok": not ng, "main_ng": ng,
+           "selected_by": None, "values": values, "near": [], "say": list(dict.fromkeys(say))}
+    if "night_rank" in s:                       # その夜の中の順位(新しい出力だけ。無い出力の資料は 1 バイトも変えない)。答えに書かない(rank と同じ)
+        out["night_rank"] = s["night_rank"]
+    if "origin" in site:                        # 地点の出どころ(新しい出力だけ。ODbL の表示に使う)
+        out["origin"] = site["origin"]
+    return out
 
 
 def site_key(f, km):
-    """地点の並び: 主軸の地点を先 → ホシビヨリの順位(無ければあと)→ 直線距離の近い順 → site_id。"""
-    return (f["group"] != "primary", f["rank"] is None, f["rank"] or 0, km, f["site_id"])
+    """地点の並び: 主軸の地点を先 → ホシビヨリの候補の夜の順位 rank(無ければあと)→ その夜の中の順位 night_rank(rank が無い地点だけ効く。
+    無ければあと)→ 直線距離の近い順 → site_id。night_rank の無い出力(1.2.0)では、今までの並びと同じ(docs/hoshibiyori-mapping.md 2.1)。
+    候補の夜で rank がある地点は rank を先に使う(ホシビヨリの画面と同じ並び。MSM の夜の 2 つの並びの食い違いは rank が勝つ。仮置き)。"""
+    nr = f.get("night_rank")
+    return (f["group"] != "primary", f["rank"] is None, f["rank"] or 0, nr is None, nr or 0, km, f["site_id"])
 
 
 def _night_fact(d, night, in_range, max_km, origin_name, min_hours, B):
@@ -317,7 +325,8 @@ def render_md(b):
             out.append(f"- 書いてよい言い方: {' / '.join(t['say'])}")
         for f in [f for f in st["facts"] if f["date"] == t["date"]]:
             out.append(f"- **[{f['id']}] {f['name']}**({'主軸' if f['group'] == 'primary' else '参考'}の地点・{f['distance_say']})"
-                       + (f"・順位 {f['rank']}(書かない)" if f["rank"] else "") + ("・リフト要" if f["requires_lift_access"] else ""))
+                       + (f"・順位 {f['rank']}(書かない)" if f["rank"] else "")
+                       + (f"・その夜の中の順位 {f['night_rank']}(書かない)" if f.get("night_rank") else "") + ("・リフト要" if f["requires_lift_access"] else ""))
             for v in f["values"]:
                 out.append(f"  - {v['name']}: {v['say'][0]}")
             for x in f["near"]:

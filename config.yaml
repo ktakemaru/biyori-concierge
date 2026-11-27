@@ -48,7 +48,8 @@ concierge:
     mountain_interests: [hiking, mountains, clear_sky_summit, landscape_photo]
   stars:
     # 夜ごとに資料へ入れる、条件を通った星の地点の数(この枠と別に、主役にできる山の近くの地点も入る)。仮置き。
-    # 並びは 主軸の地点を先 → ホシビヨリの順位(候補の夜だけにある)→ 出発地からの直線距離 → site_id(concierge/stars.py の site_key)。
+    # 並びは 主軸の地点を先 → ホシビヨリの順位(候補の夜だけにある rank)→ その夜の中の順位(night_rank。新しい出力だけ。rank の無い地点に効く)
+    # → 出発地からの直線距離 → site_id(concierge/stars.py の site_key)。
     top_per_night: 5
     # 夜ごとに、上の枠の外で「直線 combo.near_km 以内に、同じ日に主役にできる山がある」地点を足す数。仮置き。
     # 候補の夜でない夜はホシビヨリの順位が無く、出発地に近い順(近くに山の無い海沿い)で枠が埋まるため(2026-11-28 の実物で、5 地点とも山なし)。

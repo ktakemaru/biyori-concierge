@@ -96,6 +96,9 @@ def _ev(metric, value, unit, valid, source=SOURCE, source_type="forecast"):
 
 
 def _proposal(mode, night, s, site, rank, lead):
+    """rank = 候補の夜の順位 (順位, 種類, スコア)(ranks())。無ければ、その夜の中の順位 night_rank(新しい出力だけ)を順位の欄に使う。
+    2 つは番号の意味が違う(夜をまたいだ通しの番号 / その夜の中の番号)ので、どちらかを details.rank_kind に書く(final・outlook / night)。
+    night_rank の無い出力(1.2.0)では、今までと同じ(順位なし = null)。山の点数と比べられる形にはしない(score は rank のスコアだけ)。"""
     d = night["night_date"]
     if s["clear_start"] and s["clear_end"]:
         tw = {"start": s["clear_start"], "end": s["clear_end"], "kind": "clear_window"}
@@ -109,7 +112,7 @@ def _proposal(mode, night, s, site, rank, lead):
           _ev("moon_free_hours", night["moon_free_hours"], "h", d, source_type="model_derived"),
           _ev("alr", s["alr"], None, d, SOURCE_STATIC, "static_reference"),
           _ev("alr_rank_pct", s["alr_rank_pct"], "%", d, SOURCE_STATIC, "static_reference"),
-          _ev("rank", rank[0] if rank else None, None, d, source_type="model_derived")]
+          _ev("rank", rank[0] if rank else s.get("night_rank"), None, d, source_type="model_derived")]
     cons = []
     if site["requires_lift_access"]:
         cons.append({"kind": "access", "text": "リフト要の地点(運行は確かめていない)", "hard": False})
@@ -126,7 +129,8 @@ def _proposal(mode, night, s, site, rank, lead):
                             "confidence": {"value": None, "scale": None, "method": "none", "validated": False}, "known_limits": limits},
             "native_ref": {"format": SCHEMA_IN, "path": NATIVE_PATH[mode]},
             "details": {"mode": mode, "night_date": d, "site_id": s["site_id"], "group": s["group"],
-                        "rank_kind": rank[1] if rank else None, "window_start": s["window_start"], "window_end": s["window_end"]}}
+                        "rank_kind": rank[1] if rank else ("night" if s.get("night_rank") is not None else None),
+                        "window_start": s["window_start"], "window_end": s["window_end"]}}
 
 
 def convert(natives, *, now, fetched_at, agent_version, agent_commit, model_runs=None, request_id="shelf"):
