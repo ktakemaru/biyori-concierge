@@ -665,7 +665,7 @@ def build(*, question, when, region=None, interest=None, origin=None, mountains=
            "origin": {"name": org["name"], "lat": org["lat"], "lon": org["lon"], "source": org["source"]},
            "filters": {"region": region_specs, "interest": list(interest or []), "interest_resolved": ints, "mountains": named_specs},
            "shelf": shelf_info, "facts": facts, "comparisons": comparisons, "named_gaps": named_gaps, "hazard_counts": counts_, "candidates": excluded, "lines": lines_out, "plans": plans,
-           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []) + (ST.rules(star_doc) if star else []),
+           "cards": cards, "gaps": gaps, "rules": _rules(bool(sh["ok"] and named_specs)) + (CLOUD_RULES if any(f["cloud_clear"] for f in facts) else []) + (STALE_RULES if shelf_info.get("stale") else []) + (ST.rules(star_doc, bool(lines_out.get("star_attribution_plain"))) if star else []),
            "mountain_index": [{"id": m["id"], "name": m["name"]} for m in (sh["mountains"] or {}).get("mountains", [])] if sh["ok"] else [],
            "limits": {"max_chars": c["answer"]["max_chars"], "reliable_up_to_days": RELIABLE_UP_TO_DAYS,
                       "top_per_day": bc["top_per_day"], "skip_per_day": bc["skip_per_day"], "max_straight_line_km": max_km}}

@@ -58,6 +58,10 @@ concierge:
     # より少なければ星空・星座モード、そうでなければ天の川モード。ホシビヨリの explore_hoshibiyori.py が「候補が少ない場合は --target stars で…」と
     # 出す決まり(commit 3860af7)と同じ。走査した 14 夜の全部で 1 つに決める(夜ごとには変えない)。
     mode_rule: milkyway_few_results
+    # 星の帰属の文の ODbL(「地点は © OpenStreetMap contributors(ODbL)」)を、OSM 由来の地点(origin が viewpoint・curated+viewpoint。
+    # origin の無い地点も OSM 由来とみなす)を答えに使ったときだけにするか(段階 3 見どころ 第 4 部)。false なら、今までどおりいつも付ける。
+    # origin の無い出力(1.2.0)では、この値によらず、いつも付ける。仮置き(docs/stage3-highlights-report.md「決めてほしいこと」)。
+    odbl_by_origin: true
 
 collect:
   # 取得の側(collect/)の値。

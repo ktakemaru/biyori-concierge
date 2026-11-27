@@ -297,6 +297,8 @@ def build(sh, target, origin, now, c, B, interests=()):
     ec = [x["label"] for x in counts if x["regime"] == "ECMWF" and x["state"] != "not_examined"]
     if ec:
         lines["star_regime"] = f"{'・'.join(ec)}は、ECMWF の予報だけの夜で、雲量は目安です。"
+    if sc.get("odbl_by_origin") and any("origin" in x for x in n["site_index"]):      # 地点の出どころがある出力: ODbL の無い帰属の文も用意する
+        lines["star_attribution_plain"] = lines["star_attribution"].replace(ATTR_OSM, "")             # (OSM 由来の地点を使わない答え用)
     if hl and (hl["facts"] or hl["showers"]) and hl["basis"]:
         lines["star_basis"] = f"見られる星や惑星と時刻は、{hl['basis']}です。"
     extra = {"hl": hl} if hl is not None else {}
@@ -471,12 +473,17 @@ HL_RULES = [
 ]
 
 
-def rules(b_stars):
-    """資料の星の決まり。見どころの事実が無ければ RULES のまま(段階 3 と同じ)。"""
+ODBL_RULE = ("星の帰属の文は 2 つある。OSM 由来の地点(資料に「OSM 由来の地点」とある地点)を 1 つでも書いた・すすめた答えは、ODbL のある文 [L…](star_attribution)を写す。"
+             "OSM 由来の地点を書かない答えだけ、ODbL の無い文 [L…](star_attribution_plain)を写してよい。")
+
+
+def rules(b_stars, plain=False):
+    """資料の星の決まり。見どころの事実が無く、ODbL の無い帰属の文も無ければ RULES のまま(段階 3 と同じ)。"""
     h = b_stars.get("highlights")
-    if not h or not (h["facts"] or h["showers"]):
-        return list(RULES)
-    return [OBJECT_RULE if r == OBJECT_RULE_OLD else r for r in RULES] + HL_RULES
+    out = list(RULES)
+    if h and (h["facts"] or h["showers"]):
+        out = [OBJECT_RULE if r == OBJECT_RULE_OLD else r for r in RULES] + HL_RULES
+    return out + ([ODBL_RULE] if plain else [])
 
 
 def render_md(b):
@@ -492,7 +499,8 @@ def render_md(b):
         for f in [f for f in st["facts"] if f["date"] == t["date"]]:
             out.append(f"- **[{f['id']}] {f['name']}**({'主軸' if f['group'] == 'primary' else '参考'}の地点・{f['distance_say']})"
                        + (f"・順位 {f['rank']}(書かない)" if f["rank"] else "")
-                       + (f"・その夜の中の順位 {f['night_rank']}(書かない)" if f.get("night_rank") else "") + ("・リフト要" if f["requires_lift_access"] else ""))
+                       + (f"・その夜の中の順位 {f['night_rank']}(書かない)" if f.get("night_rank") else "") + ("・リフト要" if f["requires_lift_access"] else "")
+                       + ("・OSM 由来の地点(帰属は ODbL のある文)" if "origin" in f and is_osm(f) else ""))
             for v in f["values"]:
                 out.append(f"  - {v['name']}: {v['say'][0]}")
             for x in f["near"]:

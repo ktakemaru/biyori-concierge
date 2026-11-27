@@ -480,7 +480,7 @@ def _check_stale(X, body, errs):
     ref, tail_ok = L.get("refresh"), L["attribution"]
     if ref and ref["text"] in body:
         tail = body.split(ref["text"])[-1]
-        for x in [tail_ok, L.get("star_attribution")]:      # 帰属の文(星の質問では、星の帰属の文も)
+        for x in [tail_ok, L.get("star_attribution"), L.get("star_attribution_plain")]:      # 帰属の文(星の質問では、星の帰属の文も)
             if x:
                 tail = tail.replace(x["text"], "")
         if mre.sub("", tail).strip(" \t　" + NL):

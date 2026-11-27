@@ -174,7 +174,7 @@ Stop フックも同じ判定で止める(`concierge/stop_hook.py` の `named`)�
 | `highlight_without_site` | 星の地点が付かない夜の見どころを書いている(資料にはふつう入らない。念のため) | 星の地点が付く夜の見どころだけを書く |
 | `flow_order` | 夜の星を、組になる朝〜日中の山より先に書いている(最初の行の結論を除く) | 時刻の順に書く |
 | `star_gap_missing` | 聞かれた夜の雲の予報が調べられていないのに、その文がない | `[G…]` の文をそのまま写す |
-| `line_missing` | `star_data_time`・`star_mode`・`star_attribution`、ECMWF の夜の `star_regime`、リフト要の地点の `star_lifts`、対象の日が 2 日までのときの `star_skips` がない。**見どころ `[H…]`・`[M…]` を書いたのに基準の文 `star_basis` がない。流星群 `[M…]` を書いたのに、その流星群の文 `star_showers`(出現数の目安と注意)がない** | 資料の文をそのまま写す |
+| `line_missing` | `star_data_time`・`star_mode`・`star_attribution`、ECMWF の夜の `star_regime`、リフト要の地点の `star_lifts`、対象の日が 2 日までのときの `star_skips` がない。**地点の出どころがある資料では、OSM 由来の地点(`viewpoint`・`curated+viewpoint`・出どころの無い地点)の `[S…]` を書いた・すすめたのに、ODbL のある `star_attribution` がない(OSM 由来の地点を使わない答えは、ODbL の無い `star_attribution_plain` でもよい)。** **見どころ `[H…]`・`[M…]` を書いたのに基準の文 `star_basis` がない。流星群 `[M…]` を書いたのに、その流星群の文 `star_showers`(出現数の目安と注意)がない** | 資料の文をそのまま写す |
 | `pick_not_allowed`・`pick_not_in_plans`・`pick_undeclared` | 星のおすすめが、条件を通った地点でない・案にない・`[おすすめ]` に書いていない | 案にある地点だけをすすめる |
 | `stale_assertion` | 星の予報が古いのに言い切っている | 「古い予報では、○○が候補です」の形で書く |
 

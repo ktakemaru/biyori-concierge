@@ -22,6 +22,9 @@
   推奨引用: NASA VIIRS Land Science Investigator-led Processing System. (2025). VIIRS/NPP Lunar BRDF-Adjusted Nighttime Lights Yearly L3 Global 15 arc second Linear Lat Lon Grid [Dataset]. NASA Level 1 and Atmosphere Archive and Distribution System Distributed Active Archive Center.
 - 地点(名前・市町村・座標): © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)(Overpass API・Nominatim)。
   `hoshibiyori/*.json` と `proposals/hoshibiyori.json` の地点のデータは [ODbL 1.0](https://opendatacommons.org/licenses/odbl/) の条件に従います(ホシビヨリの `stargazing_spots.json` と同じ扱い)。
+  この棚には OSM 由来の地点を含む全部の地点が入るので、ここでは全部に ODbL を書きます。コンシェルの答えでは、ホシビヨリの出力に地点の出どころ
+  (`site_index[].origin`)があるとき、OSM 由来の地点(`viewpoint`・`curated+viewpoint`。出どころの無い地点を含む)を答えに使ったときだけ ODbL を書きます
+  (出どころの無い出力では、いつも書きます。`docs/hoshibiyori-mapping.md` 6 章)。
 - 天体位置: JPL DE421 暦([Skyfield](https://rhodesmill.org/skyfield/) 経由。利用条件は未確認)。
 
 ## 予報の回

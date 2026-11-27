@@ -131,5 +131,6 @@
 | `star_lifts` | `requires_lift_access` の地点ごとに「…はリフト要の地点で、運行は確かめていません。」 |
 | `star_skips` | 月の夜・条件を通った地点の無い夜ごとに 1 文。理由の語は「月が出ている」「雲」「光害」「方角」だけ |
 | `star_attribution` | 星の帰属(ホシビヨリの README「データ出典と利用上の注意」) |
+| `star_attribution_plain` | 地点の出どころ(`origin`)がある出力のときだけ。`star_attribution` から「地点は © OpenStreetMap contributors(ODbL)、」を除いた文。OSM 由来の地点を使わない答え用(`config.yaml` `concierge.stars.odbl_by_origin`。仮置き) |
 | `star_basis` | 見どころの事実があるときだけ。「見られる星や惑星と時刻は、{`highlights.basis.text`}です。」(基準の地点・平らな地平線の目安。地形・雲は見ていない) |
 | `star_showers` | 流星群の事実ごと。「{名前}の出現数は、{`zhr_note`}です。{`caveat`}。」 |

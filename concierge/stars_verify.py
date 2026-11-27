@@ -170,9 +170,15 @@ def whole_errors(X, body, sents, present, picks, mre, mk, assert_words):
     """答え全体の検査: 必ず写す決まった文・おすすめ・時刻の順・古い星の言い切り。"""
     I, L = X.star, X.b["lines"]
     used = {i for s in sents for i in s["ids"]}
-    for key in ("star_data_time", "star_mode", "star_attribution"):
+    for key in ("star_data_time", "star_mode"):
         if L[key] and L[key]["id"] not in present:
             mk(None, "line_missing", f"決まった文 {key}([{L[key]['id']}])がない", f"[{L[key]['id']}] の文をそのまま写す")
+    a, plain = L["star_attribution"], L.get("star_attribution_plain")
+    if a and a["id"] not in present:             # 地点の出どころがある資料: OSM 由来の地点を使わない答えは、ODbL の無い帰属の文でもよい
+        osm = sorted(i for i in used | set(picks) if i in I.osm)
+        if not plain or osm or plain["id"] not in present:
+            why = f"(OSM 由来の地点 {', '.join(osm)} を書いている)" if plain and osm else ""
+            mk(None, "line_missing", f"決まった文 star_attribution([{a['id']}])がない{why}", f"[{a['id']}] の文をそのまま写す")
     hl_used = [I.hl[i] for i in used if i in I.hl]
     if hl_used and L.get("star_basis") and L["star_basis"]["id"] not in present:
         mk(None, "line_missing", f"見どころを書いているのに、基準の文([{L['star_basis']['id']}])がない", f"[{L['star_basis']['id']}] の文をそのまま写す")

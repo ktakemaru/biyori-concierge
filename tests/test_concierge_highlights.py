@@ -179,7 +179,7 @@ class Highlights(unittest.TestCase):
                 self.assertNotIn("highlights", doc["stars"])
                 self.assertIn("no_star_objects", {g["kind"] for g in doc["gaps"]})
                 self.assertNotIn("star_basis", doc["lines"])
-                self.assertEqual(doc["rules"][-len(ST.RULES):], ST.RULES)
+                self.assertEqual(doc["rules"][-len(ST.RULES) - 1:], ST.RULES + [ST.ODBL_RULE])      # 出どころはあるので、ODbL の決まりだけ足される
                 self.assertTrue(all("highlights" not in fr for p in doc["plans"] for fr in p["frames"]))
 
     def test_null_or_missing_night_keeps_the_old_sentence(self):
@@ -328,6 +328,49 @@ class HighlightVerify(unittest.TestCase):
                         r = V.check(F.draft(d, compact=True), d)
                     self.assertTrue(r["ok"], r["errors"])
                     self.assertLessEqual(len(r["final"]), 2000)
+
+
+
+class Odbl(unittest.TestCase):
+    """第 4 部: ODbL の表示は、OSM 由来の地点を答えに使ったときだけ。"""
+
+    def test_plain_line_only_with_origin(self):
+        new = make(self)
+        self.assertNotIn("OpenStreetMap", new["lines"]["star_attribution_plain"]["text"])
+        self.assertIn("OpenStreetMap", new["lines"]["star_attribution"]["text"])
+        old = make(self, fix=DAY_FIX, now="2026-11-25T23:00:00+09:00")
+        self.assertNotIn("star_attribution_plain", old["lines"])
+
+    def test_answer_without_osm_sites_may_drop_odbl(self):
+        doc = make(self)
+        L = doc["lines"]
+        good = F.draft(doc)
+        shown = {f["id"] for f in doc["stars"]["facts"] if f"[{f['id']}]" in good}
+        osm = {f["id"] for f in doc["stars"]["facts"] if ST.is_osm(f)}
+        self.assertTrue(V.check(good, doc)["ok"])
+        self.assertEqual(L["star_attribution_plain"]["text"] in good, not (shown & osm))
+        if not shown & osm:                                                   # ODbL のある文でもよい(付けすぎは止めない)
+            r = V.check(good.replace(L["star_attribution_plain"]["text"] + f"[{L['star_attribution_plain']['id']}]",
+                                     L["star_attribution"]["text"] + f"[{L['star_attribution']['id']}]"), doc)
+            self.assertTrue(r["ok"], r["errors"])
+
+    def test_osm_site_needs_odbl(self):
+        doc = make(self)
+        L = doc["lines"]
+        s = next(f for f in doc["stars"]["facts"] if f.get("origin") == "curated+viewpoint")
+        self.assertTrue(ST.is_osm(s))
+        good = F.draft(doc)
+        t = good.replace(L["star_attribution"]["text"] + f"[{L['star_attribution']['id']}]",
+                         L["star_attribution_plain"]["text"] + f"[{L['star_attribution_plain']['id']}]")
+        t = t.replace("\n\n", f"\n{s['label']}は、{s['name']}も星の候補です。[{s['id']}]\n\n", 1)
+        self.assertIn("line_missing", codes(V.check(t, doc)))
+
+    def test_viewpoint_and_missing_origin_are_osm(self):
+        # 作り物: 実物(主軸 146 地点)に viewpoint の地点は無い
+        self.assertTrue(ST.is_osm({"origin": "viewpoint"}))
+        self.assertTrue(ST.is_osm({}))
+        self.assertFalse(ST.is_osm({"origin": "curated"}))
+        self.assertFalse(ST.is_osm({"origin": "curated_external"}))
 
 
 class VoiceExamples(unittest.TestCase):
