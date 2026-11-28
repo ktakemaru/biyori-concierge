@@ -1,0 +1,71 @@
+{
+ "schema": "biyori-request-log/1",
+ "started_at": "2026-11-29T01:26:17+09:00",
+ "finished_at": "2026-11-29T01:37:42+09:00",
+ "estimated_calls_note": "estimated_calls は推定(Open-Meteo の公式の換算式は未確認。config.yaml の estimated_calls)",
+ "total": {
+  "requests": 689,
+  "by_host": {
+   "api.open-meteo.com": 689
+  },
+  "by_status": {
+   "200": 686,
+   "error": 3
+  },
+  "by_error": {
+   "URLError": 3
+  },
+  "http_429_kinds": {},
+  "estimated_calls": 2337
+ },
+ "agents": {
+  "yamabiyori": {
+   "requests": 228,
+   "by_host": {
+    "api.open-meteo.com": 228
+   },
+   "by_status": {
+    "200": 228
+   },
+   "by_error": {},
+   "estimated_calls": 1222,
+   "aborted": null,
+   "blocked_host": null,
+   "http_429": 0,
+   "http_429_tolerated": 0,
+   "http_429_kinds": {}
+  },
+  "hoshibiyori": {
+   "requests": 456,
+   "by_host": {
+    "api.open-meteo.com": 456
+   },
+   "by_status": {
+    "200": 456
+   },
+   "by_error": {},
+   "estimated_calls": 1116,
+   "aborted": null,
+   "blocked_host": null,
+   "http_429": 0,
+   "http_429_tolerated": 0,
+   "http_429_kinds": {}
+  }
+ },
+ "metadata": {
+  "requests": 5,
+  "by_host": {
+   "api.open-meteo.com": 5
+  },
+  "by_status": {
+   "200": 2,
+   "error": 3
+  },
+  "by_error": {
+   "URLError": 3
+  },
+  "http_429_kinds": {},
+  "estimated_calls": 0,
+  "aborted": null
+ }
+}

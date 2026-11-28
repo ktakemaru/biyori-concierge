@@ -1,0 +1,156 @@
+{
+ "schema": "biyori-shelf/1",
+ "slot": "morning",
+ "trigger": "schedule",
+ "started_at": "2026-11-29T01:26:17+09:00",
+ "finished_at": "2026-11-29T01:37:42+09:00",
+ "concierge_commit": "92a839dd8b131d320afc899d4cecbd02c62436ad",
+ "model_runs": {
+  "jma_msm": {
+   "init": "2026-11-28T09:00:00Z",
+   "available": "2026-11-28T12:30:08Z",
+   "same_before_after": null
+  },
+  "ecmwf_ifs025": {
+   "init": "2026-11-28T06:00:00Z",
+   "available": "2026-11-28T13:04:41Z",
+   "same_before_after": null
+  }
+ },
+ "agents": {
+  "yamabiyori": {
+   "status": "ok",
+   "ref": "main",
+   "commit": "dc6e92d6a0fbe2390b569d318b6a23f334a11089",
+   "version": "1.10.2",
+   "data_time": "2026-11-29T01:32:29+09:00",
+   "model_runs": {
+    "jma_msm": {
+     "init": "2026-11-28T09:00:00Z",
+     "available": "2026-11-28T12:30:08Z",
+     "same_before_after": null
+    },
+    "ecmwf_ifs025": {
+     "init": "2026-11-28T06:00:00Z",
+     "available": "2026-11-28T13:04:41Z",
+     "same_before_after": null
+    }
+   },
+   "proposal_status": "ok",
+   "proposals": 1140,
+   "limit": null,
+   "coverage": {
+    "pool_size": 76,
+    "fetched": 76,
+    "missing": 0,
+    "total_mountains": 76
+   },
+   "attempts": [
+    {
+     "n": 1,
+     "status": "ok",
+     "reason": null,
+     "requests": 228,
+     "runtime_s": 251.3,
+     "pool_size": 76,
+     "fetched": 76,
+     "http_429": 0,
+     "http_429_kinds": {}
+    }
+   ],
+   "used_run": 1,
+   "retry_stop": null,
+   "requests": 228,
+   "runtime_s": 251.4,
+   "http_429": 0,
+   "http_429_tolerated": 0,
+   "kept_from": null,
+   "files": [
+    "proposals/yamabiyori.json",
+    "yamabiyori/explore.json",
+    "yamabiyori/mountains.json"
+   ]
+  },
+  "hoshibiyori": {
+   "status": "ok",
+   "ref": "main",
+   "commit": "dd2f792bd597b8842a4af254c7b885e972ad3308",
+   "version": "1.2.0",
+   "data_time": "2026-11-29T01:37:40+09:00",
+   "model_runs": {
+    "jma_msm": {
+     "init": "2026-11-28T09:00:00Z",
+     "available": "2026-11-28T12:30:08Z",
+     "same_before_after": null
+    },
+    "ecmwf_ifs025": {
+     "init": "2026-11-28T06:00:00Z",
+     "available": "2026-11-28T13:04:41Z",
+     "same_before_after": null
+    }
+   },
+   "proposal_status": "ok",
+   "proposals": 3086,
+   "limit": null,
+   "coverage": null,
+   "attempts": null,
+   "used_run": null,
+   "retry_stop": null,
+   "requests": 456,
+   "runtime_s": 310.4,
+   "http_429": 0,
+   "http_429_tolerated": 0,
+   "kept_from": null,
+   "files": [
+    "hoshibiyori/milkyway.json",
+    "hoshibiyori/stars.json",
+    "proposals/hoshibiyori.json"
+   ],
+   "modes": [
+    {
+     "mode": "stars",
+     "status": "ok",
+     "reason": null,
+     "requests": 456,
+     "runtime_s": 283.5,
+     "http_429": 0,
+     "http_429_kinds": {},
+     "fetch_status": "ok",
+     "api_calls": 456,
+     "cache_hits": 6132,
+     "total_cells": 456,
+     "failed_cells": 0,
+     "generated_at": "2026-11-29T01:37:13+09:00"
+    },
+    {
+     "mode": "milkyway",
+     "status": "ok",
+     "reason": null,
+     "requests": 0,
+     "runtime_s": 25.4,
+     "http_429": 0,
+     "http_429_kinds": {},
+     "fetch_status": "ok",
+     "api_calls": 0,
+     "cache_hits": 12,
+     "total_cells": 2,
+     "failed_cells": 0,
+     "generated_at": "2026-11-29T01:37:40+09:00"
+    }
+   ]
+  }
+ },
+ "requests": {
+  "total": 689,
+  "by_host": {
+   "api.open-meteo.com": 689
+  },
+  "estimated_calls": 2337
+ },
+ "notes": [
+  "時刻はすべて ISO 8601・オフセットつき。分からない値は null",
+  "agents.*.model_runs はそのビヨリのファイルを取得したときの予報の回。最上位の model_runs はこの回の実行のもの",
+  "requests・runtime_s はこの回の実行の値。kept_previous のとき commit・version・data_time・coverage・attempts は残したファイルのもの",
+  "status: incomplete は、この回のファイルに入れ替えたが全座はそろっていない(coverage の fetched / pool_size)"
+ ]
+}
